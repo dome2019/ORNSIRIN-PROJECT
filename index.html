@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ornsirin Health Link</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F6F2EA; --ink:#2B3328; --primary:#4A6741; --primary-dark:#41593A;
+    --clay:#B8763E; --slate:#6E8098; --surface:#FCFAF4; --line:#E3DCCB;
+    --muted:#9AA08F;
+  }
+  html,body{ margin:0; background:#EDE7D8; font-family:'Noto Sans Thai','Noto Serif Thai',sans-serif; color:var(--ink); }
+  .serif-th{ font-family:'Noto Serif Thai',serif; }
+  .phone-scroll::-webkit-scrollbar{ display:none; }
+  @keyframes breathe { 0%,100%{ transform:scale(1); opacity:.55; } 50%{ transform:scale(1.18); opacity:.9; } }
+  @keyframes breathe2 { 0%,100%{ transform:scale(1); opacity:.35; } 50%{ transform:scale(1.32); opacity:.65; } }
+  .listen-ring1{ animation: breathe 3.4s ease-in-out infinite; }
+  .listen-ring2{ animation: breathe2 3.4s ease-in-out infinite; animation-delay:.3s; }
+  textarea:focus, input:focus { outline: none; }
+  .tab-scroll::-webkit-scrollbar{ display:none; }
+
+  /* ---- motion system: เล่นเฉพาะตอนเปลี่ยนหน้า/เปิด overlay จริงเท่านั้น (gate อยู่ใน render) ---- */
+  @keyframes screenFwd { from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
+  @keyframes screenBack { from{ opacity:0; transform:translateY(-6px); } to{ opacity:1; transform:none; } }
+  @keyframes sheetUp { from{ opacity:0; transform:translateY(12px); } to{ opacity:1; transform:none; } }
+  @keyframes fadeIn { from{ opacity:0; } to{ opacity:1; } }
+  @keyframes dialogIn { from{ opacity:0; transform:scale(.98); } to{ opacity:1; transform:none; } }
+  @keyframes exhaleOnce { 0%{ transform:scale(1); } 50%{ transform:scale(1.04); } 100%{ transform:scale(1); } }
+  .screen-enter.fwd{ animation: screenFwd .22s cubic-bezier(.32,.72,0,1) both; }
+  .screen-enter.back{ animation: screenBack .2s cubic-bezier(.32,.72,0,1) both; }
+  .sheet-enter{ animation: sheetUp .26s cubic-bezier(.32,.72,0,1) both; }
+  .backdrop-enter{ animation: fadeIn .2s linear both; }
+  .dialog-enter{ animation: dialogIn .2s cubic-bezier(.32,.72,0,1) both; }
+  .exhale-once{ animation: exhaleOnce .6s ease-in-out 1; }
+  .panel-enter{ animation: fadeIn .14s ease both; }
+  button:not([disabled]){ transition: transform .12s ease; }
+  button:not([disabled]):active{ transform: scale(.97); }
+  @media (prefers-reduced-motion: reduce){
+    .listen-ring1,.listen-ring2{ animation:none; }
+    .screen-enter.fwd,.screen-enter.back,.sheet-enter,.backdrop-enter,.dialog-enter,.exhale-once,.panel-enter{ animation:none; }
+    button:not([disabled]){ transition:none; }
+    button:not([disabled]):active{ transform:none; }
+    #queue-fill{ transition:none !important; }
+  }
+</style>
+</head>
+<body class="w-full min-h-screen flex items-start justify-center py-6">
+
+<div id="phone" class="relative overflow-hidden phone-scroll"
+     style="width:390px;height:844px;background:var(--bg);border-radius:40px;
+            box-shadow:0 30px 60px -20px rgba(43,51,40,0.35);border:10px solid #2B3328;">
+  <div class="w-full h-full flex flex-col">
+    <div id="user-bar" class="shrink-0"></div>
+    <div id="app" class="w-full flex-1 min-h-0 overflow-y-auto phone-scroll"></div>
+  </div>
+  <div id="modal-root" class="absolute inset-0" style="pointer-events:none"></div>
+</div>
+
+<script>
+/* ---------------------------------------------------------------
+   ORNSIRIN HEALTH LINK — vanilla JS single-file prototype
+   Screens: home, consult-specialty, consult-form, queue, lab, meds, lifestyle
+   Lifestyle: maid, massage, icebath, physio, petcare
+   Overlays: item detail (location + staff picker), QR payment, success
+------------------------------------------------------------------*/
+
+const users = [
+  { id: "u1", name: "สมหญิง สุขใจ", short: "สมหญิง", initial: "ส" },
+  { id: "u2", name: "สมชาย สุขใจ", short: "สมชาย", initial: "ช" },
+  { id: "u3", name: "คุณยายบุญมี สุขใจ", short: "คุณยายบุญมี", initial: "ย" },
+];
+
+function tomorrowISO(){
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  const pad = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+const state = {
+  screen: "home",
+  loggedIn: false,
+  specialty: null,
+  selectedDoctor: null,
+  symptom: "",
+  needCert: false,
+  lifestyleTab: "maid",
+  currentUser: "u1",
+  pickedTests: ["ตรวจสุขภาพทั่วไป"],
+  labDate: tomorrowISO(),   // ตั้งต้นเป็นพรุ่งนี้ 09:00 ให้ปุ่มยืนยันกดได้ทันทีตอนเดโม
+  labTime: "09:00",
+  otcOpen: false,       // กางรายการยาสามัญในหน้ายาต่อเนื่อง
+  pickedOtc: [],
+  queue: null,          // { position, wait } — ขยับเองด้วย timer ระหว่างอยู่หน้าคิว
+  queuePaid: false,     // จ่ายเงินยืนยันคิวแล้วหรือยัง — รีเซ็ตเมื่อส่งคำขอปรึกษาใหม่
+  bookings: [],         // นัดที่จ่ายเงินยืนยันแล้ว { icon, title, sub, amount } — โชว์บนหน้าแรก
+  modal: null,          // { kind:'detail'|'payment', category, itemId, location, staffId, amount, success }
+  bookingSuccess: null, // { title, detail, amount }
+};
+
+const specialties = [
+  { id: "psych", name: "จิตแพทย์ / นักจิตวิทยา", sub: "พื้นที่ปลอดภัยสำหรับพูดคุย ไม่ตัดสิน", icon: "brain", featured: true },
+  { id: "gp", name: "แพทย์ทั่วไป", sub: "อาการเบื้องต้น ไข้ ไอ ปวดเมื่อย", icon: "stethoscope" },
+  { id: "internal", name: "อายุรแพทย์", sub: "โรคประจำตัว เบาหวาน ความดัน", icon: "heart-pulse" },
+  { id: "ortho", name: "กระดูกและข้อ", sub: "ปวดหลัง ปวดข้อ อุบัติเหตุเล็กน้อย", icon: "bone" },
+  { id: "eye", name: "จักษุแพทย์", sub: "ตาแดง ตาพร่ามัว", icon: "eye" },
+  { id: "ent", name: "หู คอ จมูก", sub: "คัดจมูก เจ็บคอ", icon: "ear" },
+];
+
+const maidPlans = [
+  { id: "hour", label: "รายชั่วโมง", price: "180", unit: "บาท/ชม.", detail: "ขั้นต่ำ 3 ชม. นัดได้ตามต้องการ" },
+  { id: "day", label: "รายวัน", price: "900", unit: "บาท/วัน", detail: "8 ชม. ทำความสะอาดทั่วบ้าน" },
+  { id: "month", label: "รายเดือน", price: "9,500", unit: "บาท/เดือน", detail: "จันทร์-ศุกร์ 3 ชม./วัน คงที่" },
+];
+
+const massagePartners = [
+  { id: "m1", name: "บ้านสมุนไพรล้านนา", tag: "นวดแผนไทย", price: "500", mins: "60 นาที" },
+  { id: "m2", name: "เจียงใหม่ เวลเนส", tag: "นวดน้ำมันอโรมา", price: "750", mins: "90 นาที" },
+  { id: "m3", name: "สุขใจสปา", tag: "นวดเท้า + ประคบสมุนไพร", price: "450", mins: "60 นาที" },
+];
+
+const icebathPlans = [
+  { id: "ice1", label: "เซสชันเดี่ยว 15 นาที", price: "350", unit: "อุณหภูมิ 10-12°C", detail: "อุณหภูมิ 10-12°C · มีผ้าเช็ดตัวให้" },
+  { id: "ice2", label: "แพ็กเกจ 4 ครั้ง/เดือน", price: "1,200", unit: "คุ้มกว่าซื้อแยก", detail: "คุ้มกว่า 350 บาท เมื่อซื้อแยกรายครั้ง" },
+];
+
+const physioPlans = [
+  { id: "p1", label: "กายภาพบำบัดทั่วไป", price: "800", unit: "60 นาที/ครั้ง", detail: "ประเมินและรักษาตามอาการปวดกล้ามเนื้อ-ข้อ" },
+  { id: "p2", label: "ฟื้นฟูหลังผ่าตัด/บาดเจ็บ", price: "950", unit: "60 นาที/ครั้ง", detail: "โปรแกรมฟื้นฟูเฉพาะบุคคล พร้อมอุปกรณ์พกพา" },
+  { id: "p3", label: "กายภาพบำบัดผู้สูงอายุ", price: "850", unit: "45 นาที/ครั้ง", detail: "เน้นการเคลื่อนไหว ป้องกันหกล้ม เสริมความแข็งแรง" },
+];
+
+const petCareServices = [
+  { id: "pc1", label: "สัตวแพทย์ถึงบ้าน / ปรึกษาออนไลน์", icon: "stethoscope", price: "450", desc: "ปรึกษาอาการเบื้องต้น หรือให้สัตวแพทย์เดินทางมาตรวจถึงบ้าน" },
+  { id: "pc2", label: "อาบน้ำ-ตัดขน-ตัดเล็บ", icon: "scissors", price: "400", desc: "ทำความสะอาดและตกแต่งขนโดยช่างมืออาชีพ" },
+  { id: "pc3", label: "รับฝากเลี้ยง / พาเดินเล่น", icon: "footprints", price: "250", desc: "พาน้องเดินเล่นประจำวัน หรือรับฝากเลี้ยงระหว่างวัน" },
+  { id: "pc4", label: "เจาะเลือด-ตรวจสุขภาพสัตว์เลี้ยง", icon: "droplet", price: "600", desc: "ตรวจสุขภาพประจำปีถึงบ้าน ไม่ต้องพาไปคลินิก" },
+  { id: "pc5", label: "ส่งอาหาร-ยาสัตว์เลี้ยงต่อเนื่อง", icon: "pill", price: "-", desc: "สั่งอาหารและยาประจำของน้อง จัดส่งถึงบ้าน" },
+];
+
+/* Staff / provider pools shown as "A / B / C, available today" */
+function staffFor(type){
+  const data = {
+    maid: [
+      { id: "A", name: "พี่นิด", role: "แม่บ้านมืออาชีพ 5 ปี", avail: true },
+      { id: "B", name: "พี่แดง", role: "แม่บ้านมืออาชีพ 3 ปี", avail: true },
+      { id: "C", name: "พี่เล็ก", role: "แม่บ้านมืออาชีพ 7 ปี", avail: false },
+    ],
+    massage: [
+      { id: "A", name: "ครูอ้อย", role: "ผู้เชี่ยวชาญนวดแผนไทย", avail: true },
+      { id: "B", name: "ครูตุ๊ก", role: "ผู้เชี่ยวชาญนวดอโรมา", avail: true },
+      { id: "C", name: "ครูหนึ่ง", role: "ผู้เชี่ยวชาญนวดเท้า", avail: false },
+    ],
+    icebath: [
+      { id: "A", name: "โค้ชบอล", role: "เจ้าหน้าที่ดูแล Ice bath", avail: true },
+      { id: "B", name: "โค้ชปูน", role: "เจ้าหน้าที่ดูแล Ice bath", avail: true },
+      { id: "C", name: "โค้ชเจมส์", role: "เจ้าหน้าที่ดูแล Ice bath", avail: false },
+    ],
+    physio: [
+      { id: "A", name: "กภ. กิตติ", role: "นักกายภาพบำบัด 8 ปี", avail: true },
+      { id: "B", name: "กภ. มณี", role: "ผู้เชี่ยวชาญผู้สูงอายุ", avail: true },
+      { id: "C", name: "กภ. สมพร", role: "ผู้เชี่ยวชาญด้านกีฬา", avail: false },
+    ],
+    pet: [
+      { id: "A", name: "สพ.ญ. พิม", role: "สัตวแพทย์ / ช่างตัดขน", avail: true },
+      { id: "B", name: "พี่ตูน", role: "พนักงานดูแลสัตว์เลี้ยง", avail: true },
+      { id: "C", name: "พี่เอ๋", role: "พนักงานดูแลสัตว์เลี้ยง", avail: false },
+    ],
+    doctor: [
+      { id: "A", name: "พญ. อารีย์", role: "แพทย์ทั่วไป · ว่างวันนี้", avail: true },
+      { id: "B", name: "นพ. ธนกร", role: "แพทย์ทั่วไป · ว่างวันนี้", avail: true },
+      { id: "C", name: "พญ. ปิยะดา", role: "แพทย์ทั่วไป", avail: false },
+    ],
+  };
+  return data[type] || [];
+}
+
+/* Category config for the tap-to-open item detail + booking flow */
+function getItemConfig(category, itemId){
+  const configs = {
+    maid: { list: maidPlans, staffType: "maid", supportsLocation: false,
+      title: i => `แม่บ้าน${i.label}`, sub: i => i.detail, price: i => i.price },
+    massage: { list: massagePartners, staffType: "massage", supportsLocation: true, homeSurcharge: 100,
+      title: i => i.name, sub: i => `${i.tag} · ${i.mins}`, price: i => i.price },
+    icebath: { list: icebathPlans, staffType: "icebath", supportsLocation: true, homeSurcharge: 200,
+      title: i => i.label, sub: i => i.detail, price: i => i.price },
+    physio: { list: physioPlans, staffType: "physio", supportsLocation: true, homeSurcharge: 0,
+      title: i => i.label, sub: i => i.detail, price: i => i.price },
+    petcare: { list: petCareServices, staffType: "pet", supportsLocation: false,
+      title: i => i.label, sub: i => i.desc, price: i => i.price },
+  };
+  const cfg = configs[category];
+  if (!cfg) return null;
+  const item = cfg.list.find(x => x.id === itemId);
+  if (!item) return null;
+  return { ...cfg, item };
+}
+
+function setState(patch){ Object.assign(state, patch); render(); }
+function icon(name, size=18, extra=""){ return `<i data-lucide="${name}" style="width:${size}px;height:${size}px" class="${extra}"></i>`; }
+
+const thMonths = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+const thDays = ["อาทิตย์","จันทร์","อังคาร","พุธ","พฤหัสบดี","ศุกร์","เสาร์"];
+
+function greetingByHour(){
+  const h = new Date().getHours();
+  if (h >= 5 && h < 12) return "สวัสดีตอนเช้า";
+  if (h >= 12 && h < 17) return "สวัสดีตอนบ่าย";
+  return "สวัสดีตอนเย็น";
+}
+
+/* วันนัดบนหน้าแรก = พรุ่งนี้ ตรงกับค่าตั้งต้นของหน้าเจาะเลือด (tomorrowISO + 09:00) */
+function tomorrowThai(){
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return `${thDays[d.getDay()]} ${d.getDate()} ${thMonths[d.getMonth()]}`;
+}
+
+function formatLabSlot(){
+  if (!state.labDate) return "";
+  const [y, m, d] = state.labDate.split("-").map(Number);
+  return `วันที่ ${d} ${thMonths[m - 1]} ${y + 543}${state.labTime ? ` เวลา ${state.labTime} น.` : ""}`;
+}
+
+/* ลำดับความลึกของแต่ละหน้า — ใช้ตัดสินทิศทางอนิเมชัน (ไปหน้า = ลอยขึ้น, ถอยกลับ = วางลง) */
+const DEPTH = { home: 0, "consult-specialty": 1, lab: 1, meds: 1, lifestyle: 1, "consult-form": 2, queue: 3 };
+/* ค่าจาก render รอบก่อน — อนิเมชันจะเล่นก็ต่อเมื่อค่าเหล่านี้เปลี่ยนจริง ไม่ใช่แค่ re-render */
+let prevScreen = null, prevModalKey = null, prevLifestyleTab = "maid", prevProgress = 35, prevQueuePos = null;
+
+/* รหัสการจองรันนิ่ง — โชว์ใน sheet รายละเอียดนัดหมาย */
+let bookingSeq = 0;
+function nextBookingRef(){ bookingSeq += 1; return `OSR-${String(bookingSeq).padStart(4, "0")}`; }
+
+/* คิวเดินเองระหว่างอยู่หน้าคิว เพื่อให้เห็นความคืบหน้าตอนเดโม */
+let queueTimer = null;
+function startQueueTimer(){
+  if (queueTimer) return;
+  queueTimer = setInterval(() => {
+    if (!state.queue || state.queue.position <= 0) { stopQueueTimer(); return; }
+    setState({ queue: { position: state.queue.position - 1, wait: Math.max(0, state.queue.wait - 6) } });
+  }, 6000);
+}
+function stopQueueTimer(){
+  if (queueTimer) { clearInterval(queueTimer); queueTimer = null; }
+}
+
+function topBar(title, back){
+  return `
+  <div class="flex items-center gap-3 px-5 pt-6 pb-4 sticky top-0 z-20" style="background:var(--bg)">
+    ${back ? `<button data-back class="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style="background:var(--surface);border:1px solid var(--line)">${icon("chevron-left",18)}</button>` : ""}
+    <h1 class="serif-th text-lg font-semibold">${title}</h1>
+  </div>`;
+}
+
+function bottomNav(){
+  const items = [
+    { id:"home", label:"หน้าแรก", icon:"home" },
+    { id:"consult-specialty", label:"ปรึกษาหมอ", icon:"stethoscope" },
+    { id:"lab", label:"เจาะเลือด", icon:"droplet" },
+    { id:"meds", label:"ยาต่อเนื่อง", icon:"pill" },
+    { id:"lifestyle", label:"ไลฟ์สไตล์", icon:"sparkles" },
+  ];
+  const isActive = (id) => id === state.screen || (id === "consult-specialty" && state.screen === "consult-form");
+  return `
+  <div class="absolute bottom-0 left-0 right-0 flex justify-between px-3 py-2.5" style="background:var(--surface);border-top:1px solid var(--line)">
+    ${items.map(it => `
+      <button data-nav="${it.id}" class="flex flex-col items-center gap-1 px-2 py-1 rounded-xl" style="color:${isActive(it.id) ? "var(--primary)" : "var(--muted)"}">
+        ${icon(it.icon, 20)}
+        <span style="font-size:10px">${it.label}</span>
+      </button>
+    `).join("")}
+  </div>`;
+}
+
+/* ---------------- top bar: login form ↔ family member switcher ---------------- */
+function userBar(){
+  const logo = `
+    <div class="flex items-center gap-1 shrink-0">
+      ${icon("user-round-check", 15, "shrink-0")}
+      <span style="font-size:11px;color:#fff;white-space:nowrap">อรสิริน เฮลท์ลิงค์</span>
+    </div>`;
+
+  if (!state.loggedIn) {
+    return `
+    <div class="flex items-center justify-between gap-1.5 px-3 py-2 w-full" style="background:var(--primary-dark);color:#fff">
+      ${logo}
+      <form id="login-form" class="flex-1 flex items-center justify-end gap-1.5 min-w-0">
+        <div class="flex items-center gap-1 rounded-full px-2 py-1" style="background:#fff;border:1px solid rgba(255,255,255,0.2); width: 75px;">
+          ${icon("user", 11, "text-gray-400 shrink-0")}
+          <input type="text" id="login-id" placeholder="ไอดี" class="w-full min-w-0 bg-transparent text-[11px] text-black" style="outline:none;" />
+        </div>
+        <div class="flex items-center gap-1 rounded-full px-2 py-1" style="background:#fff;border:1px solid rgba(255,255,255,0.2); width: 75px;">
+          ${icon("lock", 11, "text-gray-400 shrink-0")}
+          <input type="password" id="login-pw" placeholder="รหัสผ่าน" class="w-full min-w-0 bg-transparent text-[11px] text-black" style="outline:none;" />
+        </div>
+        <button type="submit" class="shrink-0 rounded-full px-2.5 py-1" style="background:var(--clay);color:#fff;border:1px solid rgba(255,255,255,0.3)">
+          <span style="font-size:11px;white-space:nowrap">เข้าสู่ระบบ</span>
+        </button>
+      </form>
+    </div>`;
+  }
+
+  // เข้าสู่ระบบแล้ว — สลับดูข้อมูลของสมาชิกในครอบครัวได้
+  return `
+  <div class="flex items-center justify-between gap-1.5 px-3 py-2 w-full" style="background:var(--primary-dark);color:#fff">
+    ${logo}
+    <div class="flex-1 flex items-center justify-end gap-1.5 min-w-0">
+      <div class="flex items-center gap-1 rounded-full p-0.5" style="background:rgba(255,255,255,0.12)">
+        ${users.map(u => `
+        <button data-user="${u.id}" class="rounded-full flex items-center justify-center"
+          style="width:22px;height:22px;font-size:11px;background:${state.currentUser === u.id ? "var(--clay)" : "transparent"};color:#fff"
+          title="${u.name}">${u.initial}</button>`).join("")}
+      </div>
+      <span style="font-size:11px;white-space:nowrap;max-width:88px;overflow:hidden;text-overflow:ellipsis">${(users.find(u => u.id === state.currentUser) || users[0]).short}</span>
+      <button data-logout class="shrink-0 rounded-full px-2 py-1 flex items-center gap-1" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25)">
+        ${icon("log-out", 11, "shrink-0")}
+        <span style="font-size:10.5px;white-space:nowrap">ออก</span>
+      </button>
+    </div>
+  </div>`;
+}
+/* ---------------- home ---------------- */
+function homeScreen(){
+  const user = users.find(u => u.id === state.currentUser) || users[0];
+  const actions = [
+    { id:"consult-specialty", title:"ปรึกษาหมอ", sub:"VDO call คิวด่วน", icon:"stethoscope", bg:"var(--primary)", fg:"#fff" },
+    { id:"lab", title:"เจาะเลือดถึงบ้าน", sub:"ไม่ต้องไป รพ.", icon:"droplet", bg:"var(--slate)", fg:"#fff" },
+    { id:"meds", title:"ส่งยาต่อเนื่อง", sub:"ยาประจำ & ยาสามัญ", icon:"pill", bg:"var(--clay)", fg:"#fff" },
+    { id:"lifestyle", title:"บริการไลฟ์สไตล์", sub:"แม่บ้าน · นวด · Ice bath · Pet care", icon:"sparkles", bg:"var(--surface)", fg:"var(--ink)", border:true },
+  ];
+  return `
+  <div class="pb-28">
+    <div class="px-6 pt-8 pb-6" style="background:linear-gradient(180deg,#4A6741 0%,#41593A 100%)">
+      <p style="color:#D7E2CC;font-size:13px">${greetingByHour()}</p>
+      <h1 class="serif-th text-white text-2xl mt-1">คุณ${user.name}</h1>
+      <p style="color:#C7D4BC;font-size:12.5px" class="mt-1">โครงการอรสิริน · Ornsirin Health Link</p>
+      <div class="mt-5 rounded-2xl p-4 flex items-center gap-3" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.18)">
+        ${icon("shield-check",20,"shrink-0")}
+        <p style="color:#E7EFDD;font-size:12.5px;line-height:1.5">ทุกบทสนทนาของคุณเป็นความลับ เราเป็นคนกลางที่พร้อมรับฟังเสมอ</p>
+      </div>
+    </div>
+
+    <div class="px-5 mt-5 grid grid-cols-2 gap-3">
+      ${actions.map(a => `
+        <button data-nav="${a.id}" class="rounded-2xl p-4 text-left flex flex-col justify-between" style="background:${a.bg};color:${a.fg};min-height:118px;${a.border ? "border:1px solid var(--line)" : ""}">
+          ${icon(a.icon,22)}
+          <div>
+            <p class="serif-th font-semibold" style="font-size:14.5px">${a.title}</p>
+            <p style="font-size:11.5px;opacity:.85;margin-top:2px">${a.sub}</p>
+          </div>
+        </button>
+      `).join("")}
+    </div>
+
+    <div class="px-5 mt-6">
+      <p class="serif-th font-semibold mb-2" style="font-size:15px">นัดหมายที่กำลังจะถึง</p>
+      ${state.bookings.length ? `
+      <div class="space-y-2.5">
+        ${state.bookings.map((b, i) => `
+        <button data-booking="${i}" class="w-full text-left rounded-2xl p-4 flex items-center gap-3" style="background:var(--surface);border:1px solid var(--line)">
+          <div class="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style="background:#EDE9DA">${icon(b.icon, 18)}</div>
+          <div class="flex-1 min-w-0">
+            <p style="font-size:13px" class="font-medium">${b.title}</p>
+            <p style="font-size:11px;color:#7A8271" class="mt-0.5">${b.sub}</p>
+          </div>
+          <div class="text-right shrink-0">
+            <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5" style="background:#E4EBDD;color:var(--primary);font-size:9.5px">${icon("check", 10)} ยืนยันแล้ว</span>
+            <p class="serif-th mt-1" style="font-size:12.5px;color:var(--clay)">฿${b.amount.toLocaleString()}</p>
+          </div>
+          ${icon("chevron-right", 14, "shrink-0")}
+        </button>`).join("")}
+      </div>` : `
+      <button data-nav="lab" class="w-full text-left rounded-2xl p-4 flex items-center gap-3" style="background:var(--surface);border:1px solid var(--line)">
+        <div class="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style="background:#EDE9DA">${icon("droplet",18)}</div>
+        <div class="flex-1">
+          <p style="font-size:13.5px" class="font-medium">เจาะเลือดตรวจสุขภาพประจำปี · ยังไม่ยืนยัน</p>
+          <p style="font-size:11.5px;color:#7A8271">${tomorrowThai()} · 09:00 น. · แตะเพื่อยืนยันนัดหมาย</p>
+        </div>
+        ${icon("chevron-right",16)}
+      </button>`}
+    </div>
+
+    <div class="px-5 mt-6">
+      <p class="serif-th font-semibold mb-2" style="font-size:15px">บริการไลฟ์สไตล์แนะนำ</p>
+      <div class="flex gap-3 overflow-x-auto phone-scroll pb-1">
+        <div class="rounded-2xl p-4 shrink-0" style="width:160px;background:var(--surface);border:1px solid var(--line)">
+          ${icon("snowflake",18)}
+          <p style="font-size:12.5px" class="mt-2 font-medium">Ice bath ริมสวน</p>
+          <button data-nav="lifestyle" data-set-tab="icebath" style="font-size:11px;color:var(--primary)" class="mt-2 font-medium">ดูรายละเอียด →</button>
+        </div>
+        <div class="rounded-2xl p-4 shrink-0" style="width:160px;background:var(--surface);border:1px solid var(--line)">
+          ${icon("sparkle",18)}
+          <p style="font-size:12.5px" class="mt-2 font-medium">นวดแผนไทยพาร์ทเนอร์</p>
+          <button data-nav="lifestyle" data-set-tab="massage" style="font-size:11px;color:var(--primary)" class="mt-2 font-medium">ดูรายละเอียด →</button>
+        </div>
+        <div class="rounded-2xl p-4 shrink-0" style="width:160px;background:var(--surface);border:1px solid var(--line)">
+          ${icon("activity",18)}
+          <p style="font-size:12.5px" class="mt-2 font-medium">กายภาพบำบัดที่บ้าน</p>
+          <button data-nav="lifestyle" data-set-tab="physio" style="font-size:11px;color:var(--primary)" class="mt-2 font-medium">ดูรายละเอียด →</button>
+        </div>
+        <div class="rounded-2xl p-4 shrink-0" style="width:160px;background:var(--surface);border:1px solid var(--line)">
+          ${icon("paw-print",18)}
+          <p style="font-size:12.5px" class="mt-2 font-medium">Pet Care ครบวงจร</p>
+          <button data-nav="lifestyle" data-set-tab="petcare" style="font-size:11px;color:var(--primary)" class="mt-2 font-medium">ดูรายละเอียด →</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ---------------- consult: specialty select ---------------- */
+function specialtyScreen(){
+  const featured = specialties.filter(s => s.featured);
+  const others = specialties.filter(s => !s.featured);
+  return `
+  <div class="pb-28">
+    ${topBar("เลือกผู้เชี่ยวชาญ", true)}
+    <div class="px-5">
+      <p style="font-size:12.5px;color:#5B6350" class="mb-4 leading-relaxed">
+        เล่าให้เราฟังก่อนว่าอยากปรึกษาเรื่องอะไร เราจะจัดคิวให้คุณกับผู้เชี่ยวชาญที่เหมาะสมที่สุด
+      </p>
+      ${featured.map(s => {
+        const selected = state.specialty === s.id;
+        return `
+        <button data-pick-specialty="${s.id}" class="w-full text-left rounded-2xl p-4 mb-3 flex items-center gap-3" style="background:${selected ? "var(--primary)" : "var(--primary-dark)"};color:#fff">
+          <div class="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style="background:rgba(255,255,255,0.15)">${icon(s.icon,20)}</div>
+          <div class="flex-1">
+            <p class="serif-th font-semibold" style="font-size:14.5px">${s.name}</p>
+            <p style="font-size:11.5px;color:#D7E2CC" class="mt-0.5">${s.sub}</p>
+          </div>
+          ${selected ? icon("check",18) : ""}
+        </button>`;
+      }).join("")}
+
+      <p style="font-size:11.5px;color:var(--muted)" class="mb-2 mt-1">ผู้เชี่ยวชาญด้านอื่น</p>
+      <div class="grid grid-cols-2 gap-2.5">
+        ${others.map(s => {
+          const selected = state.specialty === s.id;
+          return `
+          <button data-pick-specialty="${s.id}" class="text-left rounded-xl p-3" style="background:${selected ? "#EDE9DA" : "var(--surface)"};border:${selected ? "1.5px solid var(--primary)" : "1px solid var(--line)"}">
+            ${icon(s.icon,17)}
+            <p style="font-size:12px" class="font-medium mt-2 leading-tight">${s.name}</p>
+            <p style="font-size:10px;color:#8A9080" class="mt-0.5 leading-tight">${s.sub}</p>
+          </button>`;
+        }).join("")}
+      </div>
+    </div>
+
+    <div class="px-5 mt-6">
+      <button data-next-from-specialty class="w-full rounded-full py-3.5 font-medium flex items-center justify-center gap-2"
+        style="background:${state.specialty ? "var(--clay)" : "#DCD5C2"};color:${state.specialty ? "#fff" : "var(--muted)"};font-size:14px">
+        ถัดไป ${icon("chevron-right",16)}
+      </button>
+    </div>
+  </div>`;
+}
+
+/* ---------------- consult: form ---------------- */
+function consultForm(){
+  const spec = specialties.find(s => s.id === state.specialty);
+  const isPsych = state.specialty === "psych";
+  const canSubmit = state.symptom.trim().length >= 5;
+  const doctors = staffFor("doctor");
+  return `
+  <div class="pb-28">
+    ${topBar("เล่าอาการของคุณ", true)}
+    <div class="px-5">
+      ${isPsych ? `
+      <div class="rounded-2xl p-5 mb-4 text-center" style="background:var(--primary-dark)">
+        <div class="relative w-16 h-16 mx-auto mb-3 flex items-center justify-center">
+          <span class="absolute inset-0 rounded-full listen-ring2" style="background:#8FAE7F"></span>
+          <span class="absolute inset-1.5 rounded-full listen-ring1" style="background:#A9C79A"></span>
+          <span class="relative w-8 h-8 rounded-full flex items-center justify-center" style="background:#fff">${icon("heart-pulse",16)}</span>
+        </div>
+        <p class="serif-th text-white" style="font-size:14.5px">เราคือคนกลางที่พร้อมรับฟังคุณ</p>
+        <p style="font-size:11.5px;color:#D7E2CC" class="mt-1.5 leading-relaxed">
+          พิมพ์เล่าได้ตามที่คุณสบายใจ ไม่มีคำตอบไหนผิด และทุกอย่างที่คุณเล่าจะถูกเก็บเป็นความลับ
+        </p>
+      </div>` : ""}
+
+      <p style="font-size:12.5px" class="font-medium mb-2">เลือกแพทย์ที่สะดวกให้คำปรึกษาวันนี้</p>
+      <div class="space-y-2 mb-5">
+        ${doctors.map(d => `
+        <button data-doctor="${d.id}" ${d.avail ? "" : "disabled"} class="w-full flex items-center gap-3 rounded-xl p-3 text-left" style="background:${state.selectedDoctor===d.id ? "#EDE9DA" : "var(--surface)"};border:${state.selectedDoctor===d.id ? "1.5px solid var(--primary)" : "1px solid var(--line)"};opacity:${d.avail ? 1 : 0.45}">
+          <div class="w-9 h-9 rounded-full flex items-center justify-center shrink-0 font-medium" style="background:#F3E9DB;font-size:13px">${d.id}</div>
+          <div class="flex-1">
+            <p style="font-size:12.5px" class="font-medium">${d.name}</p>
+            <p style="font-size:10.5px;color:#8A9080">${d.role}</p>
+          </div>
+          ${state.selectedDoctor===d.id ? icon("check",16,"shrink-0") : ""}
+        </button>`).join("")}
+      </div>
+
+      <label style="font-size:12.5px" class="font-medium mb-2 block">${isPsych ? "วันนี้คุณอยากเล่าอะไรให้เราฟัง" : "อาการที่คุณกำลังเผชิญอยู่"}</label>
+      <textarea id="symptom-input" rows="6" maxlength="500" placeholder="${isPsych ? "เช่น ช่วงนี้นอนไม่หลับ รู้สึกกังวลบ่อย ๆ..." : "เช่น มีไข้ 2 วัน ไอ เจ็บคอ..."}"
+        class="w-full rounded-2xl p-4" style="background:var(--surface);border:1px solid var(--line);font-size:13px;resize:none">${state.symptom}</textarea>
+      <div class="flex justify-end mt-1"><span style="font-size:10.5px;color:var(--muted)" id="char-count">${state.symptom.length}/500</span></div>
+
+      <label class="flex items-center gap-3 mt-5 rounded-2xl p-3.5" style="background:var(--surface);border:1px solid var(--line)">
+        <input type="checkbox" id="need-cert" ${state.needCert ? "checked" : ""} class="w-4 h-4" />
+        <div class="flex-1">
+          <p style="font-size:12.5px" class="font-medium">ต้องการใบรับรองแพทย์</p>
+          <p style="font-size:10.5px;color:#8A9080">ค่าบริการเพิ่ม 100 บาท</p>
+        </div>
+      </label>
+
+      <div class="rounded-2xl p-3.5 mt-3 flex items-start gap-2.5" style="background:#EFEAE0">
+        ${icon("info",15,"shrink-0 mt-0.5")}
+        <p style="font-size:10.5px;color:#5B6350;line-height:1.5">
+          หากคุณกำลังอยู่ในภาวะฉุกเฉินหรือเป็นอันตรายต่อตัวเอง กรุณาโทร 1669 หรือสายด่วนสุขภาพจิต 1323 ทันที ระบบนี้ไม่ใช่บริการฉุกเฉิน
+        </p>
+      </div>
+    </div>
+
+    <div class="px-5 mt-6">
+      <button id="submit-consult" ${canSubmit ? "" : "disabled"} class="w-full rounded-full py-3.5 font-medium flex items-center justify-center gap-2"
+        style="background:${canSubmit ? "var(--clay)" : "#DCD5C2"};color:${canSubmit ? "#fff" : "var(--muted)"};font-size:14px">
+        ส่งคำขอปรึกษา ${icon("send",15)}
+      </button>
+    </div>
+  </div>`;
+}
+
+/* ---------------- queue ---------------- */
+const QUEUE_START = 3;
+
+// คิวเดินจาก #3 → #0 แถบจึงวิ่งจาก 35% → 100%
+function queueProgress(){
+  const q = state.queue || { position: QUEUE_START, wait: 18 };
+  return Math.round(35 + (65 * (QUEUE_START - q.position)) / QUEUE_START);
+}
+
+function queueScreen(){
+  const price = state.needCert ? 500 : 400;
+  const spec = specialties.find(s => s.id === state.specialty);
+  const doctor = staffFor("doctor").find(d => d.id === state.selectedDoctor);
+  const q = state.queue || { position: QUEUE_START, wait: 18 };
+  const ready = q.position === 0;
+  const progress = queueProgress();
+  return `
+  <div class="pb-10 px-5 pt-6">
+    <div class="flex justify-end">
+      <button data-nav="home" class="w-8 h-8 rounded-full flex items-center justify-center" style="background:var(--surface);border:1px solid var(--line)">${icon("x",16)}</button>
+    </div>
+    <div class="text-center mt-2">
+      <div class="w-14 h-14 rounded-full mx-auto flex items-center justify-center" style="background:var(--primary)">${icon("check",24,"")}</div>
+      <h2 class="serif-th mt-4" style="font-size:18px">ส่งคำขอเรียบร้อยแล้ว</h2>
+      <p style="font-size:12.5px;color:#7A8271" class="mt-1">ขอบคุณที่ไว้วางใจเล่าให้เราฟัง ทีมงานกำลังจัดคิวให้คุณ</p>
+    </div>
+
+    <div class="rounded-2xl p-4 mt-6" style="background:var(--surface);border:1px solid var(--line)">
+      <div class="flex items-center justify-between">
+        <span style="font-size:12.5px;color:#5B6350">คิวปัจจุบันของคุณ</span>
+        <span id="queue-pos" class="serif-th" style="font-size:20px;color:var(--primary);display:inline-block">${ready ? "ถึงคิวแล้ว" : `#${q.position}`}</span>
+      </div>
+      <div class="h-1.5 rounded-full mt-3" style="background:#EDE9DA"><div id="queue-fill" data-target="${progress}" class="h-1.5 rounded-full" style="width:${prevProgress}%;background:var(--primary);transition:width .6s ease"></div></div>
+      <p style="font-size:11px;color:var(--muted)" class="mt-2">${ready ? "แพทย์พร้อมให้คำปรึกษาแล้ว" : `เวลารอโดยประมาณ ${q.wait} นาที`} · ${spec ? spec.name : "แพทย์ทั่วไป"}${doctor ? ` · ${doctor.name}` : ""}</p>
+    </div>
+
+    ${state.queuePaid ? `
+    <div class="rounded-2xl p-4 mt-3 flex items-center gap-3" style="background:#EFF3EA;border:1px solid #C9D6BD">
+      <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:var(--primary);color:#fff">${icon("check",18)}</div>
+      <div class="flex-1">
+        <p style="font-size:12.5px" class="font-medium" >ชำระแล้ว · คิวได้รับการยืนยัน</p>
+        <p style="font-size:11px;color:#7A8271">พร้อมเพย์ · Ornsirin Health Link</p>
+      </div>
+      <p class="serif-th" style="font-size:16px;color:var(--primary)">฿${price}</p>
+    </div>` : `
+    <button data-queue-pay class="w-full text-left rounded-2xl p-4 mt-3 flex items-center gap-3" style="background:var(--surface);border:1px solid var(--line)">
+      ${icon("qr-code",40)}
+      <div class="flex-1">
+        <p style="font-size:12.5px" class="font-medium">ชำระเงินเพื่อยืนยันคิว</p>
+        <p style="font-size:11px;color:#8A9080">สแกนจ่ายผ่าน QR พร้อมเพย์</p>
+      </div>
+      <p class="serif-th" style="font-size:16px;color:var(--clay)">฿${price}</p>
+    </button>`}
+
+    ${ready ? `
+    <button data-queue-call class="w-full rounded-full py-3.5 font-medium mt-6 flex items-center justify-center gap-2" style="background:var(--clay);color:#fff;font-size:14px">
+      ${icon("video",16)} เข้าสู่ห้อง VDO call
+    </button>
+    <button data-nav="home" class="w-full rounded-full py-3 font-medium mt-2.5" style="background:var(--surface);color:var(--primary);border:1px solid var(--primary);font-size:13px">กลับหน้าแรก</button>
+    ` : `
+    <button data-nav="home" class="w-full rounded-full py-3.5 font-medium mt-6" style="background:var(--primary);color:#fff;font-size:14px">กลับหน้าแรก</button>
+    `}
+  </div>`;
+}
+
+/* ---------------- lab ---------------- */
+const tests = [
+  { name: "ตรวจสุขภาพทั่วไป", price: 1200 },
+  { name: "น้ำตาลในเลือด", price: 350 },
+  { name: "ไขมันในเลือด", price: 450 },
+  { name: "การทำงานของตับ-ไต", price: 650 },
+];
+const LAB_HOME_FEE = 300; // ค่าเดินทางพยาบาลถึงบ้าน
+
+function labTotal(){
+  const sum = tests
+    .filter(t => state.pickedTests.includes(t.name))
+    .reduce((acc, t) => acc + t.price, 0);
+  return sum ? sum + LAB_HOME_FEE : 0;
+}
+
+function labScreen(){
+  const total = labTotal();
+  const canBook = total > 0 && state.labDate && state.labTime;
+  return `
+  <div class="pb-28">
+    ${topBar("เจาะเลือดถึงบ้าน", true)}
+    <div class="px-5">
+      <div class="rounded-2xl p-4 flex items-start gap-3 mb-4" style="background:var(--surface);border:1px solid var(--line)">
+        ${icon("droplet",18,"mt-0.5")}
+        <p style="font-size:11.5px;color:#5B6350;line-height:1.6">เจ้าหน้าที่พยาบาลจะเดินทางมาเจาะเลือดถึงบ้านของคุณ และส่งตรวจแล็บให้ ผลตรวจแจ้งผ่านแอปภายใน 1-2 วัน</p>
+      </div>
+      <p style="font-size:12.5px" class="font-medium mb-2">เลือกรายการตรวจ</p>
+      <div class="space-y-2 mb-4">
+        ${tests.map(t => `
+        <label class="flex items-center gap-3 rounded-xl p-3" style="background:var(--surface);border:1px solid var(--line)">
+          <input type="checkbox" data-test="${t.name}" ${state.pickedTests.includes(t.name) ? "checked" : ""} class="w-4 h-4" />
+          <span style="font-size:12.5px" class="flex-1">${t.name}</span>
+          <span style="font-size:11.5px;color:#8A9080">฿${t.price.toLocaleString()}</span>
+        </label>`).join("")}
+      </div>
+      <p style="font-size:12.5px" class="font-medium mb-2">วันและเวลาที่สะดวก</p>
+      <div class="flex gap-2.5 mb-4">
+        <div class="flex-1 rounded-xl p-3 flex items-center gap-2" style="background:var(--surface);border:1px solid var(--line)">
+          ${icon("calendar",15)}<input type="date" id="lab-date" value="${state.labDate}" class="bg-transparent outline-none w-full" style="font-size:12px" />
+        </div>
+        <div class="flex-1 rounded-xl p-3 flex items-center gap-2" style="background:var(--surface);border:1px solid var(--line)">
+          ${icon("clock",15)}<input type="time" id="lab-time" value="${state.labTime}" class="bg-transparent outline-none w-full" style="font-size:12px" />
+        </div>
+      </div>
+      <div class="rounded-xl p-3 flex items-center gap-2.5 mb-4" style="background:var(--surface);border:1px solid var(--line)">
+        ${icon("map-pin",15)}<span style="font-size:12px">บ้านเลขที่ 12/4 โครงการอรสิริน เชียงใหม่</span>
+      </div>
+
+      <div class="rounded-2xl p-4 mb-5" style="background:var(--surface);border:1px solid var(--line)">
+        <div class="flex items-center justify-between mb-1.5">
+          <span style="font-size:11.5px;color:#7A8271">ค่าตรวจ ${state.pickedTests.length} รายการ</span>
+          <span style="font-size:11.5px;color:#7A8271">฿${(total ? total - LAB_HOME_FEE : 0).toLocaleString()}</span>
+        </div>
+        <div class="flex items-center justify-between mb-2.5">
+          <span style="font-size:11.5px;color:#7A8271">ค่าบริการถึงบ้าน</span>
+          <span style="font-size:11.5px;color:#7A8271">฿${(total ? LAB_HOME_FEE : 0).toLocaleString()}</span>
+        </div>
+        <div class="flex items-center justify-between pt-2.5" style="border-top:1px solid var(--line)">
+          <span style="font-size:12.5px" class="font-medium">ยอดชำระ</span>
+          <span class="serif-th" style="font-size:17px;color:var(--clay)">฿${total.toLocaleString()}</span>
+        </div>
+      </div>
+
+      <button id="lab-confirm" ${canBook ? "" : "disabled"} class="w-full rounded-full py-3.5 font-medium"
+        style="background:${canBook ? "var(--slate)" : "#DCD5C2"};color:${canBook ? "#fff" : "var(--muted)"};font-size:14px">ยืนยันนัดหมาย</button>
+      ${canBook ? "" : `<p style="font-size:10.5px;color:var(--muted)" class="text-center mt-2">เลือกรายการตรวจ พร้อมวันและเวลาที่สะดวก</p>`}
+    </div>
+  </div>`;
+}
+
+/* ---------------- meds ---------------- */
+const medsByUser = {
+  u1: [
+    { name: "Metformin 500mg", freq: "วันละ 2 ครั้ง เช้า-เย็น", left: "ยาเหลือ 6 วัน", price: 180 },
+    { name: "Amlodipine 5mg", freq: "วันละ 1 ครั้ง เช้า", left: "ยาเหลือ 12 วัน", price: 220 },
+  ],
+  u2: [],
+  u3: [
+    { name: "Atorvastatin 10mg", freq: "วันละ 1 ครั้ง ก่อนนอน", left: "ยาเหลือ 4 วัน", price: 350 },
+  ],
+};
+
+const otcItems = [
+  { name: "พาราเซตามอล 500mg (10 เม็ด)", price: 35 },
+  { name: "ผงเกลือแร่ ORS (5 ซอง)", price: 25 },
+  { name: "ยาแก้แพ้ ลอราทาดีน (10 เม็ด)", price: 45 },
+  { name: "เจลแอลกอฮอล์ล้างมือ 100ml", price: 59 },
+];
+
+function medsScreen(){
+  const current = medsByUser[state.currentUser] || [];
+  const otcPicked = otcItems.filter(o => state.pickedOtc.includes(o.name));
+  const total = current.reduce((acc, m) => acc + m.price, 0) + otcPicked.reduce((a, o) => a + o.price, 0);
+  const itemCount = current.length + otcPicked.length;
+  return `
+  <div class="pb-28">
+    ${topBar("ยาต่อเนื่อง", true)}
+    <div class="px-5">
+      <p style="font-size:12.5px" class="font-medium mb-2">ยาประจำของคุณ</p>
+      <div class="space-y-2.5 mb-5">
+        ${current.length ? current.map(m => `
+        <div class="rounded-2xl p-3.5 flex items-center gap-3" style="background:var(--surface);border:1px solid var(--line)">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:#F3E9DB">${icon("pill",16)}</div>
+          <div class="flex-1">
+            <p style="font-size:12.5px" class="font-medium">${m.name}</p>
+            <p style="font-size:10.5px;color:#8A9080">${m.freq}</p>
+          </div>
+          <div class="text-right shrink-0">
+            <p style="font-size:10px;color:var(--clay)" class="font-medium">${m.left}</p>
+            <p style="font-size:11.5px;color:#8A9080" class="mt-0.5">฿${m.price.toLocaleString()}</p>
+          </div>
+        </div>`).join("") : `
+        <div class="rounded-2xl p-4 text-center" style="background:var(--surface);border:1px solid var(--line)">
+          <p style="font-size:11.5px;color:#8A9080">ไม่มีรายการยาประจำที่ต้องรับประทานในขณะนี้</p>
+        </div>`}
+      </div>
+      <button id="meds-otc" class="w-full rounded-full py-3 font-medium mb-3 flex items-center justify-center gap-1.5"
+        style="background:${state.otcOpen ? "#EDE9DA" : "var(--surface)"};color:var(--primary);border:1px solid var(--primary);font-size:13px">
+        ${state.otcOpen ? `ซ่อนรายการยาสามัญ ${icon("chevron-up",14)}` : `+ สั่งซื้อยาสามัญเพิ่มเติม`}
+      </button>
+      ${state.otcOpen ? `
+      <div class="space-y-2 mb-6">
+        ${otcItems.map(o => `
+        <label class="flex items-center gap-3 rounded-xl p-3" style="background:var(--surface);border:1px solid var(--line)">
+          <input type="checkbox" data-otc="${o.name}" ${state.pickedOtc.includes(o.name) ? "checked" : ""} class="w-4 h-4" />
+          <span style="font-size:12.5px" class="flex-1">${o.name}</span>
+          <span style="font-size:11.5px;color:#8A9080">฿${o.price}</span>
+        </label>`).join("")}
+      </div>` : `<div class="mb-3"></div>`}
+      <p style="font-size:12.5px" class="font-medium mb-2">จัดส่งไปที่</p>
+      <div class="rounded-xl p-3 flex items-center gap-2.5 mb-4" style="background:var(--surface);border:1px solid var(--line)">
+        ${icon("map-pin",15)}<span style="font-size:12px">บ้านเลขที่ 12/4 โครงการอรสิริน เชียงใหม่</span>
+      </div>
+      ${itemCount ? `
+      <div class="rounded-2xl p-4 mb-5" style="background:var(--surface);border:1px solid var(--line)">
+        ${otcPicked.length ? `
+        <div class="flex items-center justify-between mb-1.5">
+          <span style="font-size:11.5px;color:#7A8271">ยาประจำ ${current.length} รายการ</span>
+          <span style="font-size:11.5px;color:#7A8271">฿${current.reduce((a, m) => a + m.price, 0).toLocaleString()}</span>
+        </div>
+        <div class="flex items-center justify-between mb-2.5">
+          <span style="font-size:11.5px;color:#7A8271">ยาสามัญ ${otcPicked.length} รายการ</span>
+          <span style="font-size:11.5px;color:#7A8271">฿${otcPicked.reduce((a, o) => a + o.price, 0).toLocaleString()}</span>
+        </div>
+        <div class="flex items-center justify-between pt-2.5" style="border-top:1px solid var(--line)">
+          <span style="font-size:12.5px" class="font-medium">ยอดชำระ</span>
+          <span class="serif-th" style="font-size:17px;color:var(--clay)">฿${total.toLocaleString()}</span>
+        </div>` : `
+        <div class="flex items-center justify-between">
+          <span style="font-size:12.5px" class="font-medium">ยอดชำระ</span>
+          <span class="serif-th" style="font-size:17px;color:var(--clay)">฿${total.toLocaleString()}</span>
+        </div>`}
+      </div>` : ""}
+      <button id="meds-confirm" ${itemCount ? "" : "disabled"} class="w-full rounded-full py-3.5 font-medium"
+        style="background:${itemCount ? "var(--clay)" : "#DCD5C2"};color:${itemCount ? "#fff" : "var(--muted)"};font-size:14px">ยืนยันสั่งซื้อยา</button>
+      ${itemCount ? "" : `<p style="font-size:10.5px;color:var(--muted)" class="text-center mt-2">เลือกยาสามัญด้านบนเพื่อสั่งซื้อ</p>`}
+    </div>
+  </div>`;
+}
+
+/* ---------------- lifestyle ---------------- */
+function bookableCard(category, item, cfg){
+  return `
+  <button data-item-category="${category}" data-item-id="${item.id}" class="w-full text-left rounded-2xl p-4 flex items-center gap-3" style="background:var(--surface);border:1px solid var(--line)">
+    <div class="flex-1">
+      <p style="font-size:13px" class="font-medium">${cfg.title(item)}</p>
+      <p style="font-size:10.5px;color:#8A9080" class="mt-0.5">${cfg.sub(item)}</p>
+    </div>
+    <div class="text-right shrink-0">
+      <p class="serif-th" style="font-size:15px;color:var(--primary)">${cfg.price(item) === "-" ? "ดูราคา" : `฿${cfg.price(item)}`}</p>
+    </div>
+    ${icon("chevron-right",15,"shrink-0")}
+  </button>`;
+}
+
+function lifestyleScreen(){
+  const tabs = [
+    { id:"maid", label:"แม่บ้าน" },
+    { id:"massage", label:"นวด" },
+    { id:"icebath", label:"Ice bath" },
+    { id:"physio", label:"กายภาพบำบัด" },
+    { id:"petcare", label:"Pet Care" },
+  ];
+  return `
+  <div class="pb-28">
+    ${topBar("บริการไลฟ์สไตล์", true)}
+    <div class="px-5">
+      <div class="flex gap-1.5 mb-5 rounded-full p-1 overflow-x-auto tab-scroll" style="background:#EDE9DA">
+        ${tabs.map(t => `
+        <button data-tab="${t.id}" class="rounded-full py-2 px-3.5 font-medium shrink-0" style="background:${state.lifestyleTab === t.id ? "var(--primary)" : "transparent"};color:${state.lifestyleTab === t.id ? "#fff" : "#5B6350"};font-size:12px;white-space:nowrap">${t.label}</button>
+        `).join("")}
+      </div>
+
+      <div id="tab-panel">
+      ${state.lifestyleTab === "maid" ? `
+      <div class="space-y-2.5">
+        ${maidPlans.map(p => bookableCard("maid", p, getItemConfig("maid", p.id))).join("")}
+      </div>` : ""}
+
+      ${state.lifestyleTab === "massage" ? `
+      <div class="space-y-2.5">
+        <div class="rounded-2xl p-3.5 mb-1" style="background:var(--primary-dark)">
+          <p style="font-size:11.5px;color:#E7EFDD;line-height:1.6">นวดผ่อนคลายโดยพาร์ทเนอร์ร้านนวดมืออาชีพในเชียงใหม่ เลือกได้ทั้งไปรับบริการที่พื้นที่ส่วนกลาง หรือให้พนักงานเดินทางมาที่บ้านของคุณ</p>
+        </div>
+        ${massagePartners.map(m => bookableCard("massage", m, getItemConfig("massage", m.id))).join("")}
+      </div>` : ""}
+
+      ${state.lifestyleTab === "icebath" ? `
+      <div class="space-y-2.5">
+        <div class="rounded-2xl p-4" style="background:var(--primary-dark)">
+          <div class="flex items-center gap-3">
+            ${icon("snowflake",22)}
+            <p style="font-size:12px;color:#E7EFDD;line-height:1.5">ช่วยฟื้นฟูร่างกายและลดการอักเสบ มีเจ้าหน้าที่ดูแลตลอดเซสชัน จองได้ทั้งที่สวนส่วนกลาง หรือเรียกชุดอ่างน้ำแข็งพกพามาให้บริการถึงบ้าน</p>
+          </div>
+        </div>
+        ${icebathPlans.map(p => bookableCard("icebath", p, getItemConfig("icebath", p.id))).join("")}
+      </div>` : ""}
+
+      ${state.lifestyleTab === "physio" ? `
+      <div class="space-y-2.5">
+        <div class="rounded-2xl p-3.5 mb-1" style="background:var(--primary-dark)">
+          <p style="font-size:11.5px;color:#E7EFDD;line-height:1.6">นักกายภาพบำบัดวิชาชีพให้บริการรายครั้งถึงบ้าน หรือเลือกใช้ห้องออกกำลังกายส่วนกลางของโครงการได้เช่นกัน</p>
+        </div>
+        ${physioPlans.map(p => bookableCard("physio", p, getItemConfig("physio", p.id))).join("")}
+      </div>` : ""}
+
+      ${state.lifestyleTab === "petcare" ? `
+      <div class="space-y-2.5">
+        <div class="rounded-2xl p-3.5 mb-1" style="background:var(--primary-dark)">
+          <p style="font-size:11.5px;color:#E7EFDD;line-height:1.6">ดูแลน้องหมาน้องแมวครบวงจร ตั้งแต่ปรึกษาสัตวแพทย์ อาบน้ำตัดขน รับฝากเลี้ยง ไปจนถึงตรวจสุขภาพและส่งอาหาร-ยาต่อเนื่องถึงบ้าน</p>
+        </div>
+        ${petCareServices.map(p => bookableCard("petcare", p, getItemConfig("petcare", p.id))).join("")}
+      </div>` : ""}
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ---------------- item detail modal (location + staff picker) ---------------- */
+function detailModal(){
+  const m = state.modal;
+  const cfg = getItemConfig(m.category, m.itemId);
+  if (!cfg) return "";
+  const item = cfg.item;
+  const staffList = staffFor(cfg.staffType);
+  const priceBase = parseInt(String(cfg.price(item)).replace(/[^0-9]/g, "")) || 0;
+  const surcharge = (cfg.supportsLocation && m.location === "home" && cfg.homeSurcharge) ? cfg.homeSurcharge : 0;
+  const total = priceBase + surcharge;
+
+  return `
+  <div class="absolute inset-0 z-40 flex flex-col justify-end" style="background:rgba(43,51,40,0.55);pointer-events:auto">
+    <div class="sheet-body rounded-t-3xl p-5" style="background:var(--bg);max-height:88%;overflow-y:auto">
+      <div class="flex items-center justify-between mb-1">
+        <h2 class="serif-th font-semibold" style="font-size:16px">${cfg.title(item)}</h2>
+        <button data-modal-close class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background:var(--surface);border:1px solid var(--line)">${icon("x",16)}</button>
+      </div>
+      <p style="font-size:11.5px;color:#7A8271" class="mb-4">${cfg.sub(item)}</p>
+
+      ${cfg.supportsLocation ? `
+      <p style="font-size:12.5px" class="font-medium mb-2">เลือกสถานที่ใช้บริการ</p>
+      <div class="flex gap-2 mb-4">
+        <button data-modal-location="center" class="flex-1 rounded-xl py-2.5 text-center" style="background:${m.location==="center" ? "var(--primary)" : "var(--surface)"};color:${m.location==="center" ? "#fff" : "var(--ink)"};border:1px solid var(--line);font-size:12px">พื้นที่ส่วนกลาง</button>
+        <button data-modal-location="home" class="flex-1 rounded-xl py-2.5 text-center" style="background:${m.location==="home" ? "var(--primary)" : "var(--surface)"};color:${m.location==="home" ? "#fff" : "var(--ink)"};border:1px solid var(--line);font-size:12px">ที่บ้าน${cfg.homeSurcharge ? ` (+฿${cfg.homeSurcharge})` : ""}</button>
+      </div>` : ""}
+
+      <p style="font-size:12.5px" class="font-medium mb-2">เลือกผู้ให้บริการที่ว่างวันนี้</p>
+      <div class="space-y-2 mb-5">
+        ${staffList.map(s => `
+        <button data-modal-staff="${s.id}" ${s.avail ? "" : "disabled"} class="w-full flex items-center gap-3 rounded-xl p-3 text-left" style="background:${m.staffId===s.id ? "#EDE9DA" : "var(--surface)"};border:${m.staffId===s.id ? "1.5px solid var(--primary)" : "1px solid var(--line)"};opacity:${s.avail ? 1 : 0.45}">
+          <div class="w-9 h-9 rounded-full flex items-center justify-center shrink-0 font-medium" style="background:#F3E9DB;font-size:13px">${s.id}</div>
+          <div class="flex-1">
+            <p style="font-size:12.5px" class="font-medium">${s.name}</p>
+            <p style="font-size:10.5px;color:#8A9080">${s.role}</p>
+          </div>
+          <span style="font-size:10px;color:${s.avail ? "var(--primary)" : "var(--muted)"}">${s.avail ? "ว่างวันนี้" : "ไม่ว่าง"}</span>
+        </button>`).join("")}
+      </div>
+
+      <div class="rounded-2xl p-4 mb-4 flex items-center justify-between" style="background:var(--surface);border:1px solid var(--line)">
+        <span style="font-size:12.5px" class="font-medium">ยอดชำระ</span>
+        <span class="serif-th" style="font-size:17px;color:var(--clay)">฿${total.toLocaleString()}</span>
+      </div>
+
+      <button data-modal-pay ${m.staffId ? "" : "disabled"} class="w-full rounded-full py-3.5 font-medium" style="background:${m.staffId ? "var(--clay)" : "#DCD5C2"};color:${m.staffId ? "#fff" : "var(--muted)"};font-size:14px">ถัดไป · ชำระเงิน</button>
+    </div>
+  </div>`;
+}
+
+/* ---------------- booking detail sheet (กดจากการ์ดนัดหมายบนหน้าแรก) ---------------- */
+function bookingDetailModal(){
+  const b = state.bookings[state.modal.bookingIndex];
+  if (!b) return "";
+  return `
+  <div class="absolute inset-0 z-40 flex flex-col justify-end" style="background:rgba(43,51,40,0.55);pointer-events:auto">
+    <div class="sheet-body rounded-t-3xl p-5" style="background:var(--bg);max-height:88%;overflow-y:auto">
+      <div class="flex items-center gap-3 mb-1">
+        <div class="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style="background:#EDE9DA">${icon(b.icon, 18)}</div>
+        <div class="flex-1 min-w-0">
+          <h2 class="serif-th font-semibold" style="font-size:15.5px">${b.title}</h2>
+          <p style="font-size:10.5px;color:#8A9080" class="mt-0.5">รหัสการจอง ${b.ref || "-"}</p>
+        </div>
+        <button data-modal-close class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background:var(--surface);border:1px solid var(--line)">${icon("x",16)}</button>
+      </div>
+
+      <div class="flex gap-1.5 mt-3 mb-4">
+        <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1" style="background:#E4EBDD;color:var(--primary);font-size:10.5px">${icon("check",11)} ยืนยันแล้ว</span>
+        <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1" style="background:#F3E9DB;color:var(--clay);font-size:10.5px">${icon("qr-code",11)} ชำระเงินแล้ว</span>
+      </div>
+
+      <div class="rounded-2xl p-4 space-y-3" style="background:var(--surface);border:1px solid var(--line)">
+        ${(b.details || []).map(d => `
+        <div>
+          <p style="font-size:10.5px;color:#8A9080">${d.label}</p>
+          <p style="font-size:12.5px;line-height:1.5" class="font-medium mt-0.5">${d.value}</p>
+        </div>`).join("")}
+      </div>
+
+      <div class="rounded-2xl p-4 mt-3 flex items-center justify-between" style="background:var(--surface);border:1px solid var(--line)">
+        <div>
+          <p style="font-size:12.5px" class="font-medium">ชำระแล้ว · พร้อมเพย์</p>
+          <p style="font-size:10.5px;color:#8A9080">Ornsirin Health Link</p>
+        </div>
+        <span class="serif-th" style="font-size:17px;color:var(--clay)">฿${b.amount.toLocaleString()}</span>
+      </div>
+
+      <button data-modal-close class="w-full rounded-full py-3.5 font-medium mt-4" style="background:var(--primary);color:#fff;font-size:14px">เรียบร้อย</button>
+      <button data-booking-cancel class="w-full rounded-full py-2.5 font-medium mt-1.5" style="background:transparent;color:#B0543F;font-size:12px">ยกเลิกนัดหมายนี้</button>
+    </div>
+  </div>`;
+}
+
+/* ---------------- QR payment modal ---------------- */
+function paymentModal(){
+  const m = state.modal;
+  return `
+  <div class="absolute inset-0 z-50 flex flex-col justify-end" style="background:rgba(43,51,40,0.6);pointer-events:auto">
+    <div class="sheet-body rounded-t-3xl p-6 text-center" style="background:var(--bg)">
+      <div class="flex justify-end">
+        <button data-modal-close class="w-8 h-8 rounded-full flex items-center justify-center" style="background:var(--surface);border:1px solid var(--line)">${icon("x",16)}</button>
+      </div>
+      <div class="w-36 h-36 mx-auto rounded-2xl flex items-center justify-center" style="background:#fff;border:1px solid var(--line)">${icon("qr-code",100)}</div>
+      <p class="serif-th mt-4" style="font-size:15px">สแกนเพื่อชำระเงิน</p>
+      <p style="font-size:11.5px;color:#7A8271" class="mt-1">พร้อมเพย์ · Ornsirin Health Link</p>
+      <p class="serif-th mt-3" style="font-size:22px;color:var(--clay)">฿${m.amount.toLocaleString()}</p>
+      <button data-payment-confirm class="w-full rounded-full py-3.5 font-medium mt-5" style="background:var(--primary);color:#fff;font-size:14px">ฉันชำระเงินแล้ว</button>
+    </div>
+  </div>`;
+}
+
+/* ---------------- booking success overlay ---------------- */
+function successModal(){
+  const b = state.bookingSuccess;
+  return `
+  <div class="absolute inset-0 z-50 flex items-center justify-center p-6" style="background:rgba(43,51,40,0.6);pointer-events:auto">
+    <div class="dialog-body rounded-3xl p-6 text-center w-full" style="background:var(--bg)">
+      <div class="success-check w-14 h-14 rounded-full mx-auto flex items-center justify-center" style="background:var(--primary)">${icon("check",24)}</div>
+      <h2 class="serif-th mt-4" style="font-size:16px">${b.title}</h2>
+      <p style="font-size:12px;color:#7A8271" class="mt-1.5 leading-relaxed">${b.detail}</p>
+      ${b.amount ? `<p class="serif-th mt-3" style="font-size:18px;color:var(--clay)">฿${b.amount.toLocaleString()}</p>` : ""}
+      <button data-success-close class="w-full rounded-full py-3 font-medium mt-5" style="background:var(--primary);color:#fff;font-size:13px">เรียบร้อย</button>
+    </div>
+  </div>`;
+}
+
+/* ---------------- render + events ---------------- */
+function render(){
+  const app = document.getElementById("app");
+  // อนิเมชันเข้าหน้าเล่นเฉพาะตอนเปลี่ยนหน้าจริง — การ re-render ภายในหน้า (ติ๊ก checkbox,
+  // เลือกหมอ, สลับสมาชิก, timer คิว) ต้องนิ่งสนิท ไม่งั้นหน้าจะกระพริบซ้ำตอนเดโม
+  // ต้องคำนวณก่อนสร้าง HTML เพราะ queueScreen ใช้ prevProgress เป็นจุดตั้งต้นของแถบคิว
+  const screenChanged = state.screen !== prevScreen;
+  if (screenChanged && state.screen === "queue") prevProgress = queueProgress();
+
+  let html = "";
+  if (state.screen === "home") html = homeScreen();
+  else if (state.screen === "consult-specialty") html = specialtyScreen();
+  else if (state.screen === "consult-form") html = consultForm();
+  else if (state.screen === "queue") html = queueScreen();
+  else if (state.screen === "lab") html = labScreen();
+  else if (state.screen === "meds") html = medsScreen();
+  else if (state.screen === "lifestyle") html = lifestyleScreen();
+  const dir = screenChanged ? ((DEPTH[state.screen] ?? 0) < (DEPTH[prevScreen] ?? 0) ? "back" : "fwd") : null;
+  const keepScroll = screenChanged ? 0 : app.scrollTop;
+  const nav = state.screen !== "queue" ? bottomNav() : "";
+  // bottomNav อยู่นอก wrapper — ถ้าอยู่ในแล้ว transform ชั่วคราวจะดึงแถบล่างลอยตามอนิเมชัน
+  app.innerHTML = (dir ? `<div class="screen-enter ${dir}">${html}</div>` : html) + nav;
+  app.scrollTop = keepScroll;
+
+  if (state.screen === "lifestyle" && !screenChanged && state.lifestyleTab !== prevLifestyleTab) {
+    const panel = document.getElementById("tab-panel");
+    if (panel) panel.classList.add("panel-enter");
+  }
+  prevLifestyleTab = state.lifestyleTab;
+
+  if (state.screen === "queue") {
+    // แถบถูก render ที่ค่าเดิมไว้ก่อน แล้วค่อยดันไปค่าจริงเฟรมถัดไป ให้ transition:width ได้ไหลจริง
+    // callback อ่าน data-target จาก element ปัจจุบันเสมอ — idempotent จึงยิงซ้ำได้ ไม่มีค่าเก่ามาทับ
+    // มี setTimeout สำรองเพราะ rAF ถูกหยุดยิงตอนแท็บอยู่เบื้องหลัง
+    if (document.getElementById("queue-fill")) {
+      const settleFill = () => {
+        const f = document.getElementById("queue-fill");
+        if (f) f.style.width = f.dataset.target + "%";
+      };
+      requestAnimationFrame(() => requestAnimationFrame(settleFill));
+      setTimeout(settleFill, 250);
+    }
+    if (!screenChanged && state.queue && state.queue.position !== prevQueuePos) {
+      const pos = document.getElementById("queue-pos");
+      if (pos) pos.classList.add("exhale-once");
+    }
+    prevProgress = queueProgress();
+  }
+  prevQueuePos = state.queue ? state.queue.position : null;
+  prevScreen = state.screen;
+
+  // หยุดคิวชั่วคราวระหว่าง overlay เปิด — กัน re-render เบื้องหลังมารบกวนอนิเมชันของ modal
+  if (state.screen === "queue" && !state.modal && !state.bookingSuccess) startQueueTimer(); else stopQueueTimer();
+
+  document.getElementById("user-bar").innerHTML = userBar();
+
+  const modalRoot = document.getElementById("modal-root");
+  const modalKey = state.modal ? state.modal.kind : (state.bookingSuccess ? "success" : null);
+  const sameOverlay = modalKey !== null && modalKey === prevModalKey;
+  const prevSheetEl = sameOverlay ? modalRoot.querySelector(".sheet-body") : null;
+  const keepSheetScroll = prevSheetEl ? prevSheetEl.scrollTop : 0;
+
+  if (state.modal && state.modal.kind === "detail") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = detailModal(); }
+  else if (state.modal && state.modal.kind === "bookingDetail") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = bookingDetailModal(); }
+  else if (state.modal && state.modal.kind === "payment") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = paymentModal(); }
+  else if (state.bookingSuccess) { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = successModal(); }
+  else { modalRoot.style.pointerEvents = "none"; modalRoot.innerHTML = ""; }
+
+  if (sameOverlay) {
+    // overlay เดิม (เช่น แตะเลือกพนักงานใน sheet) — คืนตำแหน่ง scroll และห้ามเล่นอนิเมชันซ้ำ
+    const sheet = modalRoot.querySelector(".sheet-body");
+    if (sheet) sheet.scrollTop = keepSheetScroll;
+  } else if (modalKey) {
+    const overlay = modalRoot.firstElementChild;
+    if (overlay) {
+      if (prevModalKey === null) overlay.classList.add("backdrop-enter");
+      const sheet = overlay.querySelector(".sheet-body");
+      if (sheet) sheet.classList.add("sheet-enter");
+      const dialog = overlay.querySelector(".dialog-body");
+      if (dialog) {
+        dialog.classList.add("dialog-enter");
+        const check = overlay.querySelector(".success-check");
+        if (check) check.classList.add("exhale-once");
+      }
+    }
+  }
+  prevModalKey = modalKey;
+
+  // wire up events
+  app.querySelectorAll("[data-nav]").forEach(el => el.addEventListener("click", () => {
+    const patch = { screen: el.dataset.nav };
+    if (el.dataset.setTab) patch.lifestyleTab = el.dataset.setTab;
+    setState(patch);
+  }));
+  const back = app.querySelector("[data-back]");
+  if (back) back.addEventListener("click", () => {
+    if (state.screen === "consult-specialty") setState({ screen: "home" });
+    else if (state.screen === "consult-form") setState({ screen: "consult-specialty" });
+    else setState({ screen: "home" });
+  });
+  app.querySelectorAll("[data-pick-specialty]").forEach(el => el.addEventListener("click", () => setState({ specialty: el.dataset.pickSpecialty })));
+  const nextBtn = app.querySelector("[data-next-from-specialty]");
+  if (nextBtn) nextBtn.addEventListener("click", () => {
+    if (state.specialty) {
+      const firstAvail = staffFor("doctor").find(d => d.avail);
+      setState({ screen: "consult-form", selectedDoctor: firstAvail ? firstAvail.id : null });
+    }
+  });
+
+  app.querySelectorAll("[data-doctor]").forEach(el => el.addEventListener("click", () => setState({ selectedDoctor: el.dataset.doctor })));
+
+  const symptomInput = document.getElementById("symptom-input");
+  if (symptomInput) symptomInput.addEventListener("input", (e) => {
+    state.symptom = e.target.value;
+    document.getElementById("char-count").textContent = `${state.symptom.length}/500`;
+    const submitBtn = document.getElementById("submit-consult");
+    const ok = state.symptom.trim().length >= 5;
+    submitBtn.disabled = !ok;
+    submitBtn.style.background = ok ? "var(--clay)" : "#DCD5C2";
+    submitBtn.style.color = ok ? "#fff" : "var(--muted)";
+  });
+  const needCertBox = document.getElementById("need-cert");
+  if (needCertBox) needCertBox.addEventListener("change", (e) => { state.needCert = e.target.checked; });
+  const submitBtn = document.getElementById("submit-consult");
+  if (submitBtn) submitBtn.addEventListener("click", () => {
+    if (state.symptom.trim().length >= 5) setState({ screen: "queue", queue: { position: QUEUE_START, wait: 18 }, queuePaid: false });
+  });
+
+  app.querySelectorAll("[data-test]").forEach(el => el.addEventListener("change", () => {
+    const t = el.dataset.test;
+    const picked = state.pickedTests.includes(t) ? state.pickedTests.filter(x => x !== t) : [...state.pickedTests, t];
+    setState({ pickedTests: picked });
+  }));
+  const labDate = document.getElementById("lab-date");
+  if (labDate) labDate.addEventListener("change", (e) => setState({ labDate: e.target.value }));
+  const labTime = document.getElementById("lab-time");
+  if (labTime) labTime.addEventListener("change", (e) => setState({ labTime: e.target.value }));
+
+  const labConfirm = app.querySelector("#lab-confirm:not([disabled])");
+  if (labConfirm) labConfirm.addEventListener("click", () => {
+    setState({ modal: { kind: "payment", amount: labTotal(),
+      success: {
+        title: "นัดหมายเรียบร้อย",
+        detail: `พยาบาลจะไปเจาะเลือดถึงบ้านคุณ ${formatLabSlot()} · แจ้งผลผ่านแอปภายใน 1-2 วัน`,
+        amount: labTotal(),
+      },
+      booking: {
+        icon: "droplet",
+        title: `เจาะเลือดถึงบ้าน · ${state.pickedTests.length} รายการ`,
+        sub: `${formatLabSlot()} · ที่บ้านเลขที่ 12/4`,
+        amount: labTotal(),
+        details: [
+          { label: "รายการตรวจ", value: state.pickedTests.join(" · ") },
+          { label: "วันและเวลา", value: formatLabSlot() },
+          { label: "สถานที่", value: "บ้านเลขที่ 12/4 โครงการอรสิริน เชียงใหม่" },
+          { label: "ผลตรวจ", value: "แจ้งผ่านแอปภายใน 1-2 วัน" },
+        ],
+      },
+    } });
+  });
+
+  const otcToggle = app.querySelector("#meds-otc");
+  if (otcToggle) otcToggle.addEventListener("click", () => setState({ otcOpen: !state.otcOpen }));
+  app.querySelectorAll("[data-otc]").forEach(el => el.addEventListener("change", () => {
+    const n = el.dataset.otc;
+    const picked = state.pickedOtc.includes(n) ? state.pickedOtc.filter(x => x !== n) : [...state.pickedOtc, n];
+    setState({ pickedOtc: picked });
+  }));
+
+  const medsConfirm = app.querySelector("#meds-confirm:not([disabled])");
+  if (medsConfirm) medsConfirm.addEventListener("click", () => {
+    const current = medsByUser[state.currentUser] || [];
+    const otcPicked = otcItems.filter(o => state.pickedOtc.includes(o.name));
+    const total = current.reduce((acc, m) => acc + m.price, 0) + otcPicked.reduce((a, o) => a + o.price, 0);
+    const count = current.length + otcPicked.length;
+    setState({ modal: { kind: "payment", amount: total,
+      success: {
+        title: "สั่งซื้อยาเรียบร้อย",
+        detail: `จัดส่งยา ${count} รายการ ถึงบ้านเลขที่ 12/4 ภายใน 24 ชั่วโมง`,
+        amount: total,
+      },
+      booking: {
+        icon: "pill",
+        title: `จัดส่งยาถึงบ้าน · ${count} รายการ`,
+        sub: "ถึงภายใน 24 ชั่วโมง · ที่บ้านเลขที่ 12/4",
+        amount: total,
+        details: [
+          { label: "รายการยา", value: [...current.map(x => x.name), ...otcPicked.map(o => o.name)].join(" · ") },
+          { label: "การจัดส่ง", value: "ถึงภายใน 24 ชั่วโมง" },
+          { label: "ที่อยู่จัดส่ง", value: "บ้านเลขที่ 12/4 โครงการอรสิริน เชียงใหม่" },
+        ],
+      },
+    } });
+  });
+
+  const queuePay = app.querySelector("[data-queue-pay]");
+  if (queuePay) queuePay.addEventListener("click", () => {
+    const price = state.needCert ? 500 : 400;
+    setState({ modal: { kind: "payment", amount: price, queuePay: true, success: {
+      title: "ยืนยันคิวเรียบร้อย",
+      detail: "เราจะแจ้งเตือนคุณเมื่อใกล้ถึงคิว กรุณาเปิดแอปค้างไว้",
+      amount: price,
+    } } });
+  });
+
+  const queueCall = app.querySelector("[data-queue-call]");
+  if (queueCall) queueCall.addEventListener("click", () => {
+    const doctor = staffFor("doctor").find(d => d.id === state.selectedDoctor);
+    setState({ bookingSuccess: {
+      title: "กำลังเชื่อมต่อ VDO call",
+      detail: `${doctor ? doctor.name : "แพทย์"} กำลังเข้าห้องสนทนา กรุณาอนุญาตการใช้กล้องและไมโครโฟน`,
+      amount: 0,
+    } });
+  });
+
+  app.querySelectorAll("[data-tab]").forEach(el => el.addEventListener("click", () => setState({ lifestyleTab: el.dataset.tab })));
+
+  // แถบบน — ล็อกอิน / สลับสมาชิก / ออกจากระบบ (อยู่นอก #app จึงต้องหาจาก document)
+  const loginForm = document.getElementById("login-form");
+  if (loginForm) loginForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    setState({ loggedIn: true });
+  });
+  document.querySelectorAll("[data-user]").forEach(el => el.addEventListener("click", () => setState({ currentUser: el.dataset.user })));
+  const logoutBtn = document.querySelector("[data-logout]");
+  if (logoutBtn) logoutBtn.addEventListener("click", () => setState({ loggedIn: false, screen: "home" }));
+
+  // เปิดรายละเอียดนัดหมายที่ยืนยันแล้ว (จากการ์ดบนหน้าแรก)
+  app.querySelectorAll("[data-booking]").forEach(el => el.addEventListener("click", () => {
+    setState({ modal: { kind: "bookingDetail", bookingIndex: +el.dataset.booking } });
+  }));
+
+  // open item detail
+  app.querySelectorAll("[data-item-category]").forEach(el => el.addEventListener("click", () => {
+    const category = el.dataset.itemCategory;
+    const itemId = el.dataset.itemId;
+    const cfg = getItemConfig(category, itemId);
+    setState({ modal: { kind: "detail", category, itemId, location: cfg.supportsLocation ? "center" : null, staffId: null } });
+  }));
+
+  // modal interactions
+  modalRoot.querySelectorAll("[data-modal-close]").forEach(el => el.addEventListener("click", () => setState({ modal: null })));
+  modalRoot.querySelectorAll("[data-modal-location]").forEach(el => el.addEventListener("click", () => {
+    setState({ modal: { ...state.modal, location: el.dataset.modalLocation } });
+  }));
+  modalRoot.querySelectorAll("[data-modal-staff]:not([disabled])").forEach(el => el.addEventListener("click", () => {
+    setState({ modal: { ...state.modal, staffId: el.dataset.modalStaff } });
+  }));
+  const modalPay = modalRoot.querySelector("[data-modal-pay]:not([disabled])");
+  if (modalPay) modalPay.addEventListener("click", () => {
+    const m = state.modal;
+    const cfg = getItemConfig(m.category, m.itemId);
+    const priceBase = parseInt(String(cfg.price(cfg.item)).replace(/[^0-9]/g, "")) || 0;
+    const surcharge = (cfg.supportsLocation && m.location === "home" && cfg.homeSurcharge) ? cfg.homeSurcharge : 0;
+    const total = priceBase + surcharge;
+    const staff = staffFor(cfg.staffType).find(s => s.id === m.staffId);
+    const locText = m.location === "home" ? " ที่บ้านของคุณ" : m.location === "center" ? " ที่พื้นที่ส่วนกลาง" : "";
+    const catIcons = { maid: "sparkles", massage: "sparkle", icebath: "snowflake", physio: "activity", petcare: "paw-print" };
+    setState({ modal: { ...m, kind: "payment", amount: total,
+      success: {
+        title: "จองบริการสำเร็จ",
+        detail: `${staff ? staff.name : "ผู้ให้บริการ"} จะให้บริการคุณ${locText}`,
+        amount: total,
+      },
+      booking: {
+        icon: catIcons[m.category] || "sparkles",
+        title: cfg.title(cfg.item),
+        sub: `${staff ? staff.name : "ผู้ให้บริการ"}${locText ? " ·" + locText : ""}`,
+        amount: total,
+        details: [
+          { label: "ผู้ให้บริการ", value: staff ? `${staff.name} · ${staff.role}` : "ผู้ให้บริการ" },
+          { label: "สถานที่", value: m.location === "home" ? "ที่บ้านของคุณ (บ้านเลขที่ 12/4)" : m.location === "center" ? "พื้นที่ส่วนกลางโครงการอรสิริน" : "ที่บ้านเลขที่ 12/4 โครงการอรสิริน" },
+          { label: "รายละเอียดบริการ", value: cfg.sub(cfg.item) },
+        ],
+      },
+    } });
+  });
+  const payConfirm = modalRoot.querySelector("[data-payment-confirm]");
+  if (payConfirm) payConfirm.addEventListener("click", () => {
+    const m = state.modal;
+    const patch = { modal: null, bookingSuccess: m.success };
+    if (m.booking) patch.bookings = [{ ...m.booking, ref: nextBookingRef() }, ...state.bookings];   // นัดใหม่ขึ้นบนสุดของหน้าแรก
+    if (m.queuePay) patch.queuePaid = true;
+    setState(patch);
+  });
+  const bookingCancel = modalRoot.querySelector("[data-booking-cancel]");
+  if (bookingCancel) bookingCancel.addEventListener("click", () => {
+    const idx = state.modal.bookingIndex;
+    setState({
+      modal: null,
+      bookings: state.bookings.filter((_, i) => i !== idx),
+      bookingSuccess: { title: "ยกเลิกนัดหมายแล้ว", detail: "เราจะคืนเงินเต็มจำนวนไปยังช่องทางเดิมภายใน 3-5 วันทำการ", amount: 0 },
+    });
+  });
+  const successClose = modalRoot.querySelector("[data-success-close]");
+  if (successClose) successClose.addEventListener("click", () => setState({ bookingSuccess: null }));
+
+  lucide.createIcons();
+}
+
+render();
+</script>
+</body>
+</html>
