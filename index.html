@@ -743,14 +743,17 @@ function homeScreen(){
           </div>
           ${icon("chevron-right", 14, "shrink-0")}
         </button>`).join("")}
-      </div>` : `
-      <button data-nav="lab" class="w-full text-left rounded-2xl p-4 flex items-center gap-3" style="background:var(--surface);border:1px solid var(--line)">
-        <div class="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style="background:#EDE9DA">${icon("droplet",18)}</div>
-        <div class="flex-1">
-          <p style="font-size:13.5px" class="font-medium">เจาะเลือดตรวจสุขภาพประจำปี · ยังไม่ยืนยัน</p>
-          <p style="font-size:11.5px;color:#7A8271">${tomorrowThai()} · 09:00 น. · แตะเพื่อยืนยันนัดหมาย</p>
+      </div>` : ""}
+      ${state.bookings.some(b => b.kind === "lab") ? "" : `
+      <button data-nav="lab" class="w-full text-left rounded-2xl p-4 flex items-center gap-3 ${state.bookings.length ? "mt-2.5" : ""}"
+        style="background:#FBF6EA;border:1.5px dashed var(--clay)">
+        <div class="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style="background:#F3E9DB;color:var(--clay)">${icon("droplet",18)}</div>
+        <div class="flex-1 min-w-0">
+          <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5" style="background:var(--clay);color:#fff;font-size:9px">${icon("sparkles", 9)} แนะนำสำหรับคุณ</span>
+          <p style="font-size:13px" class="font-medium mt-1">เจาะเลือดตรวจสุขภาพประจำปี</p>
+          <p style="font-size:11px;color:#8A9080" class="mt-0.5">คิวว่างวัน${tomorrowThai()} 09:00 น. · แตะเพื่อจองเลย</p>
         </div>
-        ${icon("chevron-right",16)}
+        ${icon("chevron-right",16,"shrink-0")}
       </button>`}
     </div>
 
@@ -1514,6 +1517,7 @@ function render(){
         amount: labTotal(),
       },
       booking: {
+        kind: "lab",   // ใช้ตัดสินว่าการ์ดแนะนำเจาะเลือดบนหน้าแรกควรหายหรือยัง
         icon: "droplet",
         title: `เจาะเลือดถึงบ้าน · ${state.pickedTests.length} รายการ`,
         sub: `${formatLabSlot()} · ที่บ้านเลขที่ 12/4`,
