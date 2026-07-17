@@ -405,10 +405,14 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
 ------------------------------------------------------------------*/
 
 const users = [
-  { id: "u1", name: "สมหญิง สุขใจ", short: "สมหญิง", initial: "ส" },
-  { id: "u2", name: "สมชาย สุขใจ", short: "สมชาย", initial: "ช" },
-  { id: "u3", name: "คุณยายบุญมี สุขใจ", short: "คุณยายบุญมี", initial: "ย" },
+  { id: "u1", name: "สมหญิง สุขใจ", short: "สมหญิง", initial: "ส", houseNo: "12/4" },
+  { id: "u2", name: "สมชาย สุขใจ", short: "สมชาย", initial: "ช", houseNo: "45/2" },
+  { id: "u3", name: "คุณยายบุญมี สุขใจ", short: "คุณยายบุญมี", initial: "ย", houseNo: "88/1" },
 ];
+
+function currentUser(){ return users.find(u => u.id === state.currentUser) || users[0]; }
+/* ที่อยู่ตามสมาชิกที่ล็อกอินอยู่ — แต่ละคนคนละหลังในโครงการ */
+function userAddress(){ return `บ้านเลขที่ ${currentUser().houseNo} โครงการอรสิริน เชียงใหม่`; }
 
 function tomorrowISO(){
   const d = new Date();
@@ -1009,7 +1013,7 @@ function labScreen(){
         </div>
       </div>
       <div class="rounded-xl p-3 flex items-center gap-2.5 mb-4" style="background:var(--surface);border:1px solid var(--line)">
-        ${icon("map-pin",15)}<span style="font-size:12px">บ้านเลขที่ 12/4 โครงการอรสิริน เชียงใหม่</span>
+        ${icon("map-pin",15)}<span style="font-size:12px">${userAddress()}</span>
       </div>
 
       <div class="rounded-2xl p-4 mb-5" style="background:var(--surface);border:1px solid var(--line)">
@@ -1095,7 +1099,7 @@ function medsScreen(){
       </div>` : `<div class="mb-3"></div>`}
       <p style="font-size:12.5px" class="font-medium mb-2">จัดส่งไปที่</p>
       <div class="rounded-xl p-3 flex items-center gap-2.5 mb-4" style="background:var(--surface);border:1px solid var(--line)">
-        ${icon("map-pin",15)}<span style="font-size:12px">บ้านเลขที่ 12/4 โครงการอรสิริน เชียงใหม่</span>
+        ${icon("map-pin",15)}<span style="font-size:12px">${userAddress()}</span>
       </div>
       ${itemCount ? `
       <div class="rounded-2xl p-4 mb-5" style="background:var(--surface);border:1px solid var(--line)">
@@ -1520,7 +1524,7 @@ function render(){
         kind: "lab",   // ใช้ตัดสินว่าการ์ดแนะนำเจาะเลือดบนหน้าแรกควรหายหรือยัง
         icon: "droplet",
         title: `เจาะเลือดถึงบ้าน · ${state.pickedTests.length} รายการ`,
-        sub: `${formatLabSlot()} · ที่บ้านเลขที่ 12/4`,
+        sub: `${formatLabSlot()} · ที่บ้านเลขที่ ${currentUser().houseNo}`,
         amount: labTotal(),
         details: [
           { label: "รายการตรวจ", items: [
@@ -1528,7 +1532,7 @@ function render(){
             { name: "ค่าบริการเจาะเลือดถึงบ้าน", note: "พยาบาลวิชาชีพเดินทางไปหาคุณ", price: LAB_HOME_FEE },
           ] },
           { label: "วันและเวลา", value: formatLabSlot() },
-          { label: "สถานที่", value: "บ้านเลขที่ 12/4 โครงการอรสิริน เชียงใหม่" },
+          { label: "สถานที่", value: userAddress() },
           { label: "ผลตรวจ", value: "แจ้งผ่านแอปภายใน 1-2 วัน" },
         ],
       },
@@ -1552,13 +1556,13 @@ function render(){
     setState({ modal: { kind: "payment", amount: total,
       success: {
         title: "สั่งซื้อยาเรียบร้อย",
-        detail: `จัดส่งยา ${count} รายการ ถึงบ้านเลขที่ 12/4 ภายใน 24 ชั่วโมง`,
+        detail: `จัดส่งยา ${count} รายการ ถึงบ้านเลขที่ ${currentUser().houseNo} ภายใน 24 ชั่วโมง`,
         amount: total,
       },
       booking: {
         icon: "pill",
         title: `จัดส่งยาถึงบ้าน · ${count} รายการ`,
-        sub: "ถึงภายใน 24 ชั่วโมง · ที่บ้านเลขที่ 12/4",
+        sub: `ถึงภายใน 24 ชั่วโมง · ที่บ้านเลขที่ ${currentUser().houseNo}`,
         amount: total,
         details: [
           { label: "รายการยา", items: [
@@ -1566,7 +1570,7 @@ function render(){
             ...otcPicked.map(o => ({ name: o.name, note: "ยาสามัญประจำบ้าน", price: o.price })),
           ] },
           { label: "การจัดส่ง", value: "ถึงภายใน 24 ชั่วโมง" },
-          { label: "ที่อยู่จัดส่ง", value: "บ้านเลขที่ 12/4 โครงการอรสิริน เชียงใหม่" },
+          { label: "ที่อยู่จัดส่ง", value: userAddress() },
         ],
       },
     } });
@@ -1648,7 +1652,7 @@ function render(){
         amount: total,
         details: [
           { label: "ผู้ให้บริการ", value: staff ? `${staff.name} · ${staff.role}` : "ผู้ให้บริการ" },
-          { label: "สถานที่", value: m.location === "home" ? "ที่บ้านของคุณ (บ้านเลขที่ 12/4)" : m.location === "center" ? "พื้นที่ส่วนกลางโครงการอรสิริน" : "ที่บ้านเลขที่ 12/4 โครงการอรสิริน" },
+          { label: "สถานที่", value: m.location === "home" ? `ที่บ้านของคุณ (บ้านเลขที่ ${currentUser().houseNo})` : m.location === "center" ? "พื้นที่ส่วนกลางโครงการอรสิริน" : userAddress() },
           { label: "รายละเอียดบริการ", value: cfg.sub(cfg.item) },
         ],
       },
