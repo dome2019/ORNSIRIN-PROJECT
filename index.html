@@ -1275,15 +1275,32 @@ function bookingDetailModal(){
 /* ---------------- QR payment modal ---------------- */
 function paymentModal(){
   const m = state.modal;
+  // สรุปรายการให้ผู้ซื้อตรวจก่อนจ่าย — ดึงจากข้อมูลใบเสร็จของ booking (มีเฉพาะ flow ยา/เจาะเลือด)
+  const itemDetail = m.booking && m.booking.details ? m.booking.details.find(d => d.items) : null;
+  const orderItems = itemDetail ? itemDetail.items : null;
   return `
   <div class="absolute inset-0 z-50 flex flex-col justify-end" style="background:rgba(43,51,40,0.6);pointer-events:auto">
-    <div class="sheet-body rounded-t-3xl p-6 text-center" style="background:var(--bg)">
+    <div class="sheet-body rounded-t-3xl p-6 text-center" style="background:var(--bg);max-height:92%;overflow-y:auto">
       <div class="flex justify-end">
         <button data-modal-close class="w-8 h-8 rounded-full flex items-center justify-center" style="background:var(--surface);border:1px solid var(--line)">${icon("x",16)}</button>
       </div>
       <div class="w-36 h-36 mx-auto rounded-2xl flex items-center justify-center" style="background:#fff;border:1px solid var(--line)">${icon("qr-code",100)}</div>
       <p class="serif-th mt-4" style="font-size:15px">สแกนเพื่อชำระเงิน</p>
       <p style="font-size:11.5px;color:#7A8271" class="mt-1">พร้อมเพย์ · Ornsirin Health Link</p>
+      ${orderItems ? `
+      <div class="rounded-2xl p-3.5 mt-3 text-left" style="background:var(--surface);border:1px solid var(--line)">
+        <p style="font-size:10.5px;color:#8A9080" class="mb-2">ตรวจสอบรายการก่อนชำระเงิน · ${orderItems.length} รายการ</p>
+        <div class="space-y-1.5" style="max-height:150px;overflow-y:auto">
+          ${orderItems.map(it => `
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="rounded-full shrink-0" style="width:5px;height:5px;background:var(--primary)"></span>
+              <p style="font-size:11.5px" class="min-w-0">${it.name}</p>
+            </div>
+            <span style="font-size:11px;color:#8A9080" class="shrink-0">฿${(it.price || 0).toLocaleString()}</span>
+          </div>`).join("")}
+        </div>
+      </div>` : ""}
       <p class="serif-th mt-3" style="font-size:22px;color:var(--clay)">฿${m.amount.toLocaleString()}</p>
       <button data-payment-confirm class="w-full rounded-full py-3.5 font-medium mt-5" style="background:var(--primary);color:#fff;font-size:14px">ฉันชำระเงินแล้ว</button>
     </div>
