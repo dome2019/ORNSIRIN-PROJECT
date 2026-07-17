@@ -1062,23 +1062,34 @@ function medsScreen(){
       </div>
       ${itemCount ? `
       <div class="rounded-2xl p-4 mb-5" style="background:var(--surface);border:1px solid var(--line)">
+        ${current.length ? `
+        <p style="font-size:10.5px;color:#8A9080" class="mb-1.5">ยาประจำ · ${current.length} รายการ</p>
+        <div class="space-y-1.5 mb-2.5">
+          ${current.map(m => `
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="rounded-full shrink-0" style="width:5px;height:5px;background:var(--primary)"></span>
+              <p style="font-size:11.5px" class="min-w-0">${m.name}</p>
+            </div>
+            <span style="font-size:11px;color:#8A9080" class="shrink-0">฿${m.price.toLocaleString()}</span>
+          </div>`).join("")}
+        </div>` : ""}
         ${otcPicked.length ? `
-        <div class="flex items-center justify-between mb-1.5">
-          <span style="font-size:11.5px;color:#7A8271">ยาประจำ ${current.length} รายการ</span>
-          <span style="font-size:11.5px;color:#7A8271">฿${current.reduce((a, m) => a + m.price, 0).toLocaleString()}</span>
-        </div>
-        <div class="flex items-center justify-between mb-2.5">
-          <span style="font-size:11.5px;color:#7A8271">ยาสามัญ ${otcPicked.length} รายการ</span>
-          <span style="font-size:11.5px;color:#7A8271">฿${otcPicked.reduce((a, o) => a + o.price, 0).toLocaleString()}</span>
-        </div>
+        <p style="font-size:10.5px;color:#8A9080" class="mb-1.5">ยาสามัญ · ${otcPicked.length} รายการ</p>
+        <div class="space-y-1.5 mb-2.5">
+          ${otcPicked.map(o => `
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="rounded-full shrink-0" style="width:5px;height:5px;background:var(--clay)"></span>
+              <p style="font-size:11.5px" class="min-w-0">${o.name}</p>
+            </div>
+            <span style="font-size:11px;color:#8A9080" class="shrink-0">฿${o.price.toLocaleString()}</span>
+          </div>`).join("")}
+        </div>` : ""}
         <div class="flex items-center justify-between pt-2.5" style="border-top:1px solid var(--line)">
           <span style="font-size:12.5px" class="font-medium">ยอดชำระ</span>
           <span class="serif-th" style="font-size:17px;color:var(--clay)">฿${total.toLocaleString()}</span>
-        </div>` : `
-        <div class="flex items-center justify-between">
-          <span style="font-size:12.5px" class="font-medium">ยอดชำระ</span>
-          <span class="serif-th" style="font-size:17px;color:var(--clay)">฿${total.toLocaleString()}</span>
-        </div>`}
+        </div>
       </div>` : ""}
       <button id="meds-confirm" ${itemCount ? "" : "disabled"} class="w-full rounded-full py-3.5 font-medium"
         style="background:${itemCount ? "var(--clay)" : "#DCD5C2"};color:${itemCount ? "#fff" : "var(--muted)"};font-size:14px">ยืนยันสั่งซื้อยา</button>
