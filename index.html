@@ -1240,7 +1240,21 @@ function bookingDetailModal(){
         ${(b.details || []).map(d => `
         <div>
           <p style="font-size:10.5px;color:#8A9080">${d.label}</p>
-          <p style="font-size:12.5px;line-height:1.5" class="font-medium mt-0.5">${d.value}</p>
+          ${d.items ? `
+          <div class="mt-1.5 space-y-2">
+            ${d.items.map(it => `
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex items-start gap-2 min-w-0">
+                <span class="rounded-full shrink-0" style="width:6px;height:6px;margin-top:6px;background:var(--primary)"></span>
+                <div class="min-w-0">
+                  <p style="font-size:12.5px" class="font-medium">${it.name}</p>
+                  ${it.note ? `<p style="font-size:10.5px;color:#8A9080" class="mt-0.5">${it.note}</p>` : ""}
+                </div>
+              </div>
+              ${it.price != null ? `<span style="font-size:11.5px;color:#8A9080" class="shrink-0">฿${it.price.toLocaleString()}</span>` : ""}
+            </div>`).join("")}
+          </div>` : `
+          <p style="font-size:12.5px;line-height:1.5" class="font-medium mt-0.5">${d.value}</p>`}
         </div>`).join("")}
       </div>
 
@@ -1443,7 +1457,10 @@ function render(){
         sub: `${formatLabSlot()} · ที่บ้านเลขที่ 12/4`,
         amount: labTotal(),
         details: [
-          { label: "รายการตรวจ", value: state.pickedTests.join(" · ") },
+          { label: "รายการตรวจ", items: [
+            ...state.pickedTests.map(n => { const t = tests.find(x => x.name === n); return { name: n, price: t ? t.price : 0 }; }),
+            { name: "ค่าบริการเจาะเลือดถึงบ้าน", note: "พยาบาลวิชาชีพเดินทางไปหาคุณ", price: LAB_HOME_FEE },
+          ] },
           { label: "วันและเวลา", value: formatLabSlot() },
           { label: "สถานที่", value: "บ้านเลขที่ 12/4 โครงการอรสิริน เชียงใหม่" },
           { label: "ผลตรวจ", value: "แจ้งผ่านแอปภายใน 1-2 วัน" },
@@ -1478,7 +1495,10 @@ function render(){
         sub: "ถึงภายใน 24 ชั่วโมง · ที่บ้านเลขที่ 12/4",
         amount: total,
         details: [
-          { label: "รายการยา", value: [...current.map(x => x.name), ...otcPicked.map(o => o.name)].join(" · ") },
+          { label: "รายการยา", items: [
+            ...current.map(x => ({ name: x.name, note: x.freq, price: x.price })),
+            ...otcPicked.map(o => ({ name: o.name, note: "ยาสามัญประจำบ้าน", price: o.price })),
+          ] },
           { label: "การจัดส่ง", value: "ถึงภายใน 24 ชั่วโมง" },
           { label: "ที่อยู่จัดส่ง", value: "บ้านเลขที่ 12/4 โครงการอรสิริน เชียงใหม่" },
         ],
