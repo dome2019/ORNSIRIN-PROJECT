@@ -4,10 +4,10 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Ornsirin Health Link</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/lucide@latest"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Thai:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- ทุกอย่างโหลดจากในเครื่อง (โฟลเดอร์ vendor/) — เดโมทำงานได้แม้ไม่มีอินเทอร์เน็ต -->
+<script src="vendor/tailwind.js"></script>
+<script src="vendor/lucide.js"></script><!-- lucide v1.25.0 -->
+<link href="vendor/fonts.css" rel="stylesheet">
 <style>
   :root{
     --bg:#F6F2EA; --ink:#2B3328; --primary:#4A6741; --primary-dark:#41593A;
@@ -337,7 +337,7 @@ function homeScreen(){
   <div class="pb-28">
     <div class="px-6 pt-8 pb-6" style="background:linear-gradient(180deg,#4A6741 0%,#41593A 100%)">
       <p style="color:#D7E2CC;font-size:13px">${greetingByHour()}</p>
-      <h1 class="serif-th text-white text-2xl mt-1">คุณ${user.name}</h1>
+      <h1 class="serif-th text-white text-2xl mt-1">คุณ${user.name.replace(/^คุณ/, "")}</h1>
       <p style="color:#C7D4BC;font-size:12.5px" class="mt-1">โครงการอรสิริน · Ornsirin Health Link</p>
       <div class="mt-5 rounded-2xl p-4 flex items-center gap-3" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.18)">
         ${icon("shield-check",20,"shrink-0")}
@@ -1253,10 +1253,22 @@ function render(){
   const successClose = modalRoot.querySelector("[data-success-close]");
   if (successClose) successClose.addEventListener("click", () => setState({ bookingSuccess: null }));
 
-  lucide.createIcons();
+  // กันแอปตายทั้งแอปถ้าไฟล์ lucide โหลดไม่สำเร็จ — UI ยังใช้ได้ แค่ไม่มีไอคอน
+  if (typeof lucide !== "undefined") lucide.createIcons();
 }
 
 render();
+
+/* ย่อเฟรมมือถือให้พอดีจอ — กันแถบเมนูล่างโดนตัดบนจอเตี้ย เช่น โปรเจกเตอร์ 1366x768 */
+function fitPhone(){
+  const phone = document.getElementById("phone");
+  phone.style.zoom = "";                       // วัดขนาดจริงก่อนทุกครั้ง กันคำนวณซ้อนค่าเดิม
+  const needed = phone.offsetHeight + 48;      // เฟรม + padding บน-ล่างของหน้า
+  const scale = Math.min(1, window.innerHeight / needed);
+  if (scale < 1) phone.style.zoom = scale;
+}
+window.addEventListener("resize", fitPhone);
+fitPhone();
 </script>
 </body>
 </html>
