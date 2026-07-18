@@ -1035,7 +1035,7 @@ function consultForm(){
 /* ---------------- queue ---------------- */
 const QUEUE_START = 3;
 
-// คิวเดินจาก #3 → #0 แถบจึงวิ่งจาก 35% → 100%
+// คิวเดินจาก #3 → #0 แถบวิ่งจาก 35% → 100% · เข้าห้อง VDO call ได้ต่อเมื่อชำระเงินยืนยันคิวแล้ว
 function queueProgress(){
   const q = state.queue || { position: QUEUE_START, wait: 18 };
   return Math.round(35 + (65 * (QUEUE_START - q.position)) / QUEUE_START);
@@ -1087,9 +1087,14 @@ function queueScreen(){
     </button>`}
 
     ${ready ? `
+    ${state.queuePaid ? `
     <button data-queue-call class="w-full rounded-full py-3.5 font-medium mt-6 flex items-center justify-center gap-2" style="background:var(--clay);color:#fff;font-size:14px">
       ${icon("video",16)} เข้าสู่ห้อง VDO call
+    </button>` : `
+    <button data-queue-pay class="w-full rounded-full py-3.5 font-medium mt-6 flex items-center justify-center gap-2" style="background:var(--surface);color:var(--clay);border:1.5px solid var(--clay);font-size:14px">
+      ${icon("lock",15)} ชำระเงินก่อนเข้าห้อง VDO call
     </button>
+    <p class="text-center mt-2" style="font-size:10.5px;color:var(--muted)">แพทย์พร้อมแล้ว — ชำระเงินเพื่อเริ่มการปรึกษา</p>`}
     <button data-nav="home" class="w-full rounded-full py-3 font-medium mt-2.5" style="background:var(--surface);color:var(--primary);border:1px solid var(--primary);font-size:13px">กลับหน้าแรก</button>
     ` : `
     <button data-nav="home" class="w-full rounded-full py-3.5 font-medium mt-6" style="background:var(--primary);color:#fff;font-size:14px">กลับหน้าแรก</button>
@@ -1916,15 +1921,15 @@ function render(){
     } });
   });
 
-  const queuePay = app.querySelector("[data-queue-pay]");
-  if (queuePay) queuePay.addEventListener("click", () => {
+  app.querySelectorAll("[data-queue-pay]").forEach(el => el.addEventListener("click", () => {
     const price = state.needCert ? 500 : 400;
+    const atFront = state.queue && state.queue.position === 0;
     setState({ modal: { kind: "payment", amount: price, queuePay: true, success: {
       title: "ยืนยันคิวเรียบร้อย",
-      detail: "เราจะแจ้งเตือนคุณเมื่อใกล้ถึงคิว กรุณาเปิดแอปค้างไว้",
+      detail: atFront ? "แพทย์พร้อมแล้ว เข้าห้อง VDO call ได้เลย" : "เราจะแจ้งเตือนคุณเมื่อใกล้ถึงคิว กรุณาเปิดแอปค้างไว้",
       amount: price,
     } } });
-  });
+  }));
 
   const queueCall = app.querySelector("[data-queue-call]");
   if (queueCall) queueCall.addEventListener("click", () => {
