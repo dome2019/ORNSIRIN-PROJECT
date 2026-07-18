@@ -374,6 +374,16 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   .dialog-enter{ animation: dialogIn .2s cubic-bezier(.32,.72,0,1) both; }
   .exhale-once{ animation: exhaleOnce .6s ease-in-out 1; }
   .panel-enter{ animation: fadeIn .14s ease both; }
+  /* ---- จังหวะฉลองตอนจ่ายเงินสำเร็จ (เล่นครั้งเดียวต่อการเปิด dialog ผ่านคลาส .celebrate) ---- */
+  @keyframes checkDraw { from{ stroke-dashoffset:24; } to{ stroke-dashoffset:0; } }
+  @keyframes ringPulse { 0%{ transform:scale(.65); opacity:.4; } 100%{ transform:scale(2.05); opacity:0; } }
+  @keyframes confettiFall { 0%{ transform:translateY(-12px) rotate(0deg); opacity:1; } 82%{ opacity:1; } 100%{ transform:translateY(640px) rotate(520deg); opacity:0; } }
+  .check-draw{ stroke-dasharray:24; }
+  .success-ring{ opacity:0; }
+  .confetti-bit{ position:absolute; top:-4%; border-radius:2px; opacity:0; }
+  .celebrate .check-draw{ animation: checkDraw .5s ease-out .25s both; }
+  .celebrate .success-ring{ animation: ringPulse .85s ease-out .2s both; }
+  .celebrate .confetti-bit{ animation-name: confettiFall; animation-timing-function: ease-in; animation-fill-mode: both; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .spin{ display:inline-block; width:13px; height:13px; border:2px solid rgba(255,255,255,0.35);
          border-top-color:#fff; border-radius:50%; animation: spin .7s linear infinite; vertical-align:-2px; }
@@ -385,6 +395,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   @media (prefers-reduced-motion: reduce){
     .listen-ring1,.listen-ring2{ animation:none; }
     .screen-enter.fwd,.screen-enter.back,.sheet-enter,.backdrop-enter,.dialog-enter,.exhale-once,.panel-enter,.spin{ animation:none; }
+    .celebrate .check-draw,.celebrate .success-ring,.celebrate .confetti-bit{ animation:none; }
     button:not([disabled]){ transition:none; }
     button:not([disabled]):active{ transform:none; }
     #queue-fill{ transition:none !important; }
@@ -1715,13 +1726,31 @@ function paymentModal(){
 /* ---------------- booking success overlay ---------------- */
 function successModal(){
   const b = state.bookingSuccess;
+  const confettiColors = ["#4A6741", "#B8763E", "#8FAE7F", "#6E8098", "#E5C33B", "#D8B98C"];
+  // คอนเฟตติเฉพาะตอนมีการจ่ายเงินจริง — dialog แจ้งเตือนเฉย ๆ (ยกเลิก/ลบ) ไม่ฉลอง
+  const confetti = b.amount ? `
+    <div class="absolute inset-0 overflow-hidden" style="pointer-events:none">
+      ${Array.from({ length: 18 }, (_, i) => {
+        const left = (i * 57 + 9) % 100;
+        const delay = (i % 6) * 0.1;
+        const dur = 1.15 + (i % 4) * 0.22;
+        const size = 6 + (i % 3) * 3;
+        return `<span class="confetti-bit" style="left:${left}%;width:${size}px;height:${Math.round(size * 0.45)}px;background:${confettiColors[i % confettiColors.length]};animation-delay:${delay}s;animation-duration:${dur}s"></span>`;
+      }).join("")}
+    </div>` : "";
   return `
   <div class="absolute inset-0 z-50 flex items-center justify-center p-6" style="background:rgba(43,51,40,0.6);pointer-events:auto">
+    ${confetti}
     <div class="dialog-body rounded-3xl p-6 text-center w-full" style="background:var(--bg)">
-      <div class="success-check w-14 h-14 rounded-full mx-auto flex items-center justify-center" style="background:var(--primary);color:#fff">${icon("check",24)}</div>
+      <div class="relative w-14 h-14 mx-auto">
+        <span class="success-ring absolute inset-0 rounded-full" style="background:var(--primary)"></span>
+        <div class="success-check relative w-14 h-14 rounded-full flex items-center justify-center" style="background:var(--primary);color:#fff">
+          <svg viewBox="0 0 24 24" style="width:27px;height:27px" fill="none"><path class="check-draw" d="M5.5 12.6l4.2 4.2L18.6 8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
       <h2 class="serif-th mt-4" style="font-size:16px">${b.title}</h2>
       <p style="font-size:12px;color:#7A8271" class="mt-1.5 leading-relaxed">${b.detail}</p>
-      ${b.amount ? `<p class="serif-th mt-3" style="font-size:18px;color:var(--clay)">฿${b.amount.toLocaleString()}</p>` : ""}
+      ${b.amount ? `<p class="serif-th mt-3" data-countup="${b.amount}" style="font-size:19px;color:var(--clay)">฿${b.amount.toLocaleString()}</p>` : ""}
       <button data-success-close class="w-full rounded-full py-3 font-medium mt-5" style="background:var(--primary);color:#fff;font-size:13px">เรียบร้อย</button>
     </div>
   </div>`;
@@ -1811,8 +1840,24 @@ function render(){
       const dialog = overlay.querySelector(".dialog-body");
       if (dialog) {
         dialog.classList.add("dialog-enter");
+        overlay.classList.add("celebrate");   // ลูกเล่นฉลองเล่นเฉพาะตอน dialog เพิ่งเปิด
         const check = overlay.querySelector(".success-check");
         if (check) check.classList.add("exhale-once");
+        // ยอดเงินวิ่งนับ 0 → ยอดจริง (~0.7 วิ) — ข้ามถ้าผู้ใช้ตั้งค่าลดการเคลื่อนไหว
+        const amtEl = overlay.querySelector("[data-countup]");
+        if (amtEl && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          const target = parseInt(amtEl.dataset.countup, 10) || 0;
+          const dur = 700, t0 = performance.now();
+          amtEl.textContent = "฿0";
+          const tick = (t) => {
+            const k = Math.min(1, (t - t0) / dur);
+            const eased = 1 - Math.pow(1 - k, 3);
+            amtEl.textContent = "฿" + Math.round(target * eased).toLocaleString();
+            if (k < 1) requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+          setTimeout(() => { amtEl.textContent = "฿" + target.toLocaleString(); }, dur + 200);
+        }
       }
     }
     // กันดับเบิลคลิกทะลุ: ปุ่ม CTA ของ sheet เก่า-ใหม่มักอยู่ตำแหน่งเดียวกัน (เช่น "ถัดไป·ชำระเงิน"
