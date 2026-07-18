@@ -657,13 +657,42 @@ function formatLabSlot(){
 }
 
 /* ลำดับความลึกของแต่ละหน้า — ใช้ตัดสินทิศทางอนิเมชัน (ไปหน้า = ลอยขึ้น, ถอยกลับ = วางลง) */
-const DEPTH = { home: 0, "consult-specialty": 1, lab: 1, meds: 1, lifestyle: 1, "consult-form": 2, queue: 3 };
+const DEPTH = { home: 0, "consult-specialty": 1, lab: 1, meds: 1, lifestyle: 1, "consult-form": 2, queue: 3, call: 4 };
 /* ค่าจาก render รอบก่อน — อนิเมชันจะเล่นก็ต่อเมื่อค่าเหล่านี้เปลี่ยนจริง ไม่ใช่แค่ re-render */
 let prevScreen = null, prevModalKey = null, prevLifestyleTab = "maid", prevProgress = 35, prevQueuePos = null;
 
 /* รหัสการจองรันนิ่ง — โชว์ใน sheet รายละเอียดนัดหมาย */
 let bookingSeq = 0;
 function nextBookingRef(){ bookingSeq += 1; return `OSR-${String(bookingSeq).padStart(4, "0")}`; }
+
+/* ---- VDO call จำลอง: เชื่อมต่อ ~2 วิ แล้วตัวนับเวลาเดินจริง ---- */
+function fmtCallTime(s){ return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; }
+
+let callTimer = null, callConnectTimer = null;
+function startCallTimers(){
+  const c = state.call;
+  if (!c) return;
+  if (c.status === "connecting" && !callConnectTimer) {
+    callConnectTimer = setTimeout(() => {
+      callConnectTimer = null;
+      if (state.screen === "call" && state.call) setState({ call: { ...state.call, status: "active" } });
+    }, 2200);
+  }
+  if (c.status === "active" && !callTimer) {
+    callTimer = setInterval(() => {
+      if (state.screen !== "call" || !state.call) { stopCallTimers(); return; }
+      // เดินเวลาแบบแก้ DOM ตรง ๆ — ไม่ re-render ทั้งจอทุกวินาที
+      state.call.seconds += 1;
+      persistState();
+      const el = document.getElementById("call-timer");
+      if (el) el.textContent = fmtCallTime(state.call.seconds);
+    }, 1000);
+  }
+}
+function stopCallTimers(){
+  if (callTimer) { clearInterval(callTimer); callTimer = null; }
+  if (callConnectTimer) { clearTimeout(callConnectTimer); callConnectTimer = null; }
+}
 
 /* คิวเดินเองระหว่างอยู่หน้าคิว เพื่อให้เห็นความคืบหน้าตอนเดโม */
 let queueTimer = null;
@@ -1026,6 +1055,60 @@ function queueScreen(){
     ` : `
     <button data-nav="home" class="w-full rounded-full py-3.5 font-medium mt-6" style="background:var(--primary);color:#fff;font-size:14px">กลับหน้าแรก</button>
     `}
+  </div>`;
+}
+
+/* ---------------- VDO call จำลอง (ไคลแมกซ์ของ flow ปรึกษาหมอ) ---------------- */
+function callScreen(){
+  const doctor = staffFor("doctor").find(d => d.id === state.selectedDoctor) || staffFor("doctor")[0];
+  const c = state.call || { status: "connecting", seconds: 0, muted: false, cameraOff: false };
+  const connecting = c.status === "connecting";
+  const user = currentUser();
+  const docInitial = doctor.name.replace(/^(นพ\.|พญ\.|คุณ)\s*/, "").charAt(0);
+  return `
+  <div class="relative h-full flex flex-col" style="background:linear-gradient(180deg,#242C21 0%,#181E15 100%);color:#F2EFE6">
+
+    <div class="flex items-center justify-between px-5 pt-5">
+      <div>
+        <p class="serif-th font-semibold" style="font-size:15px;color:#fff">${doctor.name}</p>
+        <p style="font-size:11px;color:#A9B39C">${doctor.role.replace(" · ว่างวันนี้", "")}</p>
+      </div>
+      <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1" style="background:rgba(255,255,255,0.1);font-size:11px;color:#DDE5D2">
+        <span class="rounded-full" style="width:7px;height:7px;background:${connecting ? "#E5C33B" : "#7FB069"}"></span>
+        ${connecting ? "กำลังเชื่อมต่อ..." : `<span id="call-timer">${fmtCallTime(c.seconds)}</span>`}
+      </span>
+    </div>
+
+    <div class="flex-1 flex flex-col items-center justify-center px-6">
+      <div class="relative w-36 h-36 flex items-center justify-center">
+        ${connecting ? `
+        <span class="absolute inset-0 rounded-full listen-ring2" style="background:#39452F"></span>
+        <span class="absolute inset-3 rounded-full listen-ring1" style="background:#48583B"></span>` : `
+        <span class="absolute inset-1 rounded-full" style="background:#39452F"></span>`}
+        <div class="relative w-24 h-24 rounded-full flex items-center justify-center serif-th" style="background:#5C6E4C;color:#fff;font-size:36px">${docInitial}</div>
+      </div>
+      <p class="serif-th mt-6" style="font-size:16px;color:#fff">${connecting ? "กำลังเชื่อมต่อห้องสนทนา" : `อยู่ในสายกับ ${doctor.name}`}</p>
+      <p style="font-size:11.5px;color:#A9B39C" class="mt-1.5 text-center leading-relaxed">${connecting ? "กรุณาอนุญาตการใช้กล้องและไมโครโฟน" : "การสนทนาถูกเข้ารหัสแบบ end-to-end<br>ปลอดภัยและเป็นความลับเช่นเดียวกับทุกบริการของเรา"}</p>
+    </div>
+
+    <!-- กล้องของเรา (มุมขวาบน) -->
+    <div class="absolute rounded-2xl flex items-center justify-center" style="right:16px;top:76px;width:84px;height:112px;background:#2E3828;border:1px solid rgba(255,255,255,0.15)">
+      ${c.cameraOff ? `<span style="color:#8A9482">${icon("video-off", 20)}</span>` : `<span class="serif-th" style="font-size:26px;color:#D8E0CC">${user.initial}</span>`}
+      <span class="absolute" style="bottom:6px;left:8px;font-size:9px;color:#A9B39C">คุณ${user.short}</span>
+    </div>
+
+    <div class="pb-8 pt-2 px-6">
+      <div class="flex items-center justify-center gap-5">
+        <button data-call-mute class="w-12 h-12 rounded-full flex items-center justify-center"
+          style="background:${c.muted ? "#F2EFE6" : "rgba(255,255,255,0.12)"};color:${c.muted ? "#232B20" : "#F2EFE6"}">${icon(c.muted ? "mic-off" : "mic", 20)}</button>
+        <button data-call-end class="w-16 h-16 rounded-full flex items-center justify-center" style="background:#C0503F;color:#fff">
+          <span style="display:inline-block;transform:rotate(135deg)">${icon("phone", 24)}</span>
+        </button>
+        <button data-call-camera class="w-12 h-12 rounded-full flex items-center justify-center"
+          style="background:${c.cameraOff ? "#F2EFE6" : "rgba(255,255,255,0.12)"};color:${c.cameraOff ? "#232B20" : "#F2EFE6"}">${icon(c.cameraOff ? "video-off" : "video", 20)}</button>
+      </div>
+      <p class="text-center mt-3" style="font-size:10px;color:#77816B">${connecting ? "" : "แตะปุ่มแดงเพื่อจบการปรึกษา"}</p>
+    </div>
   </div>`;
 }
 
@@ -1509,11 +1592,12 @@ function render(){
   else if (state.screen === "lab") html = labScreen();
   else if (state.screen === "meds") html = medsScreen();
   else if (state.screen === "lifestyle") html = lifestyleScreen();
+  else if (state.screen === "call") html = callScreen();
   const dir = screenChanged ? ((DEPTH[state.screen] ?? 0) < (DEPTH[prevScreen] ?? 0) ? "back" : "fwd") : null;
   const keepScroll = screenChanged ? 0 : app.scrollTop;
-  const nav = state.screen !== "queue" ? bottomNav() : "";
+  const nav = (state.screen !== "queue" && state.screen !== "call") ? bottomNav() : "";
   // bottomNav อยู่นอก wrapper — ถ้าอยู่ในแล้ว transform ชั่วคราวจะดึงแถบล่างลอยตามอนิเมชัน
-  app.innerHTML = (dir ? `<div class="screen-enter ${dir}">${html}</div>` : html) + nav;
+  app.innerHTML = (dir ? `<div class="screen-enter ${dir}"${state.screen === "call" ? ' style="height:100%"' : ""}>${html}</div>` : html) + nav;
   app.scrollTop = keepScroll;
 
   if (state.screen === "lifestyle" && !screenChanged && state.lifestyleTab !== prevLifestyleTab) {
@@ -1545,6 +1629,7 @@ function render(){
 
   // หยุดคิวชั่วคราวระหว่าง overlay เปิด — กัน re-render เบื้องหลังมารบกวนอนิเมชันของ modal
   if (state.screen === "queue" && !state.modal && !state.bookingSuccess) startQueueTimer(); else stopQueueTimer();
+  if (state.screen === "call") startCallTimers(); else stopCallTimers();
 
   document.getElementById("user-bar").innerHTML = userBar();
 
@@ -1715,12 +1800,28 @@ function render(){
 
   const queueCall = app.querySelector("[data-queue-call]");
   if (queueCall) queueCall.addEventListener("click", () => {
-    const doctor = staffFor("doctor").find(d => d.id === state.selectedDoctor);
-    setState({ bookingSuccess: {
-      title: "กำลังเชื่อมต่อ VDO call",
-      detail: `${doctor ? doctor.name : "แพทย์"} กำลังเข้าห้องสนทนา กรุณาอนุญาตการใช้กล้องและไมโครโฟน`,
-      amount: 0,
-    } });
+    setState({ screen: "call", call: { status: "connecting", seconds: 0, muted: false, cameraOff: false } });
+  });
+
+  // ปุ่มในห้อง VDO call
+  const callMute = app.querySelector("[data-call-mute]");
+  if (callMute) callMute.addEventListener("click", () => setState({ call: { ...state.call, muted: !state.call.muted } }));
+  const callCamera = app.querySelector("[data-call-camera]");
+  if (callCamera) callCamera.addEventListener("click", () => setState({ call: { ...state.call, cameraOff: !state.call.cameraOff } }));
+  const callEnd = app.querySelector("[data-call-end]");
+  if (callEnd) callEnd.addEventListener("click", () => {
+    const doctor = staffFor("doctor").find(d => d.id === state.selectedDoctor) || staffFor("doctor")[0];
+    const dur = state.call ? state.call.seconds : 0;
+    stopCallTimers();
+    // จบการปรึกษา = จบ journey — ล้างคิวและกลับหน้าแรกพร้อมสรุป
+    setState({
+      screen: "home", call: null, queue: null, queuePaid: false,
+      bookingSuccess: {
+        title: "จบการปรึกษาแล้ว",
+        detail: `คุณปรึกษา${doctor.name} เป็นเวลา ${fmtCallTime(dur)} นาที · สรุปคำแนะนำและใบสั่งยา (ถ้ามี) จะส่งเข้าแอปภายใน 15 นาที`,
+        amount: 0,
+      },
+    });
   });
 
   app.querySelectorAll("[data-tab]").forEach(el => el.addEventListener("click", () => setState({ lifestyleTab: el.dataset.tab })));
