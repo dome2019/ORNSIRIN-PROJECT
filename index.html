@@ -1388,7 +1388,10 @@ function lifestyleScreen(){
               <p style="font-size:13.5px" class="font-medium">${pet.name}</p>
               <p style="font-size:10.5px;color:#8A9080" class="mt-0.5">${[pet.breed, pet.age, pet.weight].filter(Boolean).join(" · ")}</p>
             </div>
-            <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 shrink-0" style="background:#EDE9DA;color:#5B6350;font-size:9.5px">${icon("heart", 10)} สัตว์เลี้ยงของ${currentUser().short}</span>
+            <div class="flex flex-col items-end gap-1.5 shrink-0">
+              <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5" style="background:#EDE9DA;color:#5B6350;font-size:9.5px">${icon("heart", 10)} สัตว์เลี้ยงของ${currentUser().short}</span>
+              <button data-editpet="${pet.id}" class="inline-flex items-center gap-1 rounded-full px-2 py-0.5" style="background:transparent;border:1px solid var(--line);color:#8A9080;font-size:9.5px">${icon("pencil", 10)} แก้ไข</button>
+            </div>
           </div>
           ${pet.vaccineDue ? `
           <button data-item-category="petcare" data-item-id="pc1" data-pet-id="${pet.id}" class="w-full mt-3 rounded-xl p-2.5 flex items-center gap-2 text-left" style="background:#F9EFDF;border:1px solid #E8CFA4">
@@ -1582,41 +1585,45 @@ function bookingDetailModal(){
   </div>`;
 }
 
-/* ---------------- add pet sheet (เพิ่มโปรไฟล์สัตว์เลี้ยง) ---------------- */
+/* ---------------- add/edit pet sheet (เพิ่ม-แก้ไข-ลบโปรไฟล์สัตว์เลี้ยง) ---------------- */
 function addPetModal(){
+  const editPet = state.modal.editId ? userPets().find(x => x.id === state.modal.editId) : null;
   return `
   <div class="absolute inset-0 z-40 flex flex-col justify-end" style="background:rgba(43,51,40,0.55);pointer-events:auto">
     <div class="sheet-body rounded-t-3xl p-5" style="background:var(--bg);max-height:88%;overflow-y:auto">
       <div class="flex items-center justify-between mb-1">
-        <h2 class="serif-th font-semibold" style="font-size:16px">เพิ่มโปรไฟล์สัตว์เลี้ยง</h2>
+        <h2 class="serif-th font-semibold" style="font-size:16px">${editPet ? "แก้ไขโปรไฟล์สัตว์เลี้ยง" : "เพิ่มโปรไฟล์สัตว์เลี้ยง"}</h2>
         <button data-modal-close class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background:var(--surface);border:1px solid var(--line)">${icon("x",16)}</button>
       </div>
       <p style="font-size:11.5px;color:#7A8271" class="mb-4">ของ${currentUser().short} · ใช้เลือกตอนจองบริการ Pet Care ได้ทันที</p>
 
       <p style="font-size:12.5px" class="font-medium mb-2">ประเภท</p>
-      <div id="addpet-type" data-type="dog" class="flex gap-2 mb-4">
-        <button data-pettype="dog" class="flex-1 rounded-xl py-2.5 flex items-center justify-center gap-1.5" style="background:var(--primary);color:#fff;border:1px solid var(--line);font-size:12px">${icon("dog",15)} สุนัข</button>
-        <button data-pettype="cat" class="flex-1 rounded-xl py-2.5 flex items-center justify-center gap-1.5" style="background:var(--surface);color:var(--ink);border:1px solid var(--line);font-size:12px">${icon("cat",15)} แมว</button>
+      <div id="addpet-type" data-type="${editPet ? editPet.icon : "dog"}" class="flex gap-2 mb-4">
+        ${[["dog", "สุนัข"], ["cat", "แมว"]].map(([t, label]) => {
+          const sel = (editPet ? editPet.icon : "dog") === t;
+          return `<button data-pettype="${t}" class="flex-1 rounded-xl py-2.5 flex items-center justify-center gap-1.5" style="background:${sel ? "var(--primary)" : "var(--surface)"};color:${sel ? "#fff" : "var(--ink)"};border:1px solid var(--line);font-size:12px">${icon(t,15)} ${label}</button>`;
+        }).join("")}
       </div>
 
       <p style="font-size:12.5px" class="font-medium mb-2">ชื่อ</p>
-      <input id="addpet-name" type="text" maxlength="30" placeholder="เช่น น้องขนุน"
+      <input id="addpet-name" type="text" maxlength="30" placeholder="เช่น น้องขนุน" value="${editPet ? editPet.name : ""}"
         class="w-full rounded-xl p-3 mb-4" style="background:var(--surface);border:1px solid var(--line);font-size:13px" />
 
       <div class="flex gap-2.5 mb-5">
         <div class="flex-1">
           <p style="font-size:12.5px" class="font-medium mb-2">พันธุ์</p>
-          <input id="addpet-breed" type="text" maxlength="30" placeholder="เช่น ชิวาวา"
+          <input id="addpet-breed" type="text" maxlength="30" placeholder="เช่น ชิวาวา" value="${editPet ? editPet.breed : ""}"
             class="w-full rounded-xl p-3" style="background:var(--surface);border:1px solid var(--line);font-size:13px" />
         </div>
         <div class="flex-1">
           <p style="font-size:12.5px" class="font-medium mb-2">อายุ</p>
-          <input id="addpet-age" type="text" maxlength="10" placeholder="เช่น 2 ปี"
+          <input id="addpet-age" type="text" maxlength="10" placeholder="เช่น 2 ปี" value="${editPet ? editPet.age : ""}"
             class="w-full rounded-xl p-3" style="background:var(--surface);border:1px solid var(--line);font-size:13px" />
         </div>
       </div>
 
-      <button data-addpet-save class="w-full rounded-full py-3.5 font-medium" style="background:var(--primary);color:#fff;font-size:14px">บันทึกโปรไฟล์</button>
+      <button data-addpet-save class="w-full rounded-full py-3.5 font-medium" style="background:var(--primary);color:#fff;font-size:14px">${editPet ? "บันทึกการแก้ไข" : "บันทึกโปรไฟล์"}</button>
+      ${editPet ? `<button data-delpet class="w-full rounded-full py-2.5 font-medium mt-1.5" style="background:transparent;color:#B0543F;font-size:12px">ลบโปรไฟล์นี้</button>` : ""}
     </div>
   </div>`;
 }
@@ -1935,6 +1942,9 @@ function render(){
 
   const addPetOpen = app.querySelector("[data-addpet-open]");
   if (addPetOpen) addPetOpen.addEventListener("click", () => setState({ modal: { kind: "addPet" } }));
+  app.querySelectorAll("[data-editpet]").forEach(el => el.addEventListener("click", () => {
+    setState({ modal: { kind: "addPet", editId: el.dataset.editpet } });
+  }));
 
   // เปิดรายละเอียดนัดหมายที่ยืนยันแล้ว (จากการ์ดบนหน้าแรก)
   app.querySelectorAll("[data-booking]").forEach(el => el.addEventListener("click", () => {
@@ -1995,13 +2005,32 @@ function render(){
     const type = (document.getElementById("addpet-type").dataset.type) || "dog";
     const breed = document.getElementById("addpet-breed").value.trim();
     const age = document.getElementById("addpet-age").value.trim();
-    const newPet = { id: "pet-" + Date.now(), name, icon: type === "cat" ? "cat" : "dog",
-      breed: breed || (type === "cat" ? "แมว" : "สุนัข"), age: age || "" };
+    const fields = { name, icon: type === "cat" ? "cat" : "dog", breed: breed || (type === "cat" ? "แมว" : "สุนัข"), age: age || "" };
     userPets();   // ensure state.pets initialized
+    const editId = state.modal.editId;
+    if (editId) {
+      // แก้ไขตัวเดิม — คงข้อมูลสุขภาพ (วัคซีน/ตรวจล่าสุด/น้ำหนัก) ไว้ตามเดิม
+      setState({
+        pets: { ...state.pets, [state.currentUser]: userPets().map(x => x.id === editId ? { ...x, ...fields } : x) },
+        modal: null,
+        bookingSuccess: { title: "บันทึกการแก้ไขแล้ว", detail: `โปรไฟล์${name} อัปเดตเรียบร้อย`, amount: 0 },
+      });
+    } else {
+      setState({
+        pets: { ...state.pets, [state.currentUser]: [...userPets(), { id: "pet-" + Date.now(), ...fields }] },
+        modal: null,
+        bookingSuccess: { title: "เพิ่มน้องเข้าครอบครัวแล้ว", detail: `โปรไฟล์${name} พร้อมใช้เลือกตอนจองบริการ Pet Care ทุกรายการ`, amount: 0 },
+      });
+    }
+  });
+  const delPet = modalRoot.querySelector("[data-delpet]");
+  if (delPet) delPet.addEventListener("click", () => {
+    const editId = state.modal.editId;
+    const pet = userPets().find(x => x.id === editId);
     setState({
-      pets: { ...state.pets, [state.currentUser]: [...userPets(), newPet] },
+      pets: { ...state.pets, [state.currentUser]: userPets().filter(x => x.id !== editId) },
       modal: null,
-      bookingSuccess: { title: "เพิ่มน้องเข้าครอบครัวแล้ว", detail: `โปรไฟล์${name} พร้อมใช้เลือกตอนจองบริการ Pet Care ทุกรายการ`, amount: 0 },
+      bookingSuccess: { title: "ลบโปรไฟล์แล้ว", detail: `นำโปรไฟล์${pet ? pet.name : "สัตว์เลี้ยง"}ออกจากบัญชีของคุณเรียบร้อย`, amount: 0 },
     });
   });
 
