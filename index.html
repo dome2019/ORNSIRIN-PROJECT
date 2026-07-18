@@ -373,11 +373,14 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   .dialog-enter{ animation: dialogIn .2s cubic-bezier(.32,.72,0,1) both; }
   .exhale-once{ animation: exhaleOnce .6s ease-in-out 1; }
   .panel-enter{ animation: fadeIn .14s ease both; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spin{ display:inline-block; width:13px; height:13px; border:2px solid rgba(255,255,255,0.35);
+         border-top-color:#fff; border-radius:50%; animation: spin .7s linear infinite; vertical-align:-2px; }
   button:not([disabled]){ transition: transform .12s ease; }
   button:not([disabled]):active{ transform: scale(.97); }
   @media (prefers-reduced-motion: reduce){
     .listen-ring1,.listen-ring2{ animation:none; }
-    .screen-enter.fwd,.screen-enter.back,.sheet-enter,.backdrop-enter,.dialog-enter,.exhale-once,.panel-enter{ animation:none; }
+    .screen-enter.fwd,.screen-enter.back,.sheet-enter,.backdrop-enter,.dialog-enter,.exhale-once,.panel-enter,.spin{ animation:none; }
     button:not([disabled]){ transition:none; }
     button:not([disabled]):active{ transform:none; }
     #queue-fill{ transition:none !important; }
@@ -1780,11 +1783,20 @@ function render(){
   });
   const payConfirm = modalRoot.querySelector("[data-payment-confirm]");
   if (payConfirm) payConfirm.addEventListener("click", () => {
-    const m = state.modal;
-    const patch = { modal: null, bookingSuccess: m.success };
-    if (m.booking) patch.bookings = [{ ...m.booking, ref: nextBookingRef() }, ...state.bookings];   // นัดใหม่ขึ้นบนสุดของหน้าแรก
-    if (m.queuePay) patch.queuePaid = true;
-    setState(patch);
+    if (payConfirm.disabled) return;
+    // จังหวะตรวจสอบยอด ~1.4 วิ ให้เหมือนเช็คกับ gateway จริง — แก้ DOM ตรง ๆ ไม่ผ่าน setState
+    // เพราะระหว่างรอห้ามมี re-render มารื้อปุ่ม (timer คิวถูกหยุดไว้แล้วตอน overlay เปิด)
+    payConfirm.disabled = true;
+    payConfirm.style.background = "var(--primary-dark)";
+    payConfirm.innerHTML = `<span class="spin"></span>&nbsp; กำลังตรวจสอบยอดชำระ...`;
+    setTimeout(() => {
+      const m = state.modal;
+      if (!m || m.kind !== "payment") return;   // ผู้ใช้ปิดหน้าจ่ายไประหว่างรอ — ยกเลิกเงียบ ๆ
+      const patch = { modal: null, bookingSuccess: m.success };
+      if (m.booking) patch.bookings = [{ ...m.booking, ref: nextBookingRef() }, ...state.bookings];   // นัดใหม่ขึ้นบนสุดของหน้าแรก
+      if (m.queuePay) patch.queuePaid = true;
+      setState(patch);
+    }, 1400);
   });
   const bookingCancel = modalRoot.querySelector("[data-booking-cancel]");
   if (bookingCancel) bookingCancel.addEventListener("click", () => {
