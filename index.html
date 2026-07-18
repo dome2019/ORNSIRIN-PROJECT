@@ -811,11 +811,11 @@ function bottomNav(){
 /* ---------------- top bar: โลโก้จริง + login form ↔ family member switcher ---------------- */
 function userBar(){
   const logo = `
-    <div class="flex items-center gap-2 shrink-0">
-      <img src="${LOGO_IMG}" alt="Ornsirin" class="shrink-0" style="height:20px;width:auto;display:block" />
+    <div class="flex items-center gap-1.5 shrink-0">
+      <img src="${LOGO_IMG}" alt="Ornsirin" class="shrink-0" style="height:18px;width:auto;display:block" />
       <div style="line-height:1">
-        <p style="font-size:10.5px;letter-spacing:2.6px;color:#F5EFDF;font-weight:600">ORNSIRIN</p>
-        <p style="font-size:6.8px;letter-spacing:2.15px;color:#C7D4BC;margin-top:2.5px">HEALTH LINK</p>
+        <p style="font-size:9.5px;letter-spacing:2.1px;color:#F5EFDF;font-weight:600">ORNSIRIN</p>
+        <p style="font-size:6.2px;letter-spacing:1.7px;color:#C7D4BC;margin-top:2px">HEALTH LINK</p>
       </div>
     </div>`;
 
@@ -840,18 +840,23 @@ function userBar(){
   }
 
   // เข้าสู่ระบบแล้ว — สลับดูข้อมูลของสมาชิกในครอบครัวได้
+  const notificationCount = state.queue ? 4 : 3;
   return `
   <div class="flex items-center justify-between gap-1.5 px-3 py-2 w-full" style="background:var(--primary-dark);color:#fff">
     ${logo}
-    <div class="flex-1 flex items-center justify-end gap-1.5 min-w-0">
+    <div class="flex-1 flex items-center justify-end gap-1 min-w-0">
+      <button data-notifications-open class="relative shrink-0 rounded-full flex items-center justify-center" style="width:25px;height:25px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25)" aria-label="การแจ้งเตือน ${notificationCount} รายการ">
+        ${icon("bell", 13)}
+        <span class="absolute flex items-center justify-center rounded-full" style="right:-4px;top:-5px;min-width:15px;height:15px;padding:0 3px;background:var(--clay);color:#fff;border:1.5px solid var(--primary-dark);font-size:8.5px;font-weight:600">${notificationCount}</span>
+      </button>
       <div class="flex items-center gap-1 rounded-full p-0.5" style="background:rgba(255,255,255,0.12)">
         ${users.map(u => `
         <button data-user="${u.id}" class="rounded-full flex items-center justify-center"
-          style="width:22px;height:22px;font-size:11px;background:${state.currentUser === u.id ? "var(--clay)" : "transparent"};color:#fff"
+          style="width:20px;height:20px;font-size:10px;background:${state.currentUser === u.id ? "var(--clay)" : "transparent"};color:#fff"
           title="${u.name}">${u.initial}</button>`).join("")}
       </div>
       <span style="font-size:11px;white-space:nowrap;max-width:88px;overflow:hidden;text-overflow:ellipsis">${(users.find(u => u.id === state.currentUser) || users[0]).short}</span>
-      <button data-logout class="shrink-0 rounded-full px-2 py-1 flex items-center gap-1" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25)">
+      <button data-logout class="shrink-0 rounded-full px-1.5 py-1 flex items-center gap-1" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25)">
         ${icon("log-out", 11, "shrink-0")}
         <span style="font-size:10.5px;white-space:nowrap">ออก</span>
       </button>
@@ -867,6 +872,29 @@ function homeScreen(){
     { id:"meds", title:"ส่งยาต่อเนื่อง", sub:"ยาประจำ & ยาสามัญ", icon:"pill", bg:"var(--clay)", fg:"#fff" },
     { id:"lifestyle", title:"บริการไลฟ์สไตล์", sub:"แม่บ้าน · นวด · Ice bath · Pet care", icon:"sparkles", bg:"var(--surface)", fg:"var(--ink)", border:true },
   ];
+  if (!state.loggedIn) {
+    return `
+    <div class="pb-28">
+      <div class="px-6 pt-10 pb-8 relative overflow-hidden text-center" style="background:linear-gradient(180deg,#4A6741 0%,#41593A 100%);border-radius:0 0 26px 26px">
+        <img src="${LOGO_IMG}" alt="" style="position:absolute;right:-16px;top:10px;height:118px;opacity:0.07;transform:rotate(-6deg);pointer-events:none" />
+        <img src="${LOGO_IMG}" alt="Ornsirin" class="mx-auto" style="height:34px;width:auto;display:block" />
+        <h1 class="serif-th text-white mt-5" style="font-size:22px">ยินดีต้อนรับสู่ Ornsirin Health Link</h1>
+        <p class="mt-2" style="color:#D7E2CC;font-size:12.5px;line-height:1.6">เข้าสู่ระบบที่แถบด้านบนเพื่อดูข้อมูลสุขภาพ นัดหมาย และสิทธิ์ของคุณ</p>
+      </div>
+
+      <div class="px-5 mt-5 grid grid-cols-2 gap-3">
+        ${actions.map(a => `
+          <button data-nav="${a.id}" class="rounded-2xl p-4 text-left flex flex-col justify-between" style="background:${a.bg};color:${a.fg};min-height:118px;${a.border ? "border:1px solid var(--line)" : ""}">
+            ${icon(a.icon,22)}
+            <div>
+              <p class="serif-th font-semibold" style="font-size:14.5px">${a.title}</p>
+              <p style="font-size:11.5px;opacity:.85;margin-top:2px">${a.sub}</p>
+            </div>
+          </button>
+        `).join("")}
+      </div>
+    </div>`;
+  }
   return `
   <div class="pb-28">
     <div class="px-6 pt-8 pb-6 relative overflow-hidden" style="background:linear-gradient(180deg,#4A6741 0%,#41593A 100%);border-radius:0 0 26px 26px">
@@ -897,6 +925,18 @@ function homeScreen(){
         </button>
       `).join("")}
     </div>
+
+    ${state.queue ? `
+    <div class="px-5 mt-3">
+      <button data-nav="queue" class="w-full text-left rounded-2xl p-3.5 flex items-center gap-3" style="background:#EFF3EA;border:1px solid #C9D6BD">
+        <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:var(--primary);color:#fff">${icon("stethoscope",18)}</div>
+        <div class="flex-1 min-w-0">
+          <p style="font-size:12.5px" class="font-medium">${state.queue.position === 0 ? "ถึงคิวแล้ว — แพทย์พร้อม" : `คิวปรึกษาหมอ #${state.queue.position} · แตะเพื่อกลับเข้าคิว`}</p>
+          <p style="font-size:10.5px;color:#7A8271" class="mt-0.5">สถานะคิวและการชำระเงินของคุณยังอยู่ครบ</p>
+        </div>
+        ${icon("chevron-right",16,"shrink-0")}
+      </button>
+    </div>` : ""}
 
     <div class="px-5 mt-6">
       <p class="serif-th font-semibold mb-2" style="font-size:15px">นัดหมายที่กำลังจะถึง</p>
@@ -1568,6 +1608,39 @@ function lifestyleScreen(){
   </div>`;
 }
 
+/* ---------------- notifications sheet ---------------- */
+function notificationsModal(){
+  const items = [
+    ...(state.queue ? [{ target: "queue", icon: "stethoscope", title: `ใกล้ถึงคิวปรึกษาหมอแล้ว (#${state.queue.position})`, sub: state.queue.position === 0 ? "แพทย์พร้อมให้คำปรึกษาแล้ว" : `เหลือประมาณ ${state.queue.wait} นาที` }] : []),
+    { target: "meds", icon: "pill", title: "ยาประจำใกล้หมด — สั่งเติมล่วงหน้าได้เลย", sub: "จัดส่งยาถึงบ้านภายใน 24 ชั่วโมง" },
+    { target: "lab-results", icon: "clipboard-check", title: "ผลตรวจสุขภาพพร้อมดูแล้ว", sub: "เปิดดูผลตรวจล่าสุดของคุณ" },
+    { target: "lifestyle", tab: "petcare", icon: "paw-print", title: "วัคซีนสัตว์เลี้ยงใกล้ครบกำหนด", sub: "เลือกบริการ Pet Care ที่เหมาะกับน้อง" },
+  ];
+  return `
+  <div class="absolute inset-0 z-40 flex flex-col justify-end" style="background:rgba(43,51,40,0.55);pointer-events:auto">
+    <div class="sheet-body rounded-t-3xl p-5" style="background:var(--bg);max-height:88%;overflow-y:auto">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="serif-th font-semibold" style="font-size:17px">การแจ้งเตือน</h2>
+          <p style="font-size:10.5px;color:var(--muted)" class="mt-0.5">${items.length} รายการ</p>
+        </div>
+        <button data-modal-close class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background:var(--surface);border:1px solid var(--line)">${icon("x",16)}</button>
+      </div>
+      <div class="space-y-2.5">
+        ${items.map(item => `
+        <button data-notification-target="${item.target}" ${item.tab ? `data-notification-tab="${item.tab}"` : ""} class="w-full text-left rounded-2xl p-3.5 flex items-center gap-3" style="background:var(--surface);border:1px solid var(--line)">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:#E7EDDF;color:var(--primary)">${icon(item.icon,17)}</div>
+          <div class="flex-1 min-w-0">
+            <p class="font-medium" style="font-size:12.5px;line-height:1.4">${item.title}</p>
+            <p class="mt-0.5" style="font-size:10.5px;color:var(--muted)">${item.sub}</p>
+          </div>
+          ${icon("chevron-right",15,"shrink-0")}
+        </button>`).join("")}
+      </div>
+    </div>
+  </div>`;
+}
+
 /* ---------------- item detail modal (location + staff picker) ---------------- */
 function detailModal(){
   const m = state.modal;
@@ -1841,6 +1914,18 @@ function successModal(){
   </div>`;
 }
 
+/* ---------------- login privacy gate ---------------- */
+function loginGateScreen(){
+  return `
+  <div class="pb-28 px-5 pt-12">
+    <div class="rounded-3xl p-7 text-center" style="background:var(--surface);border:1px solid var(--line)">
+      <div class="w-14 h-14 rounded-full mx-auto flex items-center justify-center" style="background:#E7EDDF;color:var(--primary)">${icon("lock",24)}</div>
+      <h1 class="serif-th mt-4 font-semibold" style="font-size:19px">เข้าสู่ระบบก่อนใช้งาน</h1>
+      <p class="mt-2" style="font-size:12px;color:var(--muted);line-height:1.6">กรอกไอดีและรหัสผ่านที่แถบด้านบน เพื่อดูข้อมูลสุขภาพและใช้บริการของคุณอย่างเป็นส่วนตัว</p>
+    </div>
+  </div>`;
+}
+
 /* ---------------- render + events ---------------- */
 function render(){
   const app = document.getElementById("app");
@@ -1850,8 +1935,10 @@ function render(){
   const screenChanged = state.screen !== prevScreen;
   if (screenChanged && state.screen === "queue") prevProgress = queueProgress();
 
+  const privacyGated = !state.loggedIn && state.screen !== "home";
   let html = "";
-  if (state.screen === "home") html = homeScreen();
+  if (privacyGated) html = loginGateScreen();
+  else if (state.screen === "home") html = homeScreen();
   else if (state.screen === "consult-specialty") html = specialtyScreen();
   else if (state.screen === "consult-form") html = consultForm();
   else if (state.screen === "queue") html = queueScreen();
@@ -1862,7 +1949,7 @@ function render(){
   else if (state.screen === "call") html = callScreen();
   const dir = screenChanged ? ((DEPTH[state.screen] ?? 0) < (DEPTH[prevScreen] ?? 0) ? "back" : "fwd") : null;
   const keepScroll = screenChanged ? 0 : app.scrollTop;
-  const nav = (state.screen !== "queue" && state.screen !== "call") ? bottomNav() : "";
+  const nav = (privacyGated || (state.screen !== "queue" && state.screen !== "call")) ? bottomNav() : "";
   // bottomNav อยู่นอก wrapper — ถ้าอยู่ในแล้ว transform ชั่วคราวจะดึงแถบล่างลอยตามอนิเมชัน
   app.innerHTML = (dir ? `<div class="screen-enter ${dir}"${state.screen === "call" ? ' style="height:100%"' : ""}>${html}</div>` : html) + nav;
   app.scrollTop = keepScroll;
@@ -1895,22 +1982,24 @@ function render(){
   prevScreen = state.screen;
 
   // หยุดคิวชั่วคราวระหว่าง overlay เปิด — กัน re-render เบื้องหลังมารบกวนอนิเมชันของ modal
-  if (state.screen === "queue" && !state.modal && !state.bookingSuccess) startQueueTimer(); else stopQueueTimer();
-  if (state.screen === "call") startCallTimers(); else stopCallTimers();
+  if (state.loggedIn && state.screen === "queue" && !state.modal && !state.bookingSuccess) startQueueTimer(); else stopQueueTimer();
+  if (state.loggedIn && state.screen === "call") startCallTimers(); else stopCallTimers();
 
   document.getElementById("user-bar").innerHTML = userBar();
 
   const modalRoot = document.getElementById("modal-root");
-  const modalKey = state.modal ? state.modal.kind : (state.bookingSuccess ? "success" : null);
+  const overlayAllowed = state.loggedIn;
+  const modalKey = overlayAllowed ? (state.modal ? state.modal.kind : (state.bookingSuccess ? "success" : null)) : null;
   const sameOverlay = modalKey !== null && modalKey === prevModalKey;
   const prevSheetEl = sameOverlay ? modalRoot.querySelector(".sheet-body") : null;
   const keepSheetScroll = prevSheetEl ? prevSheetEl.scrollTop : 0;
 
-  if (state.modal && state.modal.kind === "detail") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = detailModal(); }
-  else if (state.modal && state.modal.kind === "bookingDetail") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = bookingDetailModal(); }
-  else if (state.modal && state.modal.kind === "addPet") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = addPetModal(); }
-  else if (state.modal && state.modal.kind === "payment") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = paymentModal(); }
-  else if (state.bookingSuccess) { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = successModal(); }
+  if (overlayAllowed && state.modal && state.modal.kind === "detail") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = detailModal(); }
+  else if (overlayAllowed && state.modal && state.modal.kind === "bookingDetail") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = bookingDetailModal(); }
+  else if (overlayAllowed && state.modal && state.modal.kind === "addPet") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = addPetModal(); }
+  else if (overlayAllowed && state.modal && state.modal.kind === "payment") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = paymentModal(); }
+  else if (overlayAllowed && state.modal && state.modal.kind === "notifications") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = notificationsModal(); }
+  else if (overlayAllowed && state.bookingSuccess) { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = successModal(); }
   else { modalRoot.style.pointerEvents = "none"; modalRoot.innerHTML = ""; }
 
   if (sameOverlay) {
@@ -2123,9 +2212,11 @@ function render(){
     e.preventDefault();
     setState({ loggedIn: true });
   });
+  const notificationsOpen = document.querySelector("[data-notifications-open]");
+  if (notificationsOpen) notificationsOpen.addEventListener("click", () => setState({ modal: { kind: "notifications" } }));
   document.querySelectorAll("[data-user]").forEach(el => el.addEventListener("click", () => setState({ currentUser: el.dataset.user })));
   const logoutBtn = document.querySelector("[data-logout]");
-  if (logoutBtn) logoutBtn.addEventListener("click", () => setState({ loggedIn: false, screen: "home" }));
+  if (logoutBtn) logoutBtn.addEventListener("click", () => setState({ loggedIn: false, screen: "home", modal: null, bookingSuccess: null }));
 
   const addPetOpen = app.querySelector("[data-addpet-open]");
   if (addPetOpen) addPetOpen.addEventListener("click", () => setState({ modal: { kind: "addPet" } }));
@@ -2150,6 +2241,11 @@ function render(){
 
   // modal interactions
   modalRoot.querySelectorAll("[data-modal-close]").forEach(el => el.addEventListener("click", () => setState({ modal: null })));
+  modalRoot.querySelectorAll("[data-notification-target]").forEach(el => el.addEventListener("click", () => {
+    const patch = { screen: el.dataset.notificationTarget, modal: null };
+    if (el.dataset.notificationTab) patch.lifestyleTab = el.dataset.notificationTab;
+    setState(patch);
+  }));
   modalRoot.querySelectorAll("[data-modal-location]").forEach(el => el.addEventListener("click", () => {
     setState({ modal: { ...state.modal, location: el.dataset.modalLocation } });
   }));
@@ -2292,6 +2388,16 @@ function render(){
 
 hydrateState();   // ถ้าเพิ่ง refresh มา จะกลับไปหน้าเดิม ล็อกอินเดิม นัดเดิมครบ
 render();
+
+/* คีย์ลัดสำหรับผู้พรีเซนต์ — ทำงานเฉพาะหน้าคิวเมื่อไม่มี overlay */
+document.addEventListener("keydown", (e) => {
+  if (!state.loggedIn || state.screen !== "queue" || !state.queue || state.modal || state.bookingSuccess) return;
+  if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+  const delta = e.key === "ArrowRight" ? -1 : 1;
+  const position = Math.max(0, Math.min(QUEUE_START, state.queue.position + delta));
+  e.preventDefault();
+  if (position !== state.queue.position) setState({ queue: { position, wait: position * 6 } });
+});
 
 /* ย่อเฟรมมือถือให้พอดีจอ — กันแถบเมนูล่างโดนตัดบนจอเตี้ย เช่น โปรเจกเตอร์ 1366x768 */
 function fitPhone(){
