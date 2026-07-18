@@ -715,7 +715,7 @@ function formatLabSlot(){
 }
 
 /* ลำดับความลึกของแต่ละหน้า — ใช้ตัดสินทิศทางอนิเมชัน (ไปหน้า = ลอยขึ้น, ถอยกลับ = วางลง) */
-const DEPTH = { home: 0, "consult-specialty": 1, lab: 1, meds: 1, lifestyle: 1, "consult-form": 2, queue: 3, call: 4 };
+const DEPTH = { home: 0, "consult-specialty": 1, lab: 1, meds: 1, lifestyle: 1, "consult-form": 2, "lab-results": 2, queue: 3, call: 4 };
 /* ค่าจาก render รอบก่อน — อนิเมชันจะเล่นก็ต่อเมื่อค่าเหล่านี้เปลี่ยนจริง ไม่ใช่แค่ re-render */
 let prevScreen = null, prevModalKey = null, prevLifestyleTab = "maid", prevProgress = 35, prevQueuePos = null;
 
@@ -1224,6 +1224,15 @@ function labScreen(){
   <div class="pb-28">
     ${screenHero({ title: "เจาะเลือดถึงบ้าน", sub: "พยาบาลไปเจาะถึงบ้าน · ผลตรวจแจ้งในแอปภายใน 1-2 วัน", icon: "droplet", from: "#6E8098", to: "#586A85" })}
     <div class="px-5">
+      <button data-nav="lab-results" class="w-full rounded-2xl p-3.5 mb-5 flex items-center gap-3 text-left"
+        style="background:#E8ECF2;border:1px solid #CDD5E0;color:#42536C">
+        <span class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:#D7DEE8">${icon("clipboard-check",18)}</span>
+        <span class="flex-1">
+          <span class="block font-medium" style="font-size:12.5px">ผลตรวจของฉัน</span>
+          <span class="block mt-0.5" style="font-size:10.5px;color:#6E8098">ดูผลตรวจสุขภาพล่าสุดในแอป</span>
+        </span>
+        ${icon("chevron-right",16)}
+      </button>
       <p style="font-size:12.5px" class="font-medium mb-2">เลือกรายการตรวจ</p>
       <div class="space-y-2 mb-4">
         ${tests.map(t => `
@@ -1266,6 +1275,82 @@ function labScreen(){
       <button id="lab-confirm" ${canBook ? "" : "disabled"} class="w-full rounded-full py-3.5 font-medium"
         style="background:${canBook ? "var(--slate)" : "#DCD5C2"};color:${canBook ? "#fff" : "var(--muted)"};font-size:14px">ยืนยันนัดหมาย</button>
       ${canBook ? "" : `<p style="font-size:10.5px;color:var(--muted)" class="text-center mt-2">เลือกรายการตรวจ พร้อมวันและเวลาที่สะดวก</p>`}
+    </div>
+  </div>`;
+}
+
+/* ผลตรวจจำลองแยกตามสมาชิก — วันที่คำนวณย้อนหลังจากวันเปิดแอป ไม่เก็บเป็นค่าตายตัว */
+const labResultsByUser = {
+  u1: [
+    { name: "น้ำตาลในเลือด (FBS)", value: "118", unit: "mg/dL", reference: "70-99", status: "follow", daysAgo: 30 },
+    { name: "คอเลสเตอรอลรวม", value: "186", unit: "mg/dL", reference: "น้อยกว่า 200", status: "normal", daysAgo: 30 },
+    { name: "การทำงานของไต (eGFR)", value: "92", unit: "mL/min/1.73m²", reference: "ตั้งแต่ 90", status: "normal", daysAgo: 30 },
+    { name: "เอนไซม์ตับ (ALT)", value: "24", unit: "U/L", reference: "7-35", status: "normal", daysAgo: 30 },
+  ],
+  u2: [],
+  u3: [
+    { name: "ไขมัน LDL", value: "142", unit: "mg/dL", reference: "น้อยกว่า 130", status: "follow", daysAgo: 45 },
+    { name: "น้ำตาลในเลือด (FBS)", value: "96", unit: "mg/dL", reference: "70-99", status: "normal", daysAgo: 45 },
+    { name: "การทำงานของไต (eGFR)", value: "68", unit: "mL/min/1.73m²", reference: "ตั้งแต่ 60", status: "normal", daysAgo: 45 },
+    { name: "ฮีโมโกลบิน", value: "12.1", unit: "g/dL", reference: "12.0-15.5", status: "normal", daysAgo: 45 },
+  ],
+  u4: [],
+};
+
+function labResultDate(daysAgo){
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  return `${d.getDate()} ${thMonths[d.getMonth()]} ${d.getFullYear() + 543}`;
+}
+
+function labResultsScreen(){
+  const results = labResultsByUser[state.currentUser] || [];
+  const user = currentUser();
+  return `
+  <div class="pb-28">
+    ${screenHero({ title: "ผลตรวจของฉัน", sub: `ข้อมูลสุขภาพล่าสุดของ${user.short}`, icon: "clipboard-check", from: "#6E8098", to: "#586A85" })}
+    <div class="px-5">
+      ${results.length ? `
+        <div class="rounded-2xl p-3.5 mb-4 flex items-center gap-3" style="background:#E8ECF2;border:1px solid #CDD5E0">
+          <span class="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style="background:#D7DEE8;color:#42536C">${icon("file-heart",17)}</span>
+          <div class="flex-1">
+            <p class="font-medium" style="font-size:12px">ผลตรวจสุขภาพล่าสุด</p>
+            <p class="mt-0.5" style="font-size:10.5px;color:#6E8098">ตรวจเมื่อ ${labResultDate(results[0].daysAgo)} · ${results.length} รายการ</p>
+          </div>
+          <span class="rounded-full px-2 py-1" style="font-size:9.5px;background:#DDE9D7;color:#4A6741">ตรวจแล้ว</span>
+        </div>
+        <div class="space-y-2.5">
+          ${results.map(result => {
+            const follow = result.status === "follow";
+            return `
+            <div class="rounded-2xl p-3.5" style="background:var(--surface);border:1px solid var(--line)">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="font-medium" style="font-size:12.5px">${result.name}</p>
+                  <p class="mt-0.5" style="font-size:10px;color:#8A9080">วันที่ตรวจ ${labResultDate(result.daysAgo)}</p>
+                </div>
+                <span class="shrink-0 rounded-full px-2 py-1" style="font-size:9.5px;background:${follow ? "#F8E8C7" : "#DDE9D7"};color:${follow ? "#9A6A20" : "#4A6741"}">${follow ? "ควรติดตาม" : "ปกติ"}</span>
+              </div>
+              <div class="flex items-end justify-between gap-3 mt-3 pt-3" style="border-top:1px solid var(--line)">
+                <div>
+                  <span class="serif-th" style="font-size:18px;color:${follow ? "#B8763E" : "var(--ink)"}">${result.value}</span>
+                  <span style="font-size:10px;color:#7A8271"> ${result.unit}</span>
+                </div>
+                <p class="text-right" style="font-size:10px;color:#8A9080">ช่วงอ้างอิง<br><span style="color:#5B6350">${result.reference} ${result.unit}</span></p>
+              </div>
+            </div>`;
+          }).join("")}
+        </div>
+        <button data-nav="consult-specialty" class="w-full rounded-full py-3.5 font-medium mt-5 flex items-center justify-center gap-2"
+          style="background:var(--slate);color:#fff;font-size:14px">${icon("stethoscope",17)} ปรึกษาหมอต่อ</button>
+      ` : `
+        <div class="rounded-3xl p-7 text-center" style="background:var(--surface);border:1px solid var(--line)">
+          <span class="w-14 h-14 rounded-full mx-auto flex items-center justify-center" style="background:#E8ECF2;color:#586A85">${icon("clipboard-x",24)}</span>
+          <h2 class="serif-th mt-4" style="font-size:17px">ยังไม่มีผลตรวจ</h2>
+          <p class="mt-1.5 leading-relaxed" style="font-size:11.5px;color:#7A8271">เมื่อผลตรวจพร้อม ระบบจะแจ้งและแสดงรายการทั้งหมดไว้ที่หน้านี้</p>
+          <button data-nav="lab" class="w-full rounded-full py-3 mt-5 font-medium" style="background:var(--slate);color:#fff;font-size:13px">จองเจาะเลือด</button>
+        </div>
+      `}
     </div>
   </div>`;
 }
@@ -1771,6 +1856,7 @@ function render(){
   else if (state.screen === "consult-form") html = consultForm();
   else if (state.screen === "queue") html = queueScreen();
   else if (state.screen === "lab") html = labScreen();
+  else if (state.screen === "lab-results") html = labResultsScreen();
   else if (state.screen === "meds") html = medsScreen();
   else if (state.screen === "lifestyle") html = lifestyleScreen();
   else if (state.screen === "call") html = callScreen();
@@ -1879,6 +1965,7 @@ function render(){
   if (back) back.addEventListener("click", () => {
     if (state.screen === "consult-specialty") setState({ screen: "home" });
     else if (state.screen === "consult-form") setState({ screen: "consult-specialty" });
+    else if (state.screen === "lab-results") setState({ screen: "lab" });
     else setState({ screen: "home" });
   });
   app.querySelectorAll("[data-pick-specialty]").forEach(el => el.addEventListener("click", () => setState({ specialty: el.dataset.pickSpecialty, symptomTags: [] })));
