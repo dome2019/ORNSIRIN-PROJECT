@@ -501,6 +501,12 @@ const petCareServices = [
   { id: "pc5", label: "ส่งอาหาร-ยาสัตว์เลี้ยงต่อเนื่อง", icon: "pill", price: "590", desc: "แพ็กเกจรายเดือนเริ่มต้น สั่งอาหารและยาประจำของน้อง จัดส่งถึงบ้านทุกเดือน" },
 ];
 
+/* โปรไฟล์สัตว์เลี้ยงประจำสมาชิก — โชว์บนแท็บ Pet Care (คนไม่มีสัตว์เลี้ยงไม่แสดงการ์ด) */
+const petsByUser = {
+  u1: { name: "น้องโบ้", icon: "dog", breed: "โกลเด้น รีทรีฟเวอร์", age: "3 ปี", weight: "28 กก.", vaccineDue: "พิษสุนัขบ้า" },
+  u3: { name: "น้องส้ม", icon: "cat", breed: "แมวส้มไทย", age: "5 ปี", weight: "4.2 กก.", lastCheck: "มี.ค. 2569" },
+};
+
 /* ทีมแพทย์แยกตามแผนกที่เลือก — ชื่อและบทบาทต้องตรงกับ specialty เสมอ */
 const doctorsBySpecialty = {
   psych: [
@@ -1361,13 +1367,37 @@ function lifestyleScreen(){
         ${physioPlans.map(p => bookableCard("physio", p, getItemConfig("physio", p.id))).join("")}
       </div>` : ""}
 
-      ${state.lifestyleTab === "petcare" ? `
+      ${state.lifestyleTab === "petcare" ? (() => {
+        const pet = petsByUser[state.currentUser];
+        return `
       <div class="space-y-2.5">
+        ${pet ? `
+        <div class="rounded-2xl p-4" style="background:var(--surface);border:1px solid var(--line)">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0" style="background:#F3E9DB;color:var(--clay)">${icon(pet.icon, 22)}</div>
+            <div class="flex-1 min-w-0">
+              <p style="font-size:13.5px" class="font-medium">${pet.name}</p>
+              <p style="font-size:10.5px;color:#8A9080" class="mt-0.5">${pet.breed} · ${pet.age} · ${pet.weight}</p>
+            </div>
+            <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 shrink-0" style="background:#EDE9DA;color:#5B6350;font-size:9.5px">${icon("heart", 10)} สัตว์เลี้ยงของ${currentUser().short}</span>
+          </div>
+          ${pet.vaccineDue ? `
+          <button data-item-category="petcare" data-item-id="pc1" class="w-full mt-3 rounded-xl p-2.5 flex items-center gap-2 text-left" style="background:#F9EFDF;border:1px solid #E8CFA4">
+            <span style="color:var(--clay)">${icon("syringe", 14)}</span>
+            <span class="flex-1" style="font-size:11px;color:#8A6A3F">วัคซีน${pet.vaccineDue}ครบกำหนด ${thaiDate(7)} — แตะเพื่อนัดสัตวแพทย์</span>
+            ${icon("chevron-right", 13, "shrink-0")}
+          </button>` : `
+          <div class="mt-3 rounded-xl p-2.5 flex items-center gap-2" style="background:#EFF3EA;border:1px solid #C9D6BD">
+            <span style="color:var(--primary)">${icon("badge-check", 14)}</span>
+            <span style="font-size:11px;color:#5B6350">วัคซีนครบ สุขภาพดี · ตรวจล่าสุด ${pet.lastCheck}</span>
+          </div>`}
+        </div>` : ""}
         <div class="rounded-2xl p-3.5 mb-1" style="background:var(--primary-dark)">
           <p style="font-size:11.5px;color:#E7EFDD;line-height:1.6">ดูแลน้องหมาน้องแมวครบวงจร ตั้งแต่ปรึกษาสัตวแพทย์ อาบน้ำตัดขน รับฝากเลี้ยง ไปจนถึงตรวจสุขภาพและส่งอาหาร-ยาต่อเนื่องถึงบ้าน</p>
         </div>
         ${petCareServices.map(p => bookableCard("petcare", p, getItemConfig("petcare", p.id))).join("")}
-      </div>` : ""}
+      </div>`;
+      })() : ""}
       </div>
     </div>
   </div>`;
@@ -1897,6 +1927,7 @@ function render(){
         amount: total,
         details: [
           { label: "วันและเวลานัด", value: `${dayThaiLabel(m.day)} เวลา ${m.time} น.` },
+          ...(m.category === "petcare" && petsByUser[state.currentUser] ? [{ label: "สัตว์เลี้ยง", value: `${petsByUser[state.currentUser].name} · ${petsByUser[state.currentUser].breed}` }] : []),
           { label: "ผู้ให้บริการ", value: staff ? `${staff.name} · ${staff.role}` : "ผู้ให้บริการ" },
           { label: "สถานที่", value: m.location === "home" ? `ที่บ้านของคุณ (${placeShort()})` : m.location === "center" ? "พื้นที่ส่วนกลางโครงการอรสิริน" : userAddress() },
           { label: "รายละเอียดบริการ", value: cfg.sub(cfg.item) },
