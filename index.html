@@ -774,7 +774,7 @@ function homeScreen(){
         <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5" style="background:rgba(255,255,255,0.12);color:#DDE5D2;font-size:10.5px;border:1px solid rgba(255,255,255,0.18)">${icon("user",11)} ลูกค้าทั่วไป</span>
         <span style="color:#C7D4BC;font-size:11px">Ornsirin Health Link</span>`}
       </div>
-      <div class="mt-5 rounded-2xl p-4 flex items-center gap-3" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.18)">
+      <div class="mt-5 rounded-2xl p-4 flex items-center gap-3" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.18);color:#E7EFDD">
         ${icon("shield-check",20,"shrink-0")}
         <p style="color:#E7EFDD;font-size:12.5px;line-height:1.5">ทุกบทสนทนาของคุณเป็นความลับ เราเป็นคนกลางที่พร้อมรับฟังเสมอ</p>
       </div>
@@ -986,7 +986,7 @@ function queueScreen(){
       <button data-nav="home" class="w-8 h-8 rounded-full flex items-center justify-center" style="background:var(--surface);border:1px solid var(--line)">${icon("x",16)}</button>
     </div>
     <div class="text-center mt-2">
-      <div class="w-14 h-14 rounded-full mx-auto flex items-center justify-center" style="background:var(--primary)">${icon("check",24,"")}</div>
+      <div class="w-14 h-14 rounded-full mx-auto flex items-center justify-center" style="background:var(--primary);color:#fff">${icon("check",24,"")}</div>
       <h2 class="serif-th mt-4" style="font-size:18px">ส่งคำขอเรียบร้อยแล้ว</h2>
       <p style="font-size:12.5px;color:#7A8271" class="mt-1">ขอบคุณที่ไว้วางใจเล่าให้เราฟัง ทีมงานกำลังจัดคิวให้คุณ</p>
     </div>
@@ -1262,7 +1262,7 @@ function lifestyleScreen(){
       ${state.lifestyleTab === "icebath" ? `
       <div class="space-y-2.5">
         <div class="rounded-2xl p-4" style="background:var(--primary-dark)">
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-3" style="color:#E7EFDD">
             ${icon("snowflake",22)}
             <p style="font-size:12px;color:#E7EFDD;line-height:1.5">ช่วยฟื้นฟูร่างกายและลดการอักเสบ มีเจ้าหน้าที่ดูแลตลอดเซสชัน จองได้ทั้งที่สวนส่วนกลาง หรือเรียกชุดอ่างน้ำแข็งพกพามาให้บริการถึงบ้าน</p>
           </div>
@@ -1483,7 +1483,7 @@ function successModal(){
   return `
   <div class="absolute inset-0 z-50 flex items-center justify-center p-6" style="background:rgba(43,51,40,0.6);pointer-events:auto">
     <div class="dialog-body rounded-3xl p-6 text-center w-full" style="background:var(--bg)">
-      <div class="success-check w-14 h-14 rounded-full mx-auto flex items-center justify-center" style="background:var(--primary)">${icon("check",24)}</div>
+      <div class="success-check w-14 h-14 rounded-full mx-auto flex items-center justify-center" style="background:var(--primary);color:#fff">${icon("check",24)}</div>
       <h2 class="serif-th mt-4" style="font-size:16px">${b.title}</h2>
       <p style="font-size:12px;color:#7A8271" class="mt-1.5 leading-relaxed">${b.detail}</p>
       ${b.amount ? `<p class="serif-th mt-3" style="font-size:18px;color:var(--clay)">฿${b.amount.toLocaleString()}</p>` : ""}
@@ -1577,6 +1577,12 @@ function render(){
         if (check) check.classList.add("exhale-once");
       }
     }
+    // กันดับเบิลคลิกทะลุ: ปุ่ม CTA ของ sheet เก่า-ใหม่มักอยู่ตำแหน่งเดียวกัน (เช่น "ถัดไป·ชำระเงิน"
+    // กับ "ฉันชำระเงินแล้ว") — overlay ที่เพิ่งเปิดจะไม่รับคลิก 300ms แรก
+    modalRoot.style.pointerEvents = "none";
+    setTimeout(() => {
+      if (state.modal || state.bookingSuccess) modalRoot.style.pointerEvents = "auto";
+    }, 300);
   }
   prevModalKey = modalKey;
 
