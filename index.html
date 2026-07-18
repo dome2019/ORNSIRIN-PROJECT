@@ -457,6 +457,7 @@ const state = {
   specialty: null,
   selectedDoctor: null,
   symptom: "",
+  symptomTags: [],      // อาการที่แตะเลือกจากชิป
   needCert: false,
   lifestyleTab: "maid",
   currentUser: "u1",
@@ -526,6 +527,16 @@ function userPets(){
   if (!state.pets) state.pets = defaultPets;   // lazy init — ค่าที่เพิ่มภายหลังถูก persist ลง sessionStorage
   return state.pets[state.currentUser] || [];
 }
+
+/* อาการคร่าว ๆ ให้แตะเลือก — ชุดเปลี่ยนตามแผนก ไม่ต้องพิมพ์ยาวต่อหน้าคนดู */
+const symptomChips = {
+  psych: ["นอนไม่หลับ", "เครียด วิตกกังวล", "เศร้า เบื่อหน่าย", "หมดไฟในการทำงาน", "แพนิค ใจสั่น", "เรื่องความสัมพันธ์"],
+  gp: ["มีไข้ ครั่นเนื้อตัว", "ไอ เจ็บคอ", "ปวดหัว", "ปวดท้อง ท้องเสีย", "ผื่นคัน", "อ่อนเพลีย"],
+  internal: ["ความดันสูง", "น้ำตาลในเลือดสูง", "เหนื่อยง่าย ใจสั่น", "ปวดเรื้อรัง", "น้ำหนักลดผิดปกติ"],
+  ortho: ["ปวดหลัง", "ปวดเข่า", "ปวดคอ บ่า ไหล่", "ข้อบวม ข้อติด", "บาดเจ็บจากกีฬา"],
+  eye: ["ตาแดง เคืองตา", "ตาพร่ามัว", "น้ำตาไหลผิดปกติ", "เห็นจุดดำลอย"],
+  ent: ["คัดจมูก น้ำมูกไหล", "เจ็บคอ เสียงแหบ", "ปวดหู หูอื้อ", "เวียนหัว บ้านหมุน", "ภูมิแพ้"],
+};
 
 /* ทีมแพทย์แยกตามแผนกที่เลือก — ชื่อและบทบาทต้องตรงกับ specialty เสมอ */
 const doctorsBySpecialty = {
@@ -966,11 +977,11 @@ function specialtyScreen(){
   </div>`;
 }
 
-/* ---------------- consult: form ---------------- */
+/* ---------------- consult: form (ชิปอาการ + ช่องพิมพ์เพิ่มเติม) ---------------- */
 function consultForm(){
   const spec = specialties.find(s => s.id === state.specialty);
   const isPsych = state.specialty === "psych";
-  const canSubmit = state.symptom.trim().length >= 5;
+  const canSubmit = state.symptomTags.length > 0 || state.symptom.trim().length >= 5;
   const doctors = staffFor("doctor");
   return `
   <div class="pb-28">
@@ -1002,8 +1013,17 @@ function consultForm(){
         </button>`).join("")}
       </div>
 
-      <label style="font-size:12.5px" class="font-medium mb-2 block">${isPsych ? "วันนี้คุณอยากเล่าอะไรให้เราฟัง" : "อาการที่คุณกำลังเผชิญอยู่"}</label>
-      <textarea id="symptom-input" rows="6" maxlength="500" placeholder="${isPsych ? "เช่น ช่วงนี้นอนไม่หลับ รู้สึกกังวลบ่อย ๆ..." : "เช่น มีไข้ 2 วัน ไอ เจ็บคอ..."}"
+      <label style="font-size:12.5px" class="font-medium mb-2 block">${isPsych ? "เรื่องที่อยากปรึกษา (เลือกได้หลายข้อ)" : "อาการที่คุณกำลังเผชิญอยู่ (เลือกได้หลายข้อ)"}</label>
+      <div class="flex flex-wrap gap-2 mb-4">
+        ${(symptomChips[state.specialty] || symptomChips.gp).map(tag => {
+          const sel = state.symptomTags.includes(tag);
+          return `
+        <button data-symptom-tag="${tag}" class="rounded-full px-3.5 py-2" style="background:${sel ? "var(--primary)" : "var(--surface)"};color:${sel ? "#fff" : "var(--ink)"};border:1px solid ${sel ? "var(--primary)" : "var(--line)"};font-size:12px">${tag}</button>`;
+        }).join("")}
+      </div>
+
+      <label style="font-size:12.5px" class="font-medium mb-2 block">อื่น ๆ / รายละเอียดเพิ่มเติม <span style="color:var(--muted);font-weight:400">(พิมพ์เพิ่มได้)</span></label>
+      <textarea id="symptom-input" rows="3" maxlength="500" placeholder="${isPsych ? "เช่น เล่าสิ่งที่เจอมา หรือสิ่งที่อยากให้หมอรู้เพิ่มเติม..." : "เช่น เป็นมากี่วัน มีโรคประจำตัว หรือแพ้ยาอะไร..."}"
         class="w-full rounded-2xl p-4" style="background:var(--surface);border:1px solid var(--line);font-size:13px;resize:none">${state.symptom}</textarea>
       <div class="flex justify-end mt-1"><span style="font-size:10.5px;color:var(--muted)" id="char-count">${state.symptom.length}/500</span></div>
 
@@ -1816,7 +1836,7 @@ function render(){
     else if (state.screen === "consult-form") setState({ screen: "consult-specialty" });
     else setState({ screen: "home" });
   });
-  app.querySelectorAll("[data-pick-specialty]").forEach(el => el.addEventListener("click", () => setState({ specialty: el.dataset.pickSpecialty })));
+  app.querySelectorAll("[data-pick-specialty]").forEach(el => el.addEventListener("click", () => setState({ specialty: el.dataset.pickSpecialty, symptomTags: [] })));
   const nextBtn = app.querySelector("[data-next-from-specialty]");
   if (nextBtn) nextBtn.addEventListener("click", () => {
     if (state.specialty) {
@@ -1827,13 +1847,19 @@ function render(){
 
   app.querySelectorAll("[data-doctor]").forEach(el => el.addEventListener("click", () => setState({ selectedDoctor: el.dataset.doctor })));
 
+  app.querySelectorAll("[data-symptom-tag]").forEach(el => el.addEventListener("click", () => {
+    const t = el.dataset.symptomTag;
+    const tags = state.symptomTags.includes(t) ? state.symptomTags.filter(x => x !== t) : [...state.symptomTags, t];
+    setState({ symptomTags: tags });
+  }));
+
   const symptomInput = document.getElementById("symptom-input");
   if (symptomInput) symptomInput.addEventListener("input", (e) => {
     state.symptom = e.target.value;
     persistState();   // จุดนี้แก้ state ตรง ๆ ไม่ผ่าน setState (กัน focus หลุด) เลยต้องเก็บเอง
     document.getElementById("char-count").textContent = `${state.symptom.length}/500`;
     const submitBtn = document.getElementById("submit-consult");
-    const ok = state.symptom.trim().length >= 5;
+    const ok = state.symptomTags.length > 0 || state.symptom.trim().length >= 5;
     submitBtn.disabled = !ok;
     submitBtn.style.background = ok ? "var(--clay)" : "#DCD5C2";
     submitBtn.style.color = ok ? "#fff" : "var(--muted)";
@@ -1842,7 +1868,7 @@ function render(){
   if (needCertBox) needCertBox.addEventListener("change", (e) => { state.needCert = e.target.checked; persistState(); });
   const submitBtn = document.getElementById("submit-consult");
   if (submitBtn) submitBtn.addEventListener("click", () => {
-    if (state.symptom.trim().length >= 5) setState({ screen: "queue", queue: { position: QUEUE_START, wait: 18 }, queuePaid: false });
+    if (state.symptomTags.length > 0 || state.symptom.trim().length >= 5) setState({ screen: "queue", queue: { position: QUEUE_START, wait: 18 }, queuePaid: false });
   });
 
   app.querySelectorAll("[data-test]").forEach(el => el.addEventListener("change", () => {
