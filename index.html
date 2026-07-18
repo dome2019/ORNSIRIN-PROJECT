@@ -498,7 +498,7 @@ const petCareServices = [
   { id: "pc2", label: "อาบน้ำ-ตัดขน-ตัดเล็บ", icon: "scissors", price: "400", desc: "ทำความสะอาดและตกแต่งขนโดยช่างมืออาชีพ" },
   { id: "pc3", label: "รับฝากเลี้ยง / พาเดินเล่น", icon: "footprints", price: "250", desc: "พาน้องเดินเล่นประจำวัน หรือรับฝากเลี้ยงระหว่างวัน" },
   { id: "pc4", label: "เจาะเลือด-ตรวจสุขภาพสัตว์เลี้ยง", icon: "droplet", price: "600", desc: "ตรวจสุขภาพประจำปีถึงบ้าน ไม่ต้องพาไปคลินิก" },
-  { id: "pc5", label: "ส่งอาหาร-ยาสัตว์เลี้ยงต่อเนื่อง", icon: "pill", price: "-", desc: "สั่งอาหารและยาประจำของน้อง จัดส่งถึงบ้าน" },
+  { id: "pc5", label: "ส่งอาหาร-ยาสัตว์เลี้ยงต่อเนื่อง", icon: "pill", price: "590", desc: "แพ็กเกจรายเดือนเริ่มต้น สั่งอาหารและยาประจำของน้อง จัดส่งถึงบ้านทุกเดือน" },
 ];
 
 /* ทีมแพทย์แยกตามแผนกที่เลือก — ชื่อและบทบาทต้องตรงกับ specialty เสมอ */
@@ -590,7 +590,23 @@ function getItemConfig(category, itemId){
   return { ...cfg, item };
 }
 
-function setState(patch){ Object.assign(state, patch); render(); }
+/* กัน refresh กลางเดโม — เก็บ state ลง sessionStorage ทุกครั้งที่เปลี่ยน แล้วกู้คืนตอนเปิดหน้า
+   ใช้ sessionStorage (ไม่ใช่ localStorage) โดยตั้งใจ: F5 ในแท็บเดิม = งานอยู่ครบ, เปิดแท็บใหม่ = เดโมสดเริ่มต้น */
+const STATE_KEY = "ornsirin-demo-state-v1";
+function persistState(){
+  try { sessionStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch (e) {}
+}
+function hydrateState(){
+  try {
+    const raw = sessionStorage.getItem(STATE_KEY);
+    if (!raw) return;
+    Object.assign(state, JSON.parse(raw));
+    // กู้เลขรันรหัสการจอง ไม่ให้ ref ซ้ำหลัง refresh
+    bookingSeq = (state.bookings || []).reduce((mx, b) => Math.max(mx, parseInt((b.ref || "").split("-")[1], 10) || 0), 0);
+  } catch (e) {}
+}
+
+function setState(patch){ Object.assign(state, patch); persistState(); render(); }
 function icon(name, size=18, extra=""){ return `<i data-lucide="${name}" style="width:${size}px;height:${size}px" class="${extra}"></i>`; }
 
 /* QR จริง สแกนได้ (ข้อความเดโม) — ใช้ร่วมทุก flow ที่มีการชำระเงิน */
@@ -1590,6 +1606,7 @@ function render(){
   const symptomInput = document.getElementById("symptom-input");
   if (symptomInput) symptomInput.addEventListener("input", (e) => {
     state.symptom = e.target.value;
+    persistState();   // จุดนี้แก้ state ตรง ๆ ไม่ผ่าน setState (กัน focus หลุด) เลยต้องเก็บเอง
     document.getElementById("char-count").textContent = `${state.symptom.length}/500`;
     const submitBtn = document.getElementById("submit-consult");
     const ok = state.symptom.trim().length >= 5;
@@ -1598,7 +1615,7 @@ function render(){
     submitBtn.style.color = ok ? "#fff" : "var(--muted)";
   });
   const needCertBox = document.getElementById("need-cert");
-  if (needCertBox) needCertBox.addEventListener("change", (e) => { state.needCert = e.target.checked; });
+  if (needCertBox) needCertBox.addEventListener("change", (e) => { state.needCert = e.target.checked; persistState(); });
   const submitBtn = document.getElementById("submit-consult");
   if (submitBtn) submitBtn.addEventListener("click", () => {
     if (state.symptom.trim().length >= 5) setState({ screen: "queue", queue: { position: QUEUE_START, wait: 18 }, queuePaid: false });
@@ -1814,6 +1831,7 @@ function render(){
   if (typeof lucide !== "undefined") lucide.createIcons();
 }
 
+hydrateState();   // ถ้าเพิ่ง refresh มา จะกลับไปหน้าเดิม ล็อกอินเดิม นัดเดิมครบ
 render();
 
 /* ย่อเฟรมมือถือให้พอดีจอ — กันแถบเมนูล่างโดนตัดบนจอเตี้ย เช่น โปรเจกเตอร์ 1366x768 */
