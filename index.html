@@ -501,11 +501,20 @@ const petCareServices = [
   { id: "pc5", label: "ส่งอาหาร-ยาสัตว์เลี้ยงต่อเนื่อง", icon: "pill", price: "590", desc: "แพ็กเกจรายเดือนเริ่มต้น สั่งอาหารและยาประจำของน้อง จัดส่งถึงบ้านทุกเดือน" },
 ];
 
-/* โปรไฟล์สัตว์เลี้ยงประจำสมาชิก — โชว์บนแท็บ Pet Care (คนไม่มีสัตว์เลี้ยงไม่แสดงการ์ด) */
-const petsByUser = {
-  u1: { name: "น้องโบ้", icon: "dog", breed: "โกลเด้น รีทรีฟเวอร์", age: "3 ปี", weight: "28 กก.", vaccineDue: "พิษสุนัขบ้า" },
-  u3: { name: "น้องส้ม", icon: "cat", breed: "แมวส้มไทย", age: "5 ปี", weight: "4.2 กก.", lastCheck: "มี.ค. 2569" },
+/* โปรไฟล์สัตว์เลี้ยงประจำสมาชิก — เพิ่มได้จากปุ่มบนแท็บ Pet Care ตัวที่เพิ่มถูกเก็บใน state */
+const defaultPets = {
+  u1: [
+    { id: "bo", name: "น้องโบ้", icon: "dog", breed: "โกลเด้น รีทรีฟเวอร์", age: "3 ปี", weight: "28 กก.", vaccineDue: "พิษสุนัขบ้า" },
+  ],
+  u3: [
+    { id: "som", name: "น้องส้ม", icon: "cat", breed: "แมวส้มไทย", age: "5 ปี", weight: "4.2 กก.", lastCheck: "มี.ค. 2569" },
+    { id: "khaopun", name: "น้องข้าวปั้น", icon: "dog", breed: "ปอมเมอเรเนียน", age: "2 ปี", weight: "3.1 กก.", vaccineDue: "รวม 5 โรค" },
+  ],
 };
+function userPets(){
+  if (!state.pets) state.pets = defaultPets;   // lazy init — ค่าที่เพิ่มภายหลังถูก persist ลง sessionStorage
+  return state.pets[state.currentUser] || [];
+}
 
 /* ทีมแพทย์แยกตามแผนกที่เลือก — ชื่อและบทบาทต้องตรงกับ specialty เสมอ */
 const doctorsBySpecialty = {
@@ -1368,30 +1377,38 @@ function lifestyleScreen(){
       </div>` : ""}
 
       ${state.lifestyleTab === "petcare" ? (() => {
-        const pet = petsByUser[state.currentUser];
+        const pets = userPets();
         return `
       <div class="space-y-2.5">
-        ${pet ? `
+        ${pets.map(pet => `
         <div class="rounded-2xl p-4" style="background:var(--surface);border:1px solid var(--line)">
           <div class="flex items-center gap-3">
             <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0" style="background:#F3E9DB;color:var(--clay)">${icon(pet.icon, 22)}</div>
             <div class="flex-1 min-w-0">
               <p style="font-size:13.5px" class="font-medium">${pet.name}</p>
-              <p style="font-size:10.5px;color:#8A9080" class="mt-0.5">${pet.breed} · ${pet.age} · ${pet.weight}</p>
+              <p style="font-size:10.5px;color:#8A9080" class="mt-0.5">${[pet.breed, pet.age, pet.weight].filter(Boolean).join(" · ")}</p>
             </div>
             <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 shrink-0" style="background:#EDE9DA;color:#5B6350;font-size:9.5px">${icon("heart", 10)} สัตว์เลี้ยงของ${currentUser().short}</span>
           </div>
           ${pet.vaccineDue ? `
-          <button data-item-category="petcare" data-item-id="pc1" class="w-full mt-3 rounded-xl p-2.5 flex items-center gap-2 text-left" style="background:#F9EFDF;border:1px solid #E8CFA4">
+          <button data-item-category="petcare" data-item-id="pc1" data-pet-id="${pet.id}" class="w-full mt-3 rounded-xl p-2.5 flex items-center gap-2 text-left" style="background:#F9EFDF;border:1px solid #E8CFA4">
             <span style="color:var(--clay)">${icon("syringe", 14)}</span>
-            <span class="flex-1" style="font-size:11px;color:#8A6A3F">วัคซีน${pet.vaccineDue}ครบกำหนด ${thaiDate(7)} — แตะเพื่อนัดสัตวแพทย์</span>
+            <span class="flex-1" style="font-size:11px;color:#8A6A3F">วัคซีน${pet.vaccineDue}ของ${pet.name}ครบกำหนด ${thaiDate(7)} — แตะเพื่อนัดสัตวแพทย์</span>
             ${icon("chevron-right", 13, "shrink-0")}
-          </button>` : `
+          </button>` : pet.lastCheck ? `
           <div class="mt-3 rounded-xl p-2.5 flex items-center gap-2" style="background:#EFF3EA;border:1px solid #C9D6BD">
             <span style="color:var(--primary)">${icon("badge-check", 14)}</span>
             <span style="font-size:11px;color:#5B6350">วัคซีนครบ สุขภาพดี · ตรวจล่าสุด ${pet.lastCheck}</span>
-          </div>`}
-        </div>` : ""}
+          </div>` : `
+          <button data-item-category="petcare" data-item-id="pc4" data-pet-id="${pet.id}" class="w-full mt-3 rounded-xl p-2.5 flex items-center gap-2 text-left" style="background:#EDE9DA;border:1px solid var(--line)">
+            <span style="color:#5B6350">${icon("clipboard-list", 14)}</span>
+            <span class="flex-1" style="font-size:11px;color:#5B6350">ยังไม่มีประวัติสุขภาพในระบบ — แตะเพื่อนัดตรวจครั้งแรก</span>
+            ${icon("chevron-right", 13, "shrink-0")}
+          </button>`}
+        </div>`).join("")}
+        <button data-addpet-open class="w-full rounded-2xl p-3 flex items-center justify-center gap-2" style="background:transparent;border:1.5px dashed #C9C2B0;color:#8A9080;font-size:12px">
+          ${icon("plus", 14)} เพิ่มโปรไฟล์สัตว์เลี้ยง
+        </button>
         <div class="rounded-2xl p-3.5 mb-1" style="background:var(--primary-dark)">
           <p style="font-size:11.5px;color:#E7EFDD;line-height:1.6">ดูแลน้องหมาน้องแมวครบวงจร ตั้งแต่ปรึกษาสัตวแพทย์ อาบน้ำตัดขน รับฝากเลี้ยง ไปจนถึงตรวจสุขภาพและส่งอาหาร-ยาต่อเนื่องถึงบ้าน</p>
         </div>
@@ -1424,6 +1441,16 @@ function detailModal(){
         <button data-modal-close class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background:var(--surface);border:1px solid var(--line)">${icon("x",16)}</button>
       </div>
       <p style="font-size:11.5px;color:#7A8271" class="mb-4">${cfg.sub(item)}</p>
+
+      ${m.category === "petcare" && userPets().length ? `
+      <p style="font-size:12.5px" class="font-medium mb-2">ใช้บริการสำหรับ</p>
+      <div class="flex gap-2 mb-4 flex-wrap">
+        ${userPets().map(pt => `
+        <button data-modal-pet="${pt.id}" class="flex items-center gap-1.5 rounded-full px-3.5 py-2"
+          style="background:${m.petId === pt.id ? "var(--primary)" : "var(--surface)"};color:${m.petId === pt.id ? "#fff" : "var(--ink)"};border:${m.petId === pt.id ? "1px solid var(--primary)" : "1px solid var(--line)"};font-size:12px">
+          ${icon(pt.icon, 14)} ${pt.name}
+        </button>`).join("")}
+      </div>` : ""}
 
       ${cfg.supportsLocation ? `
       <p style="font-size:12.5px" class="font-medium mb-2">เลือกสถานที่ใช้บริการ</p>
@@ -1555,6 +1582,45 @@ function bookingDetailModal(){
   </div>`;
 }
 
+/* ---------------- add pet sheet (เพิ่มโปรไฟล์สัตว์เลี้ยง) ---------------- */
+function addPetModal(){
+  return `
+  <div class="absolute inset-0 z-40 flex flex-col justify-end" style="background:rgba(43,51,40,0.55);pointer-events:auto">
+    <div class="sheet-body rounded-t-3xl p-5" style="background:var(--bg);max-height:88%;overflow-y:auto">
+      <div class="flex items-center justify-between mb-1">
+        <h2 class="serif-th font-semibold" style="font-size:16px">เพิ่มโปรไฟล์สัตว์เลี้ยง</h2>
+        <button data-modal-close class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background:var(--surface);border:1px solid var(--line)">${icon("x",16)}</button>
+      </div>
+      <p style="font-size:11.5px;color:#7A8271" class="mb-4">ของ${currentUser().short} · ใช้เลือกตอนจองบริการ Pet Care ได้ทันที</p>
+
+      <p style="font-size:12.5px" class="font-medium mb-2">ประเภท</p>
+      <div id="addpet-type" data-type="dog" class="flex gap-2 mb-4">
+        <button data-pettype="dog" class="flex-1 rounded-xl py-2.5 flex items-center justify-center gap-1.5" style="background:var(--primary);color:#fff;border:1px solid var(--line);font-size:12px">${icon("dog",15)} สุนัข</button>
+        <button data-pettype="cat" class="flex-1 rounded-xl py-2.5 flex items-center justify-center gap-1.5" style="background:var(--surface);color:var(--ink);border:1px solid var(--line);font-size:12px">${icon("cat",15)} แมว</button>
+      </div>
+
+      <p style="font-size:12.5px" class="font-medium mb-2">ชื่อ</p>
+      <input id="addpet-name" type="text" maxlength="30" placeholder="เช่น น้องขนุน"
+        class="w-full rounded-xl p-3 mb-4" style="background:var(--surface);border:1px solid var(--line);font-size:13px" />
+
+      <div class="flex gap-2.5 mb-5">
+        <div class="flex-1">
+          <p style="font-size:12.5px" class="font-medium mb-2">พันธุ์</p>
+          <input id="addpet-breed" type="text" maxlength="30" placeholder="เช่น ชิวาวา"
+            class="w-full rounded-xl p-3" style="background:var(--surface);border:1px solid var(--line);font-size:13px" />
+        </div>
+        <div class="flex-1">
+          <p style="font-size:12.5px" class="font-medium mb-2">อายุ</p>
+          <input id="addpet-age" type="text" maxlength="10" placeholder="เช่น 2 ปี"
+            class="w-full rounded-xl p-3" style="background:var(--surface);border:1px solid var(--line);font-size:13px" />
+        </div>
+      </div>
+
+      <button data-addpet-save class="w-full rounded-full py-3.5 font-medium" style="background:var(--primary);color:#fff;font-size:14px">บันทึกโปรไฟล์</button>
+    </div>
+  </div>`;
+}
+
 /* ---------------- QR payment modal ---------------- */
 function paymentModal(){
   const m = state.modal;
@@ -1671,6 +1737,7 @@ function render(){
 
   if (state.modal && state.modal.kind === "detail") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = detailModal(); }
   else if (state.modal && state.modal.kind === "bookingDetail") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = bookingDetailModal(); }
+  else if (state.modal && state.modal.kind === "addPet") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = addPetModal(); }
   else if (state.modal && state.modal.kind === "payment") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = paymentModal(); }
   else if (state.bookingSuccess) { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = successModal(); }
   else { modalRoot.style.pointerEvents = "none"; modalRoot.innerHTML = ""; }
@@ -1866,6 +1933,9 @@ function render(){
   const logoutBtn = document.querySelector("[data-logout]");
   if (logoutBtn) logoutBtn.addEventListener("click", () => setState({ loggedIn: false, screen: "home" }));
 
+  const addPetOpen = app.querySelector("[data-addpet-open]");
+  if (addPetOpen) addPetOpen.addEventListener("click", () => setState({ modal: { kind: "addPet" } }));
+
   // เปิดรายละเอียดนัดหมายที่ยืนยันแล้ว (จากการ์ดบนหน้าแรก)
   app.querySelectorAll("[data-booking]").forEach(el => el.addEventListener("click", () => {
     setState({ modal: { kind: "bookingDetail", bookingIndex: +el.dataset.booking } });
@@ -1876,7 +1946,9 @@ function render(){
     const category = el.dataset.itemCategory;
     const itemId = el.dataset.itemId;
     const cfg = getItemConfig(category, itemId);
-    setState({ modal: { kind: "detail", category, itemId, location: cfg.supportsLocation ? "center" : null, staffId: null, day: "today", time: null } });
+    const pets = category === "petcare" ? userPets() : [];
+    const petId = category === "petcare" ? (el.dataset.petId || (pets[0] && pets[0].id) || null) : null;
+    setState({ modal: { kind: "detail", category, itemId, location: cfg.supportsLocation ? "center" : null, staffId: null, day: "today", time: null, petId } });
   }));
 
   // modal interactions
@@ -1901,6 +1973,38 @@ function render(){
   modalRoot.querySelectorAll("[data-modal-time]:not([disabled])").forEach(el => el.addEventListener("click", () => {
     setState({ modal: { ...state.modal, time: el.dataset.modalTime } });
   }));
+  modalRoot.querySelectorAll("[data-modal-pet]").forEach(el => el.addEventListener("click", () => {
+    setState({ modal: { ...state.modal, petId: el.dataset.modalPet } });
+  }));
+
+  // ฟอร์มเพิ่มสัตว์เลี้ยง — toggle ประเภทแก้ DOM ตรง ๆ (ห้าม setState ระหว่างพิมพ์ เดี๋ยวช่องกรอกโดนรีเซ็ต)
+  modalRoot.querySelectorAll("[data-pettype]").forEach(el => el.addEventListener("click", () => {
+    const wrap = document.getElementById("addpet-type");
+    wrap.dataset.type = el.dataset.pettype;
+    wrap.querySelectorAll("[data-pettype]").forEach(b => {
+      const sel = b.dataset.pettype === el.dataset.pettype;
+      b.style.background = sel ? "var(--primary)" : "var(--surface)";
+      b.style.color = sel ? "#fff" : "var(--ink)";
+    });
+  }));
+  const addPetSave = modalRoot.querySelector("[data-addpet-save]");
+  if (addPetSave) addPetSave.addEventListener("click", () => {
+    const nameEl = document.getElementById("addpet-name");
+    const name = nameEl.value.trim();
+    if (!name) { nameEl.style.border = "1.5px solid #C0503F"; nameEl.focus(); return; }
+    const type = (document.getElementById("addpet-type").dataset.type) || "dog";
+    const breed = document.getElementById("addpet-breed").value.trim();
+    const age = document.getElementById("addpet-age").value.trim();
+    const newPet = { id: "pet-" + Date.now(), name, icon: type === "cat" ? "cat" : "dog",
+      breed: breed || (type === "cat" ? "แมว" : "สุนัข"), age: age || "" };
+    userPets();   // ensure state.pets initialized
+    setState({
+      pets: { ...state.pets, [state.currentUser]: [...userPets(), newPet] },
+      modal: null,
+      bookingSuccess: { title: "เพิ่มน้องเข้าครอบครัวแล้ว", detail: `โปรไฟล์${name} พร้อมใช้เลือกตอนจองบริการ Pet Care ทุกรายการ`, amount: 0 },
+    });
+  });
+
   const modalPay = modalRoot.querySelector("[data-modal-pay]:not([disabled])");
   if (modalPay) modalPay.addEventListener("click", () => {
     const m = state.modal;
@@ -1927,7 +2031,8 @@ function render(){
         amount: total,
         details: [
           { label: "วันและเวลานัด", value: `${dayThaiLabel(m.day)} เวลา ${m.time} น.` },
-          ...(m.category === "petcare" && petsByUser[state.currentUser] ? [{ label: "สัตว์เลี้ยง", value: `${petsByUser[state.currentUser].name} · ${petsByUser[state.currentUser].breed}` }] : []),
+          ...((() => { const pt = m.category === "petcare" ? userPets().find(x => x.id === m.petId) : null;
+            return pt ? [{ label: "สัตว์เลี้ยง", value: [pt.name, pt.breed].filter(Boolean).join(" · ") }] : []; })()),
           { label: "ผู้ให้บริการ", value: staff ? `${staff.name} · ${staff.role}` : "ผู้ให้บริการ" },
           { label: "สถานที่", value: m.location === "home" ? `ที่บ้านของคุณ (${placeShort()})` : m.location === "center" ? "พื้นที่ส่วนกลางโครงการอรสิริน" : userAddress() },
           { label: "รายละเอียดบริการ", value: cfg.sub(cfg.item) },
