@@ -11,14 +11,14 @@ Status: APPROVED_FOR_IMPLEMENTATION
 | Implementation and Verification Lead | Codex |
 | Repository | `/Users/dome/Desktop/ORNSIRIN PROJECT` |
 | Baseline branch | `main` tracking `origin/main` |
-| Baseline HEAD | `818249b` — `Color-coded hero headers bring the secondary screens to life` |
+| Baseline HEAD | `22f413c` — INC-F committed by Product Owner (ก่อนหน้า: `818249b`) |
 | Baseline audit date | 2026-07-18 (Asia/Bangkok) |
 | Phase 1 architecture audit date | 2026-07-18 (Asia/Bangkok, late evening) |
-| Specification version | 0.3 |
-| Blocking Questions | NONE blocking for INC-F (BQ-001/BQ-002 resolved 2026-07-18; ดู §18) |
-| Implementation authorization | GRANTED — เฉพาะ INC-F ตาม §5.3 (อนุมัติ 2026-07-19) |
+| Specification version | 0.4 |
+| Blocking Questions | NONE |
+| Implementation authorization | INC-F: COMPLETED (`22f413c`) · **batch INC-A+E+B: GRANTED — อนุมัติ v0.4 เมื่อ 2026-07-19** |
 
-> Approval Gate: **อนุมัติแล้ว (2026-07-19)** — ขอบเขตที่อนุมัติคือ **INC-F ตาม §5.3 เท่านั้น** · Codex ต้องทำ Mandatory Preflight ตาม `AGENTS.md` ก่อนเริ่ม และต้องยืนยันว่า **precondition ผ่านแล้ว: งานค้าง celebration (47+/2− ใน `index.html`) ถูกผู้ใช้ commit เรียบร้อย** — ณ เวลาอนุมัติ งานนี้ยังไม่ถูก commit (ดู Approval Record) หากยังไม่ commit ห้ามแตะ `index.html` · งานใดนอก §5.3 ยังไม่ได้รับอนุญาต · Claude ไม่มีสิทธิ์แก้ implementation ตามคำสั่งผู้ใช้
+> Approval Gate: **อนุมัติแล้ว (v0.4, 2026-07-19)** — ขอบเขตที่อนุมัติคือ **batch INC-A + INC-E + INC-B ตาม §5.4–§5.7 เท่านั้น** ทำเป็นหนึ่งรอบ implementation · baseline = `22f413c` (working tree ของ `index.html` สะอาด ณ เวลาอนุมัติ; มีเพียง `SPEC.md`/`TODO.md` ที่แก้เป็นเอกสาร) · Codex ต้องทำ Mandatory Preflight ตาม `AGENTS.md` ก่อนเริ่ม · งานนอก §5.4–§5.7 ไม่ได้รับอนุญาต · Claude ไม่แก้ implementation
 
 ## 1. Objective
 
@@ -197,7 +197,7 @@ Hardcoded data + user form input + timer output
 | INC-H | หน้าสถิติฝั่งผู้ประกอบการ | TODO P2 | L | screen ใหม่ทั้งหน้า (พิจารณาไฟล์แยกได้ตาม TODO note) |
 | INC-I | Accessibility bounded audit + labels/focus fixes | AUD-008 | S-M | login form, modal focus behavior — ต้อง audit ก่อนกำหนด AC |
 
-สถานะการเลือก (2026-07-18): **INC-0 = ตรวจแล้ว PASS** (ดูผลใน §14.2 — เหลือขั้นผู้ใช้ commit เอง) · **INC-F = ถูกเลือกเป็น increment ถัดไป** (สเปกเต็มใน §5.3)
+สถานะการเลือก (อัปเดต 2026-07-19): **INC-0 = เสร็จ** (ผู้ใช้ commit `2bbb500`) · **INC-F = เสร็จ + ตรวจรับแล้ว** (audit PASS §5.3.1, commit `22f413c`) · **INC-A + INC-E + INC-B = ถูกเลือกเป็น batch ถัดไป** (DEC-009, สเปกเต็ม §5.4–§5.6)
 
 ข้อจำกัดการจัดลำดับ: **INC-0 ต้องเสร็จก่อน increment ใดที่แก้ `index.html`** เพราะงานค้างปัจจุบันทับซ้อน `successModal()` และ `render()` — หากข้าม INC-0 แล้วแก้บริเวณเดียวกัน จะแยกเจ้าของ diff ไม่ได้และ rollback ยาก (เข้าเงื่อนไขหยุดงานของ Codex ตาม `AGENTS.md` §6)
 
@@ -248,6 +248,86 @@ Hardcoded data + user form input + timer output
 **Verification plan (Codex):** เปิดไฟล์บน Chrome ล่าสุด (default target ตาม ASM-004; ผู้ใช้ override ได้ตอนอนุมัติ) → ไล่ AC-F-01 … AC-F-07 ทีละข้อ ทั้ง viewport ปกติและจอ 1366×768 → สกัด script ตรวจ syntax → `git diff` ยืนยันบริเวณที่แก้ตรงตาราง Affected regions → บันทึกผลจริงทุกขั้นใน Completion Report
 
 **Rollback:** revert เฉพาะ diff ของ INC-F (เป็น diff แยกชัดหลัง INC-0 ถูก commit แล้ว) — ไม่มีผลต่อข้อมูล persisted เดิม
+
+### 5.3.1 INC-F Post-implementation Audit result (2026-07-19)
+
+- Verdict: **PASS** — Acceptance Criteria AC-F-01 … AC-F-07 ผ่านครบจากการตรวจ runtime จริง (วิธีสำเนา byte-identical เช่นเดียวกับ INC-0)
+- Diff 88+/1− ตรงตาราง Affected regions ทั้ง 5 จุด ไม่มี scope creep, ไม่แตะบริเวณ celebration, ไม่มี external reference ใหม่, console สะอาด, ไอคอนใหม่ทั้งสาม render จาก lucide ฝังในไฟล์
+- Findings ระดับ LOW: **PIA-001** แถบเมนูล่างไม่มีแท็บ active ขณะอยู่หน้า lab-results (ไม่ใช่ deviation — สเปกไม่ได้กำหนด; เป็น candidate polish) · **PIA-002** ไม่พบ Completion Report ของ Codex ใน repo (แนะนำแนบในรอบถัดไป)
+- Product Owner ตรวจรับโดยการ commit `22f413c` (2026-07-19 00:27 +0700) และ push แล้ว — INC-F ปิดงาน
+
+### 5.4 INC-A specification — ตัวควบคุมคิวสำหรับผู้พรีเซนต์
+
+**Objective:** ให้ผู้พรีเซนต์ควบคุมจังหวะคิวได้ตามการเล่าเรื่อง และกลับเข้าหน้าคิวได้โดยไม่รีเซ็ต (ปิด AUD-004 / TODO P1 ตัวสุดท้าย)
+
+**User-visible outcome:**
+1. เมื่อมีคิวค้าง (`state.queue` ไม่ใช่ null) และล็อกอินแล้ว หน้าแรกแสดงแบนเนอร์ใต้ปุ่มบริการ: ไอคอนหูฟังแพทย์ + "คิวปรึกษาหมอ #N · แตะเพื่อกลับเข้าคิว" (ถ้าถึงคิว: "ถึงคิวแล้ว — แพทย์พร้อม") — แตะแล้วไป `screen:"queue"` โดยตำแหน่งคิว/สถานะชำระเงินคงเดิมทุกประการ
+2. คีย์ลัดผู้พรีเซนต์ (ไม่มี UI บอกบนจอ): ขณะอยู่หน้าคิวและไม่มี overlay เปิด — `ArrowRight` ลดคิว 1 ขั้น (ต่ำสุด 0 = ถึงคิว), `ArrowLeft` เพิ่มคิว 1 ขั้น (สูงสุด 3) · แถบ progress, ตัวเลข และข้อความอัปเดตผ่านกลไก render เดิม (`wait` ตั้งเป็น `position * 6`)
+
+**Non-goals:** ไม่หยุด/เปลี่ยนความเร็ว timer อัตโนมัติเดิม · ไม่เพิ่ม persisted field ใหม่ (`queue`/`queuePaid` มีอยู่แล้ว) · ไม่แสดงคีย์ลัดใน UI
+
+**Affected regions:** `homeScreen()` (แบนเนอร์คิว) · global `keydown` listener ใหม่ในส่วน bootstrap (ทำงานเฉพาะ `state.screen === "queue" && !state.modal && !state.bookingSuccess`)
+
+**Edge cases:** refresh ระหว่างมีคิว → แบนเนอร์คงอยู่ (hydrate เดิม) · จบสาย VDO (`queue: null`) → แบนเนอร์หาย · คีย์ลัดไม่ทำงานนอกหน้าคิว/ตอน overlay เปิด · กดถึง 0 แล้วปุ่มเข้าห้อง/ล็อกจ่ายเงินแสดงตามเงื่อนไข `queuePaid` เดิม
+
+**Acceptance Criteria:**
+- AC-A-01: มีคิวค้าง → แบนเนอร์แสดงเลขคิวจริงบนหน้าแรก; ไม่มีคิว → ไม่แสดง
+- AC-A-02: แตะแบนเนอร์ → เข้าหน้าคิว ตำแหน่ง/`queuePaid` ไม่รีเซ็ต
+- AC-A-03: บนหน้าคิว `ArrowRight`/`ArrowLeft` ขยับคิวลง/ขึ้นในช่วง [0,3] พร้อม UI อัปเดต; ที่ 0 แสดงสถานะถึงคิวตามเงื่อนไขจ่ายเงินเดิม
+- AC-A-04: คีย์ลัดเงียบสนิทเมื่ออยู่หน้าอื่นหรือมี overlay เปิด
+- AC-A-05: refresh ระหว่างมีคิว → แบนเนอร์และสถานะคิวคงเดิม
+
+### 5.5 INC-E specification — กระดิ่งแจ้งเตือน
+
+**Objective:** ทำให้คำสัญญา "เราจะแจ้งเตือนคุณ" มีของจริง และสาธิต re-engagement (TODO P2)
+
+**User-visible outcome:**
+1. `userBar()` สถานะล็อกอิน: ไอคอนกระดิ่ง + badge ตัวเลขจำนวนแจ้งเตือน (ซ้ายของปุ่มสมาชิก)
+2. แตะกระดิ่ง → sheet "การแจ้งเตือน" (kind ใหม่ `notifications`, ใช้ `.sheet-body` เข้าอนิเมชันชุดเดิม) รายการ:
+   - (เงื่อนไข — แสดงบนสุดเมื่อ `state.queue` มีค่า) "ใกล้ถึงคิวปรึกษาหมอแล้ว (#N)" → ไปหน้า `queue` ไม่รีเซ็ต
+   - "ยาประจำใกล้หมด — สั่งเติมล่วงหน้าได้เลย" → `meds`
+   - "ผลตรวจสุขภาพพร้อมดูแล้ว" → `lab-results`
+   - "วัคซีนสัตว์เลี้ยงใกล้ครบกำหนด" → `lifestyle` พร้อม `lifestyleTab:"petcare"`
+   แตะรายการ → ปิด sheet + นำทาง · badge = จำนวนรายการที่แสดงจริง (3 หรือ 4)
+
+**Non-goals:** ไม่มีระบบอ่านแล้ว/ลบแจ้งเตือน · ไม่ผูกเนื้อหากับข้อมูลจริงรายคน (ข้อความกลางแบบ demo — ปลายทางมี empty state รองรับทุกสมาชิกอยู่แล้ว) · ไม่มี push จริง
+
+**Affected regions:** `userBar()` (กระดิ่ง+badge) · ฟังก์ชัน `notificationsModal()` ใหม่ + branch ใน render modal section + handlers (เปิด/แตะรายการ)
+
+**Acceptance Criteria:**
+- AC-E-01: ล็อกอินเห็นกระดิ่ง+badge; ยังไม่ล็อกอินไม่เห็น (สอดคล้อง INC-B)
+- AC-E-02: ไม่มีคิว → 3 รายการ badge 3; มีคิวค้าง → 4 รายการ มีรายการคิวบนสุด badge 4
+- AC-E-03: แตะรายการนำทางถูกปลายทางทั้ง 4 แบบ (queue ไม่รีเซ็ตคิว, lifestyle เปิดแท็บ petcare) และ sheet ปิด
+- AC-E-04: sheet เปิด/ปิดผ่านระบบ modal gating เดิม ไม่มีอนิเมชันเล่นซ้ำผี (แตะภายในไม่ re-slide)
+
+### 5.6 INC-B specification — ซ่อนข้อมูลส่วนตัวก่อนล็อกอิน
+
+**Objective:** เปลี่ยน login จากฉากประกอบเป็น privacy gate จริง (ปิด AUD-001)
+
+**User-visible outcome:**
+1. ยังไม่ล็อกอิน — หน้าแรกแบบ generic: hero ต้อนรับ (โลโก้/ข้อความ "ยินดีต้อนรับสู่ Ornsirin Health Link" + ชวนล็อกอินที่แถบบน) **ไม่มี** ชื่อสมาชิก, ป้ายลูกบ้าน/บ้านเลขที่, สิทธิ์ส่วนลด, นัดหมาย, การ์ดแนะนำเจาะเลือด · ปุ่มบริการ 4 ปุ่มยังแสดง (โชว์ศักยภาพแอป)
+2. ยังไม่ล็อกอินแล้วพยายามเข้า screen อื่นใด (จาก nav/ปุ่ม) → แสดงหน้า `loginGateScreen()`: การ์ดไอคอนกุญแจ + "เข้าสู่ระบบก่อนใช้งาน" + คำอธิบายชี้ไปแถบบน — ไม่มีข้อมูลส่วนบุคคลใดหลุดออกมา (ยา, ผลตรวจ, นัด, สัตว์เลี้ยง)
+3. ล็อกอินแล้ว — ทุกอย่างเหมือนปัจจุบันครบ (รวมแบนเนอร์คิว INC-A และกระดิ่ง INC-E) · logout จากหน้าใดก็ตาม → กลับ home generic
+
+**Non-goals:** ไม่แก้กลไก login (ไอดี/รหัสอะไรก็ได้ตามเดิม — ยังเป็น demo) · ไม่เพิ่ม session timeout · ไม่เปลี่ยน `sessionStorage` schema (`loggedIn` มีอยู่แล้ว)
+
+**Affected regions:** `render()` — gate ก่อน switch (`!state.loggedIn && screen !== "home"` → `loginGateScreen()`) · `homeScreen()` — เพิ่ม branch generic · ฟังก์ชัน `loginGateScreen()` ใหม่
+
+**Edge cases:** refresh ขณะ logged-out ที่หน้าลึก → เห็น gate ไม่ใช่ข้อมูล · hydrate `loggedIn:true` → ปกติ · bottom nav ใช้ได้ตลอด (นำไป gate ไม่ใช่ dead end)
+
+**Acceptance Criteria:**
+- AC-B-01: ก่อนล็อกอิน หน้าแรกไม่มีชื่อ/บ้านเลขที่/สิทธิ์/นัดหมาย/การ์ดแนะนำ และมีข้อความชวนล็อกอิน
+- AC-B-02: ก่อนล็อกอิน ทุก screen อื่น (meds, lab, lab-results, lifestyle, consult-specialty) แสดง gate — ไม่มีข้อมูลยา/ผลตรวจ/สัตว์เลี้ยงหลุด
+- AC-B-03: ล็อกอินแล้วเนื้อหากลับครบ; logout จากหน้าลึกกลับ home generic
+- AC-B-04: refresh คงพฤติกรรมถูกต้องทั้งสองโหมด
+
+### 5.7 Batch execution terms (INC-A + INC-E + INC-B)
+
+- ทำเป็น **หนึ่งรอบ implementation เดียว** โดย Codex (จุดทับซ้อน `homeScreen()`/`userBar()` จัดการภายในรอบ) · diff เดียว ไฟล์เดียว (`index.html`)
+- Precondition: baseline = `22f413c` — **ผ่านแล้ว** (working tree สะอาด ณ เวลาเขียน v0.4)
+- Verification รวม: ไล่ AC ทั้ง 13 ข้อ (A-01…05, E-01…04, B-01…04) + syntax check + console + `git status` ไฟล์เดียว + offline (ไม่มี external ref ใหม่) + ตรวจว่าไม่แตะบริเวณ celebration/INC-F
+- ลำดับแนะนำภายในรอบ: INC-B ก่อน (โครง gate) → INC-A → INC-E (พึ่งเงื่อนไข loggedIn)
+- Rollback: revert batch diff เดียว — ไม่กระทบ commit `22f413c` และก่อนหน้า
 
 ## 6. Non-goals
 
@@ -630,6 +710,8 @@ Assumptions must not be converted into implementation requirements without Produ
 | DEC-005 | 2026-07-18 | Claude plans/audits; Codex implements/verifies; Product Owner approves | Product Owner |
 | DEC-006 | 2026-07-18 | รับงานค้าง success celebration เป็น baseline (BQ-001); INC-0 verification PASS ตาม §14.2; ผู้ใช้จะ commit งานนี้เองก่อนเริ่ม INC-F | Product Owner |
 | DEC-007 | 2026-07-18 | เลือก INC-F (หน้าผลตรวจแล็บ) เป็น implementation increment ถัดไป (BQ-002) | Product Owner |
+| DEC-008 | 2026-07-19 | INC-F audit = PASS; Product Owner ตรวจรับโดย commit `22f413c` + push | Product Owner |
+| DEC-009 | 2026-07-19 | เลือก batch ถัดไป: INC-A + INC-E + INC-B ทำในหนึ่งรอบ implementation (ยกเว้นกติกา "ครั้งละหนึ่ง increment" โดยเจ้าของโปรเจกต์เอง) | Product Owner |
 
 ## 20. Approval Record
 
@@ -639,5 +721,7 @@ Assumptions must not be converted into implementation requirements without Produ
 | 0.2 | DRAFT | None | Pending Product Owner | — | Phase 1 architecture audit added: baseline re-verified, uncommitted diff audited read-only (§14.2), increment menu §5.2 ready for selection; Blocking Questions BQ-001–BQ-005 remain |
 | 0.3 | DRAFT | None (INC-F spec §5.3 awaiting approval) | Pending Product Owner | — | BQ-001/BQ-002 resolved (DEC-006/DEC-007); INC-0 executed PASS with reduced-motion limitation; full INC-F specification added; awaiting formal approval + user commit of celebration baseline |
 | 0.3 | APPROVED_FOR_IMPLEMENTATION | INC-F ตาม §5.3 ทั้งหมด รวม default verification target (Chrome ล่าสุด, file:// offline, viewport ปกติ + 1366×768) ตามหมายเหตุ BQ-004 | Product Owner (ผู้ใช้) — อนุมัติเป็นลายลักษณ์อักษรในแชท | 2026-07-19 (Asia/Bangkok) | ข้อยกเว้น/เงื่อนไข: (1) precondition — ผู้ใช้ต้อง commit งาน celebration ก่อน Codex เริ่ม (ณ เวลาอนุมัติยังเป็น `M index.html`, HEAD `818249b`, hash `f471e803…a00b976`); (2) reduced-motion spot-check ของ INC-0 ยังเป็น open limitation ฝั่งผู้ใช้; (3) Claude ถูกห้ามแก้ implementation — งานแก้เป็นของ Codex เท่านั้น |
+| 0.4 | DRAFT | None (batch INC-A+E+B §5.4–§5.7 awaiting approval) | Pending Product Owner | — | INC-F closed (PASS, `22f413c`); batch specifications complete; no blocking questions — awaiting formal approval |
+| 0.4 | APPROVED_FOR_IMPLEMENTATION | Batch INC-A + INC-E + INC-B ตาม §5.4–§5.7 ทั้งหมด (หนึ่งรอบ implementation, ลำดับแนะนำ B→A→E, verification 13 AC + มาตรฐานเดิม) | Product Owner (ผู้ใช้) — อนุมัติเป็นลายลักษณ์อักษรในแชท ("อนุมัติ v0.4") | 2026-07-19 (Asia/Bangkok) | เงื่อนไข: (1) baseline `22f413c`, `index.html` สะอาด ณ เวลาอนุมัติ; (2) `SPEC.md`/`TODO.md` มี doc diff ค้าง — ผู้ใช้ commit เองตามสะดวก ไม่ block งาน Codex; (3) Claude ห้ามแก้ implementation — Codex เท่านั้น |
 
 Only the Product Owner may authorize changing the first line to `Status: APPROVED_FOR_IMPLEMENTATION`. Approval must reference the exact version/scope and resolve all Blocking Questions that affect that scope
