@@ -587,11 +587,32 @@ function greetingByHour(){
   return "สวัสดีตอนเย็น";
 }
 
-/* วันนัดบนหน้าแรก = พรุ่งนี้ ตรงกับค่าตั้งต้นของหน้าเจาะเลือด (tomorrowISO + 09:00) */
-function tomorrowThai(){
+function thaiDate(offsetDays){
   const d = new Date();
-  d.setDate(d.getDate() + 1);
+  d.setDate(d.getDate() + offsetDays);
   return `${thDays[d.getDay()]} ${d.getDate()} ${thMonths[d.getMonth()]}`;
+}
+/* วันนัดบนหน้าแรก = พรุ่งนี้ ตรงกับค่าตั้งต้นของหน้าเจาะเลือด (tomorrowISO + 09:00) */
+function tomorrowThai(){ return thaiDate(1); }
+
+/* ---- ช่วงเวลานัดของบริการไลฟ์สไตล์ ---- */
+const SLOT_TIMES = ["09:00", "10:30", "13:00", "15:00", "17:00", "19:00"];
+/* ตัวอย่างคิวที่ถูกจองไปแล้ว — ผูกกับพนักงานและวัน สลับคนแล้วเวลาว่างเปลี่ยน ให้เดโมดูมีชีวิต */
+function takenSlots(staffId, day){
+  const booked = {
+    A: { today: ["10:30", "15:00"], tomorrow: ["09:00"] },
+    B: { today: ["13:00"], tomorrow: ["17:00", "19:00"] },
+    C: { today: [], tomorrow: [] },
+  };
+  return (booked[staffId] || {})[day] || [];
+}
+function dayThaiLabel(day){ return day === "today" ? `วันนี้ (${thaiDate(0)})` : `พรุ่งนี้ (${thaiDate(1)})`; }
+/* ช่วงเวลาของ "วันนี้" ที่เลยมาแล้ว ต้องจองไม่ได้ */
+function isPastSlot(day, t){
+  if (day !== "today") return false;
+  const [h, mi] = t.split(":").map(Number);
+  const now = new Date();
+  return h < now.getHours() || (h === now.getHours() && mi <= now.getMinutes());
 }
 
 function formatLabSlot(){
@@ -1257,12 +1278,40 @@ function detailModal(){
         </button>`).join("")}
       </div>
 
+      <p style="font-size:12.5px" class="font-medium mb-2">เลือกวันและเวลานัด</p>
+      <div class="flex gap-2 mb-2.5">
+        ${["today", "tomorrow"].map(d => `
+        <button data-modal-day="${d}" class="flex-1 rounded-xl py-2 text-center" style="background:${m.day === d ? "var(--primary)" : "var(--surface)"};color:${m.day === d ? "#fff" : "var(--ink)"};border:1px solid var(--line)">
+          <span style="font-size:12px" class="font-medium">${d === "today" ? "วันนี้" : "พรุ่งนี้"}</span>
+          <span style="font-size:9.5px;display:block;opacity:.75">${thaiDate(d === "today" ? 0 : 1)}</span>
+        </button>`).join("")}
+      </div>
+      ${m.staffId ? `
+      <div class="grid grid-cols-3 gap-2 mb-5">
+        ${SLOT_TIMES.map(t => {
+          const taken = takenSlots(m.staffId, m.day).includes(t);
+          const past = !taken && isPastSlot(m.day, t);
+          const dis = taken || past;
+          const sel = m.time === t;
+          return `
+          <button data-modal-time="${t}" ${dis ? "disabled" : ""} class="rounded-xl py-2 text-center"
+            style="background:${sel ? "var(--primary)" : dis ? "#EFEAE0" : "var(--surface)"};color:${sel ? "#fff" : dis ? "var(--muted)" : "var(--ink)"};border:${sel ? "1.5px solid var(--primary)" : "1px solid var(--line)"}">
+            <span style="font-size:12px;${taken ? "text-decoration:line-through" : ""}" class="font-medium">${t}</span>
+            ${taken ? `<span style="font-size:8.5px;display:block">มีนัดแล้ว</span>` : past ? `<span style="font-size:8.5px;display:block">ผ่านไปแล้ว</span>` : ""}
+          </button>`;
+        }).join("")}
+      </div>` : `
+      <div class="rounded-xl p-3 mb-5 text-center" style="background:#EFEAE0">
+        <p style="font-size:11px;color:#8A9080">เลือกผู้ให้บริการก่อน เพื่อดูช่วงเวลาว่างของแต่ละคน</p>
+      </div>`}
+
       <div class="rounded-2xl p-4 mb-4 flex items-center justify-between" style="background:var(--surface);border:1px solid var(--line)">
         <span style="font-size:12.5px" class="font-medium">ยอดชำระ</span>
         <span class="serif-th" style="font-size:17px;color:var(--clay)">฿${total.toLocaleString()}</span>
       </div>
 
-      <button data-modal-pay ${m.staffId ? "" : "disabled"} class="w-full rounded-full py-3.5 font-medium" style="background:${m.staffId ? "var(--clay)" : "#DCD5C2"};color:${m.staffId ? "#fff" : "var(--muted)"};font-size:14px">ถัดไป · ชำระเงิน</button>
+      <button data-modal-pay ${m.staffId && m.time ? "" : "disabled"} class="w-full rounded-full py-3.5 font-medium" style="background:${m.staffId && m.time ? "var(--clay)" : "#DCD5C2"};color:${m.staffId && m.time ? "#fff" : "var(--muted)"};font-size:14px">ถัดไป · ชำระเงิน</button>
+      ${m.staffId && m.time ? "" : `<p style="font-size:10px;color:var(--muted)" class="text-center mt-2">เลือกผู้ให้บริการและเวลานัด เพื่อไปขั้นตอนชำระเงิน</p>`}
     </div>
   </div>`;
 }
@@ -1618,7 +1667,7 @@ function render(){
     const category = el.dataset.itemCategory;
     const itemId = el.dataset.itemId;
     const cfg = getItemConfig(category, itemId);
-    setState({ modal: { kind: "detail", category, itemId, location: cfg.supportsLocation ? "center" : null, staffId: null } });
+    setState({ modal: { kind: "detail", category, itemId, location: cfg.supportsLocation ? "center" : null, staffId: null, day: "today", time: null } });
   }));
 
   // modal interactions
@@ -1627,7 +1676,21 @@ function render(){
     setState({ modal: { ...state.modal, location: el.dataset.modalLocation } });
   }));
   modalRoot.querySelectorAll("[data-modal-staff]:not([disabled])").forEach(el => el.addEventListener("click", () => {
-    setState({ modal: { ...state.modal, staffId: el.dataset.modalStaff } });
+    // ถ้าเวลาเดิมชนคิวที่ถูกจองของพนักงานคนใหม่ ให้ล้างเวลาทิ้ง
+    const id = el.dataset.modalStaff;
+    const keepTime = state.modal.time && !takenSlots(id, state.modal.day).includes(state.modal.time) ? state.modal.time : null;
+    setState({ modal: { ...state.modal, staffId: id, time: keepTime } });
+  }));
+  modalRoot.querySelectorAll("[data-modal-day]").forEach(el => el.addEventListener("click", () => {
+    const day = el.dataset.modalDay;
+    // เวลาเดิมใช้ต่อได้เฉพาะเมื่อไม่ชนคิวจองของวันใหม่ และยังไม่ผ่านไปแล้ว (กรณีสลับกลับมาวันนี้)
+    const keepTime = state.modal.time && state.modal.staffId
+      && !takenSlots(state.modal.staffId, day).includes(state.modal.time)
+      && !isPastSlot(day, state.modal.time) ? state.modal.time : null;
+    setState({ modal: { ...state.modal, day, time: keepTime } });
+  }));
+  modalRoot.querySelectorAll("[data-modal-time]:not([disabled])").forEach(el => el.addEventListener("click", () => {
+    setState({ modal: { ...state.modal, time: el.dataset.modalTime } });
   }));
   const modalPay = modalRoot.querySelector("[data-modal-pay]:not([disabled])");
   if (modalPay) modalPay.addEventListener("click", () => {
@@ -1639,18 +1702,20 @@ function render(){
     const staff = staffFor(cfg.staffType).find(s => s.id === m.staffId);
     const locText = m.location === "home" ? " ที่บ้านของคุณ" : m.location === "center" ? " ที่พื้นที่ส่วนกลาง" : "";
     const catIcons = { maid: "sparkles", massage: "sparkle", icebath: "snowflake", physio: "activity", petcare: "paw-print" };
+    const dayWord = m.day === "today" ? "วันนี้" : "พรุ่งนี้";
     setState({ modal: { ...m, kind: "payment", amount: total,
       success: {
         title: "จองบริการสำเร็จ",
-        detail: `${staff ? staff.name : "ผู้ให้บริการ"} จะให้บริการคุณ${locText}`,
+        detail: `${staff ? staff.name : "ผู้ให้บริการ"} จะให้บริการคุณ${locText} ${dayWord} เวลา ${m.time} น.`,
         amount: total,
       },
       booking: {
         icon: catIcons[m.category] || "sparkles",
         title: cfg.title(cfg.item),
-        sub: `${staff ? staff.name : "ผู้ให้บริการ"}${locText ? " ·" + locText : ""}`,
+        sub: `${staff ? staff.name : "ผู้ให้บริการ"} · ${dayWord} ${m.time} น.`,
         amount: total,
         details: [
+          { label: "วันและเวลานัด", value: `${dayThaiLabel(m.day)} เวลา ${m.time} น.` },
           { label: "ผู้ให้บริการ", value: staff ? `${staff.name} · ${staff.role}` : "ผู้ให้บริการ" },
           { label: "สถานที่", value: m.location === "home" ? `ที่บ้านของคุณ (บ้านเลขที่ ${currentUser().houseNo})` : m.location === "center" ? "พื้นที่ส่วนกลางโครงการอรสิริน" : userAddress() },
           { label: "รายละเอียดบริการ", value: cfg.sub(cfg.item) },
