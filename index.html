@@ -404,15 +404,31 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
    Overlays: item detail (location + staff picker), QR payment, success
 ------------------------------------------------------------------*/
 
+/* resident = ลูกบ้าน Ornsirin ได้สิทธิ์ส่วนลด · คุณกานต์เป็นลูกค้าทั่วไปไว้เทียบราคาเต็มตอนเดโม */
 const users = [
-  { id: "u1", name: "สมหญิง สุขใจ", short: "สมหญิง", initial: "ส", houseNo: "12/4" },
-  { id: "u2", name: "สมชาย สุขใจ", short: "สมชาย", initial: "ช", houseNo: "45/2" },
-  { id: "u3", name: "คุณยายบุญมี สุขใจ", short: "คุณยายบุญมี", initial: "ย", houseNo: "88/1" },
+  { id: "u1", name: "สมหญิง สุขใจ", short: "สมหญิง", initial: "ส", resident: true, houseNo: "12/4" },
+  { id: "u2", name: "สมชาย สุขใจ", short: "สมชาย", initial: "ช", resident: true, houseNo: "45/2" },
+  { id: "u3", name: "คุณยายบุญมี สุขใจ", short: "คุณยายบุญมี", initial: "ย", resident: true, houseNo: "88/1" },
+  { id: "u4", name: "กานต์ ใจดี", short: "กานต์", initial: "ก", resident: false,
+    placeShort: "คอนโดนิมมาน เรสซิเดนซ์", placeFull: "คอนโดนิมมาน เรสซิเดนซ์ ถ.นิมมานเหมินท์ เชียงใหม่" },
 ];
 
+/* ---- สิทธิ์ลูกบ้าน Ornsirin ---- */
+const RESIDENT_LIFESTYLE_DISCOUNT = 0.15;  // ลด 15% ทุกบริการไลฟ์สไตล์
+const MEDS_DELIVERY_FEE = 40;              // ค่าส่งยาปกติ — ลูกบ้านส่งฟรี
+                                           // (ค่าบริการเจาะเลือดถึงบ้าน ฿300 ลูกบ้านก็ฟรีเช่นกัน ดู labTotal)
+
 function currentUser(){ return users.find(u => u.id === state.currentUser) || users[0]; }
-/* ที่อยู่ตามสมาชิกที่ล็อกอินอยู่ — แต่ละคนคนละหลังในโครงการ */
-function userAddress(){ return `บ้านเลขที่ ${currentUser().houseNo} โครงการอรสิริน เชียงใหม่`; }
+function isResident(){ return !!currentUser().resident; }
+/* ที่อยู่ตามคนที่ล็อกอินอยู่ — ลูกบ้านใช้บ้านเลขที่ในโครงการ ลูกค้าทั่วไปใช้ที่อยู่ของตัวเอง */
+function userAddress(){
+  const u = currentUser();
+  return u.resident ? `บ้านเลขที่ ${u.houseNo} โครงการอรสิริน เชียงใหม่` : u.placeFull;
+}
+function placeShort(){
+  const u = currentUser();
+  return u.resident ? `บ้านเลขที่ ${u.houseNo}` : u.placeShort;
+}
 
 function tomorrowISO(){
   const d = new Date();
@@ -732,7 +748,13 @@ function homeScreen(){
     <div class="px-6 pt-8 pb-6" style="background:linear-gradient(180deg,#4A6741 0%,#41593A 100%)">
       <p style="color:#D7E2CC;font-size:13px">${greetingByHour()}</p>
       <h1 class="serif-th text-white text-2xl mt-1">คุณ${user.name.replace(/^คุณ/, "")}</h1>
-      <p style="color:#C7D4BC;font-size:12.5px" class="mt-1">โครงการอรสิริน · Ornsirin Health Link</p>
+      <div class="flex items-center flex-wrap gap-1.5 mt-1.5">
+        ${user.resident ? `
+        <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5" style="background:rgba(255,255,255,0.18);color:#F5EFDF;font-size:10.5px;border:1px solid rgba(255,255,255,0.25)">${icon("badge-check",11)} ลูกบ้าน Ornsirin · บ้านเลขที่ ${user.houseNo}</span>
+        <span style="color:#C7D4BC;font-size:11px">ส่วนลดไลฟ์สไตล์ 15% · ส่งถึงบ้านฟรี</span>` : `
+        <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5" style="background:rgba(255,255,255,0.12);color:#DDE5D2;font-size:10.5px;border:1px solid rgba(255,255,255,0.18)">${icon("user",11)} ลูกค้าทั่วไป</span>
+        <span style="color:#C7D4BC;font-size:11px">Ornsirin Health Link</span>`}
+      </div>
       <div class="mt-5 rounded-2xl p-4 flex items-center gap-3" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.18)">
         ${icon("shield-check",20,"shrink-0")}
         <p style="color:#E7EFDD;font-size:12.5px;line-height:1.5">ทุกบทสนทนาของคุณเป็นความลับ เราเป็นคนกลางที่พร้อมรับฟังเสมอ</p>
@@ -1001,7 +1023,8 @@ function labTotal(){
   const sum = tests
     .filter(t => state.pickedTests.includes(t.name))
     .reduce((acc, t) => acc + t.price, 0);
-  return sum ? sum + LAB_HOME_FEE : 0;
+  if (!sum) return 0;
+  return sum + (isResident() ? 0 : LAB_HOME_FEE);   // ลูกบ้าน Ornsirin ฟรีค่าบริการถึงบ้าน
 }
 
 function labScreen(){
@@ -1040,11 +1063,13 @@ function labScreen(){
       <div class="rounded-2xl p-4 mb-5" style="background:var(--surface);border:1px solid var(--line)">
         <div class="flex items-center justify-between mb-1.5">
           <span style="font-size:11.5px;color:#7A8271">ค่าตรวจ ${state.pickedTests.length} รายการ</span>
-          <span style="font-size:11.5px;color:#7A8271">฿${(total ? total - LAB_HOME_FEE : 0).toLocaleString()}</span>
+          <span style="font-size:11.5px;color:#7A8271">฿${tests.filter(t => state.pickedTests.includes(t.name)).reduce((a, t) => a + t.price, 0).toLocaleString()}</span>
         </div>
         <div class="flex items-center justify-between mb-2.5">
           <span style="font-size:11.5px;color:#7A8271">ค่าบริการถึงบ้าน</span>
-          <span style="font-size:11.5px;color:#7A8271">฿${(total ? LAB_HOME_FEE : 0).toLocaleString()}</span>
+          ${isResident() ? `
+          <span style="font-size:11.5px"><s style="color:var(--muted)">฿${LAB_HOME_FEE}</s> <span style="color:var(--primary)" class="font-medium">ฟรี · สิทธิ์ลูกบ้าน</span></span>` : `
+          <span style="font-size:11.5px;color:#7A8271">฿${(total ? LAB_HOME_FEE : 0).toLocaleString()}</span>`}
         </div>
         <div class="flex items-center justify-between pt-2.5" style="border-top:1px solid var(--line)">
           <span style="font-size:12.5px" class="font-medium">ยอดชำระ</span>
@@ -1061,6 +1086,7 @@ function labScreen(){
 
 /* ---------------- meds ---------------- */
 const medsByUser = {
+  u4: [],
   u1: [
     { name: "Metformin 500mg", freq: "วันละ 2 ครั้ง เช้า-เย็น", left: "ยาเหลือ 6 วัน", price: 180 },
     { name: "Amlodipine 5mg", freq: "วันละ 1 ครั้ง เช้า", left: "ยาเหลือ 12 วัน", price: 220 },
@@ -1081,8 +1107,9 @@ const otcItems = [
 function medsScreen(){
   const current = medsByUser[state.currentUser] || [];
   const otcPicked = otcItems.filter(o => state.pickedOtc.includes(o.name));
-  const total = current.reduce((acc, m) => acc + m.price, 0) + otcPicked.reduce((a, o) => a + o.price, 0);
   const itemCount = current.length + otcPicked.length;
+  const delivery = itemCount ? (isResident() ? 0 : MEDS_DELIVERY_FEE) : 0;
+  const total = current.reduce((acc, m) => acc + m.price, 0) + otcPicked.reduce((a, o) => a + o.price, 0) + delivery;
   return `
   <div class="pb-28">
     ${topBar("ยาต่อเนื่อง", true)}
@@ -1148,6 +1175,12 @@ function medsScreen(){
             <span style="font-size:11px;color:#8A9080" class="shrink-0">฿${o.price.toLocaleString()}</span>
           </div>`).join("")}
         </div>` : ""}
+        <div class="flex items-center justify-between mb-2.5">
+          <span style="font-size:11px;color:#8A9080">ค่าจัดส่งถึงบ้าน</span>
+          ${isResident() ? `
+          <span style="font-size:11px"><s style="color:var(--muted)">฿${MEDS_DELIVERY_FEE}</s> <span style="color:var(--primary)" class="font-medium">ฟรี · สิทธิ์ลูกบ้าน</span></span>` : `
+          <span style="font-size:11px;color:#8A9080">฿${MEDS_DELIVERY_FEE}</span>`}
+        </div>
         <div class="flex items-center justify-between pt-2.5" style="border-top:1px solid var(--line)">
           <span style="font-size:12.5px" class="font-medium">ยอดชำระ</span>
           <span class="serif-th" style="font-size:17px;color:var(--clay)">฿${total.toLocaleString()}</span>
@@ -1247,7 +1280,9 @@ function detailModal(){
   const staffList = staffFor(cfg.staffType);
   const priceBase = parseInt(String(cfg.price(item)).replace(/[^0-9]/g, "")) || 0;
   const surcharge = (cfg.supportsLocation && m.location === "home" && cfg.homeSurcharge) ? cfg.homeSurcharge : 0;
-  const total = priceBase + surcharge;
+  const gross = priceBase + surcharge;
+  const discount = isResident() ? Math.round(gross * RESIDENT_LIFESTYLE_DISCOUNT) : 0;   // สิทธิ์ลูกบ้าน 15%
+  const total = gross - discount;
 
   return `
   <div class="absolute inset-0 z-40 flex flex-col justify-end" style="background:rgba(43,51,40,0.55);pointer-events:auto">
@@ -1305,9 +1340,24 @@ function detailModal(){
         <p style="font-size:11px;color:#8A9080">เลือกผู้ให้บริการก่อน เพื่อดูช่วงเวลาว่างของแต่ละคน</p>
       </div>`}
 
-      <div class="rounded-2xl p-4 mb-4 flex items-center justify-between" style="background:var(--surface);border:1px solid var(--line)">
-        <span style="font-size:12.5px" class="font-medium">ยอดชำระ</span>
-        <span class="serif-th" style="font-size:17px;color:var(--clay)">฿${total.toLocaleString()}</span>
+      <div class="rounded-2xl p-4 mb-4" style="background:var(--surface);border:1px solid var(--line)">
+        ${discount ? `
+        <div class="flex items-center justify-between mb-1.5">
+          <span style="font-size:11px;color:#8A9080">ราคาบริการ${surcharge ? " (รวมค่าเดินทางถึงบ้าน)" : ""}</span>
+          <span style="font-size:11px;color:#8A9080">฿${gross.toLocaleString()}</span>
+        </div>
+        <div class="flex items-center justify-between mb-2.5">
+          <span style="font-size:11px;color:var(--primary)" class="font-medium">ส่วนลดลูกบ้าน Ornsirin 15%</span>
+          <span style="font-size:11px;color:var(--primary)" class="font-medium">−฿${discount.toLocaleString()}</span>
+        </div>
+        <div class="flex items-center justify-between pt-2.5" style="border-top:1px solid var(--line)">
+          <span style="font-size:12.5px" class="font-medium">ยอดชำระ</span>
+          <span class="serif-th" style="font-size:17px;color:var(--clay)">฿${total.toLocaleString()}</span>
+        </div>` : `
+        <div class="flex items-center justify-between">
+          <span style="font-size:12.5px" class="font-medium">ยอดชำระ</span>
+          <span class="serif-th" style="font-size:17px;color:var(--clay)">฿${total.toLocaleString()}</span>
+        </div>`}
       </div>
 
       <button data-modal-pay ${m.staffId && m.time ? "" : "disabled"} class="w-full rounded-full py-3.5 font-medium" style="background:${m.staffId && m.time ? "var(--clay)" : "#DCD5C2"};color:${m.staffId && m.time ? "#fff" : "var(--muted)"};font-size:14px">ถัดไป · ชำระเงิน</button>
@@ -1573,12 +1623,12 @@ function render(){
         kind: "lab",   // ใช้ตัดสินว่าการ์ดแนะนำเจาะเลือดบนหน้าแรกควรหายหรือยัง
         icon: "droplet",
         title: `เจาะเลือดถึงบ้าน · ${state.pickedTests.length} รายการ`,
-        sub: `${formatLabSlot()} · ที่บ้านเลขที่ ${currentUser().houseNo}`,
+        sub: `${formatLabSlot()} · ที่${placeShort()}`,
         amount: labTotal(),
         details: [
           { label: "รายการตรวจ", items: [
             ...state.pickedTests.map(n => { const t = tests.find(x => x.name === n); return { name: n, price: t ? t.price : 0 }; }),
-            { name: "ค่าบริการเจาะเลือดถึงบ้าน", note: "พยาบาลวิชาชีพเดินทางไปหาคุณ", price: LAB_HOME_FEE },
+            { name: "ค่าบริการเจาะเลือดถึงบ้าน", note: isResident() ? "ฟรี · สิทธิ์ลูกบ้าน Ornsirin" : "พยาบาลวิชาชีพเดินทางไปหาคุณ", price: isResident() ? 0 : LAB_HOME_FEE },
           ] },
           { label: "วันและเวลา", value: formatLabSlot() },
           { label: "สถานที่", value: userAddress() },
@@ -1600,23 +1650,25 @@ function render(){
   if (medsConfirm) medsConfirm.addEventListener("click", () => {
     const current = medsByUser[state.currentUser] || [];
     const otcPicked = otcItems.filter(o => state.pickedOtc.includes(o.name));
-    const total = current.reduce((acc, m) => acc + m.price, 0) + otcPicked.reduce((a, o) => a + o.price, 0);
     const count = current.length + otcPicked.length;
+    const delivery = isResident() ? 0 : MEDS_DELIVERY_FEE;
+    const total = current.reduce((acc, m) => acc + m.price, 0) + otcPicked.reduce((a, o) => a + o.price, 0) + delivery;
     setState({ modal: { kind: "payment", amount: total,
       success: {
         title: "สั่งซื้อยาเรียบร้อย",
-        detail: `จัดส่งยา ${count} รายการ ถึงบ้านเลขที่ ${currentUser().houseNo} ภายใน 24 ชั่วโมง`,
+        detail: `จัดส่งยา ${count} รายการ ถึง${placeShort()} ภายใน 24 ชั่วโมง`,
         amount: total,
       },
       booking: {
         icon: "pill",
         title: `จัดส่งยาถึงบ้าน · ${count} รายการ`,
-        sub: `ถึงภายใน 24 ชั่วโมง · ที่บ้านเลขที่ ${currentUser().houseNo}`,
+        sub: `ถึงภายใน 24 ชั่วโมง · ที่${placeShort()}`,
         amount: total,
         details: [
           { label: "รายการยา", items: [
             ...current.map(x => ({ name: x.name, note: x.freq, price: x.price })),
             ...otcPicked.map(o => ({ name: o.name, note: "ยาสามัญประจำบ้าน", price: o.price })),
+            { name: "ค่าจัดส่งถึงบ้าน", note: isResident() ? "ฟรี · สิทธิ์ลูกบ้าน Ornsirin" : "ภายใน 24 ชั่วโมง", price: delivery },
           ] },
           { label: "การจัดส่ง", value: "ถึงภายใน 24 ชั่วโมง" },
           { label: "ที่อยู่จัดส่ง", value: userAddress() },
@@ -1698,7 +1750,9 @@ function render(){
     const cfg = getItemConfig(m.category, m.itemId);
     const priceBase = parseInt(String(cfg.price(cfg.item)).replace(/[^0-9]/g, "")) || 0;
     const surcharge = (cfg.supportsLocation && m.location === "home" && cfg.homeSurcharge) ? cfg.homeSurcharge : 0;
-    const total = priceBase + surcharge;
+    const gross = priceBase + surcharge;
+    const discount = isResident() ? Math.round(gross * RESIDENT_LIFESTYLE_DISCOUNT) : 0;
+    const total = gross - discount;
     const staff = staffFor(cfg.staffType).find(s => s.id === m.staffId);
     const locText = m.location === "home" ? " ที่บ้านของคุณ" : m.location === "center" ? " ที่พื้นที่ส่วนกลาง" : "";
     const catIcons = { maid: "sparkles", massage: "sparkle", icebath: "snowflake", physio: "activity", petcare: "paw-print" };
@@ -1717,8 +1771,9 @@ function render(){
         details: [
           { label: "วันและเวลานัด", value: `${dayThaiLabel(m.day)} เวลา ${m.time} น.` },
           { label: "ผู้ให้บริการ", value: staff ? `${staff.name} · ${staff.role}` : "ผู้ให้บริการ" },
-          { label: "สถานที่", value: m.location === "home" ? `ที่บ้านของคุณ (บ้านเลขที่ ${currentUser().houseNo})` : m.location === "center" ? "พื้นที่ส่วนกลางโครงการอรสิริน" : userAddress() },
+          { label: "สถานที่", value: m.location === "home" ? `ที่บ้านของคุณ (${placeShort()})` : m.location === "center" ? "พื้นที่ส่วนกลางโครงการอรสิริน" : userAddress() },
           { label: "รายละเอียดบริการ", value: cfg.sub(cfg.item) },
+          ...(discount ? [{ label: "สิทธิ์ส่วนลด", value: `ลูกบ้าน Ornsirin −15% (ประหยัด ฿${discount.toLocaleString()} จากราคาเต็ม ฿${gross.toLocaleString()})` }] : []),
         ],
       },
     } });
