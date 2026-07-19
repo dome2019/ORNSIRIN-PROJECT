@@ -1,11 +1,14 @@
-# Completion Report — SPEC v0.8 Batch INC-D + INC-J + INC-K
+# Completion Report — SPEC v0.9 INC-L + INC-M
 
 Status: IMPLEMENTED_AND_VERIFIED
 
 Date: 2026-07-19 (Asia/Bangkok)
+
 Implementation and Verification Lead: Codex
-Approved scope: SPEC.md §5.14–§5.17
-Application baseline: ca68ddb (index.html Git blob 8d29aaa04cd1e3fd3f8b67a9169f78580031b7a)
+
+Approved scope: `SPEC.md` §5.19–§5.21
+
+Application baseline: `a948687` (`index.html` Git blob `8c729c64a99ce133c0d1722d8d8ab8b993b21055`)
 
 ## 1. Preflight
 
@@ -13,142 +16,170 @@ Result: **PASS**
 
 | Check | Evidence / Result |
 |---|---|
-| Working directory | /Users/dome/Desktop/ORNSIRIN PROJECT |
-| Required documents | Read AGENTS.md, CLAUDE.md and SPEC.md completely; read README.md and TODO.md |
-| SPEC status | First line is exactly Status: APPROVED_FOR_IMPLEMENTATION |
-| Approval Record | v0.8 approved by Product Owner on 2026-07-19; exact scope is INC-D + INC-J + INC-K §5.14–§5.17 with 13 AC |
-| Blocking Questions | Document Control = NONE and §18 states none |
-| Git before implementation | HEAD 88a6ccc on main tracking origin/main; worktree, index and untracked inventory were clean |
-| Baseline reconciliation | 88a6ccc differs from ca68ddb only in README.md, SPEC.md and TODO.md; ca68ddb:index.html and HEAD:index.html are the same Git blob 8d29aaa…31b7a |
-| Working-file integrity | SHA-256 of the clean baseline index.html = 0faf0c3383e3ad6e06f5530f87511213d58ed158042661516c4195d851c14f0b |
-| Architecture | Single-file offline client; mutable in-memory state persisted to sessionStorage; render-to-innerHTML; no backend/build/test toolchain |
-| Scope controls | Implementation limited to index.html; this file is the required Completion Report; no dependency, schema key, API or external service change |
+| Working directory | `/Users/dome/Desktop/ORNSIRIN PROJECT` |
+| Required documents | Read `AGENTS.md`, `CLAUDE.md`, `SPEC.md`, `README.md`, `TODO.md` and the prior Completion Report completely |
+| SPEC status | First line is exactly `Status: APPROVED_FOR_IMPLEMENTATION` |
+| Approval Record | SPEC v0.9 approved by Product Owner on 2026-07-19; implementation owner is Codex; exact scope is INC-L + INC-M (§5.19–§5.21), 12 AC |
+| Blocking Questions | None; scope, Non-goals, rollback and all 12 AC are testable |
+| Git baseline | `main` tracks `origin/main`; HEAD and origin/main both `a948687cb9116748d1ebc7d37454d3206855287a` |
+| Application baseline | Clean `index.html`: file SHA-1 `41323998712bbee07f97ccd9965925b156edaa93`, SHA-256 `f419894bc7058b239a5f48633b9ea49d6ea39edf32daff2625bc179efdafd299`, 2,588 lines, 1,857,243 bytes |
+| Pre-existing work | Unstaged `README.md`, `SPEC.md`, `TODO.md`; 152 insertions / 8 deletions in total; no staged or untracked files; `index.html` had no diff |
+| Architecture | Unchanged single-file offline client: vanilla JS state, `sessionStorage`, template strings into `innerHTML`, embedded libraries/assets, no backend/build/test framework |
+| Scope control | Implementation limited to `index.html`; this file records the required report; no dependency, external service, persisted key, API or architecture change |
 
-The abbreviated SHA-256 value 62d25830… recorded in SPEC.md does not match the bytes stored at the named baseline commit. This is a documentation-evidence discrepancy, not application drift: both ca68ddb and current HEAD resolve index.html to the same Git blob and working bytes. The exact Git baseline therefore remained verifiable and the Gate was not materially affected.
+The stale historical sentence in SPEC §16 (“Next application increment NOT DEFINED”) conflicts with the newer Document Control, DEC-016, §§5.19–5.21 and Approval Record. The latest explicit records and the Product Owner’s command all authorize INC-L + INC-M, so this was treated as non-blocking document drift and is disclosed for Post-implementation Audit.
 
-No pre-existing uncommitted work existed. No reset, revert, checkout, dependency installation, commit or push was performed by Codex.
+No reset, revert, checkout, dependency installation, staging, commit or push was performed.
 
 ## 2. Implemented Scope
 
-### INC-D — storage recovery (§5.14)
+### INC-L — Design polish pack (§5.19)
 
-- Added clearPersistedState() with its own guarded sessionStorage.removeItem call.
-- hydrateState() now parses before mutating state and accepts only a non-null, non-array plain object.
-- Invalid JSON or a valid non-object value clears the corrupt key and retains fresh defaults.
-- persistState() keeps the approved silent try/catch behavior so a quota/write failure cannot stop in-memory actions or rendering.
-- STATE_KEY and normal hydration behavior are unchanged.
+All 30 approved items were implemented. Inventory required by §5.21:
 
-### INC-J — Emergency Health Profile (§5.15)
+| # | Result | Implementation |
+|---:|---|---|
+| 1 | DONE | Logged-out sales hero, three benefit chips and reduced login hint |
+| 2 | DONE | Consult form exposes ฿400 consultation and optional +฿100 certificate before submission |
+| 3 | DONE | Consult form uses green `screenHero`; psychiatry reassurance card uses a pale surface rather than green-on-green |
+| 4 | DONE | Added `--ink-soft:#5B6350`; removed all `#8A9080` and `#7A8271` occurrences |
+| 5 | DONE | Bottom-nav labels are 11.5px/500 and inactive labels use `--ink-soft` |
+| 6 | DONE | Queue wait is a separate 13px `--ink-soft` line |
+| 7 | DONE | Lab chips are 11px with darker passing/follow-up palettes and an alert-circle on “ควรติดตาม” |
+| 8 | DONE | Resident benefit, health allergy and SOS-summary typography follow the specified sizes/weights |
+| 9 | DONE | User bar uses 26px avatars, 30px bell, `py-1.5` logout and 64px name cap |
+| 10 | DONE | Symptom chips are 13px/`py-2.5`; icon close buttons are 40px with `aria-label="ปิด"`; time captions are 10px `#6D7766` |
+| 11 | DONE | Overlay/modal headings are standardized at 17px |
+| 12 | DONE | Full-row chevrons are 16px; only compact pet-status rows retain 13px |
+| 13 | DONE | Soft card shadow includes `.rounded-3xl` in app and overlay roots |
+| 14 | DONE | Service section headings use 14px semibold `serif-th` |
+| 15 | DONE | Added `--danger:#B0543F`; removed `#C0503F` from call-end/validation paths |
+| 16 | DONE | Login palette uses project tokens, medication icon uses clay and green gradients use primary variables |
+| 17 | DONE | Medication empty state now has icon circle, serif heading and guidance |
+| 18 | DONE | Unpaid queue primary action is payment; Home is secondary |
+| 19 | DONE | Closing a lifestyle payment sheet restores the exact detail/provider/day/time selection |
+| 20 | DONE | Consultation payment lists ฿400 consultation and optional ฿100 certificate line items |
+| 21 | DONE | Disabled Specialty/Consult CTAs expose helper captions and `aria-disabled` |
+| 22 | DONE | Unavailable doctors show “ไม่ว่าง” at opacity 0.6 |
+| 23 | DONE | Lifestyle carousel cards are fully clickable, service-colored, chevron-led and show resident benefit or starting price |
+| 24 | DONE | Detail flow defaults to tomorrow when every today slot has passed; provider selection also advances when that provider has no today slot |
+| 25 | DONE | Service price units are displayed and call duration uses grammatically correct minute/second formatting |
+| 26 | DONE | Call-end success shows doctor/avatar, duration, exact 15-minute summary copy and “ขอบคุณที่ดูแลตัวเองวันนี้” |
+| 27 | DONE | Lab cards stagger only under `.screen-enter`; internal re-render has no stagger replay |
+| 28 | DONE | Connected-call avatar retains the existing breathing/listening ring |
+| 29 | DONE | Queue-zero primary CTA receives one `exhale-once` event |
+| 30 | DONE | Queue notification is urgent/clay; bell badge exhales only on count change; health-card icon exhales only when opened |
 
-- Added synthetic u3 emergency data: blood type O, penicillin allergy, hypertension, type 2 diabetes and the existing mock u1 persona as emergency contact.
-- Added the u3-only “บัตรสุขภาพฉุกเฉิน” home action and a healthCard dialog using the existing overlay/animation gate.
-- The card shows all four required categories and a clearly synthetic 000-000-0000 contact number.
-- Extended the existing SOS dialog with blood type, allergy, condition summary and “ข้อมูลนี้ถูกส่งให้ทีมดูแลแล้ว”.
-- Every health/contact field is passed through the existing esc() render helper.
+### INC-M — SOS ambulance tracker (§5.20)
 
-### INC-K — Care Circle (§5.16)
-
-- Added a synthetic u3→u1 caregiver relationship with “บุตรสาว”.
-- Added the u3-home caregiver card: “ผู้ดูแล: สมหญิง สุขใจ (บุตรสาว)” and automatic-SOS-notification copy.
-- Extended SOS confirmation with “แจ้งผู้ดูแล (สมหญิง) แล้ว · จำลอง”.
-- No link, message API, navigation or real notification side effect was added.
+- Replaced single-tap callback dispatch with a three-action confirmation stage.
+- Preserved the v0.8 callback path and its emergency health/caregiver summary.
+- Added a simulated ambulance dispatch tracker with ETA 8, five-second cadence, progress, mock hospital/vehicle/team details, health-card transfer, caregiver notification and permanent simulation notice.
+- Added a distinct green arrival state, direct-DOM updates, persisted modal ETA, F5 recovery, ArrowRight acceleration and clean single-timer start/stop behavior.
+- Added cancel and close controls without introducing a real call, message, GPS, map or network action.
 
 ## 3. Files Changed
 
-| File | Change |
+| File | Ownership / Reason |
 |---|---|
-| index.html | Approved batch implementation; 127 insertions and 5 deletions before report generation |
-| COMPLETION_REPORT.md | Replaced the prior-round handoff with this v0.8 report; prior versions remain in Git history |
+| `index.html` | Codex implementation for the approved INC-L + INC-M scope; final diff 406 insertions / 192 deletions |
+| `COMPLETION_REPORT.md` | Codex replaced the prior-round report with this v0.9 handoff; prior content remains recoverable in Git history |
 
-README.md, SPEC.md, TODO.md, CLAUDE.md and AGENTS.md were not edited. No generated file or dependency was added.
+`README.md`, `SPEC.md` and `TODO.md` were already modified before implementation and were not edited by Codex. `CLAUDE.md` and `AGENTS.md` remain unchanged.
 
 ## 4. Verification
 
 | Verification | Result |
 |---|---|
-| Inline-script syntax | PASS, exit 0 — Node compiled all 3 inline scripts |
-| git diff --check | PASS, exit 0 |
-| Storage recovery harness | PASS, exit 0 — extracted the actual STATE_KEY/persist/hydrate/setState functions; corrupt JSON was cleared, number/string/null/array were rejected, quota throws allowed two successive render actions, normal state restored with booking sequence 42 |
-| Safe-render harness | PASS, exit 0 — actual healthCardModal()/sosModal() plus actual esc() rendered injected img payloads only as escaped text; no raw injected element |
-| Browser runtime | PASS in the Codex in-app Chromium browser via a server bound only to 127.0.0.1:4174 |
-| Normal hydration regression | PASS — after a real reload: logged-in u3, one booking, one queue, Elder Mode, current home and exact symptom “เวียนศีรษะ 2 วัน” all remained |
-| Emergency card | PASS — all four categories, mock label/contact, two close controls, existing dialog/backdrop animation and clean return to home |
-| SOS integration | PASS — original simulated callback copy plus health summary, sent-to-team copy and caregiver-notified copy |
-| State preservation | PASS — health/SOS open-close preserved bookings 1→1, queue 1→1 and pets 2→2 |
-| Privacy/visibility | PASS — no health/SOS/caregiver content logged out, on u1/u2/u4, or on a non-home u3 screen |
-| Elder layout | PASS at actual 1280×720 viewport, which is more constrained than 1366×768: app/modal/phone/dialog horizontal overflow all false; health dialog height 390.72px and SOS 439.88px inside a 665.25px modal; overflow-y = auto; fitPhone zoom = 0.807175 and Elder zoom = 1.15 |
-| Console | PASS — 0 errors; only the pre-existing embedded Tailwind production-use warning |
-| Offline packaging | PASS by diff/reference scan and local request log: no new HTTP(S), fetch, XHR, WebSocket, external src or href; requests were only local index.html and the browser’s missing favicon.ico |
-| Protected previous work | PASS — esc(), bottomNav(), notificationsModal(), labResultsScreen(), successModal() and the overlay/celebration animation block are byte-identical to ca68ddb |
+| Inline-script syntax | **PASS**, exit 0 — bundled Node compiled all 3 non-empty inline scripts with `new Function` |
+| `git diff --check` | **PASS**, exit 0 |
+| Forbidden design values | **PASS** — `rg` found no `#8A9080`, `#7A8271`, `#C0503F`, `text-gray-400` or `text-black` (expected `rg` exit 1 = no match) |
+| New outbound surface | **PASS** — added-line scan found no HTTP(S), `tel:`, `fetch`, XHR, WebSocket, new form or anchor (expected `rg` exit 1 = no match) |
+| Contrast calculation | **PASS**, exit 0 — eight changed foreground/background pairs range from 4.610:1 to 6.552:1, all ≥4.5:1 |
+| Protected-region hash comparison | **PASS**, exit 0 — escaping, storage/hydration, INC-J/K data, celebration CSS, confetti generator, count-up gate and privacy gate are byte-identical to `a948687` |
+| Browser runtime | **PASS** in Codex in-app Chromium through a server bound only to `127.0.0.1:8765` |
+| L primary flows | **PASS** — sales hero, consult pricing/helpers, unavailable doctor, queue hierarchy/line items, payment, queue-zero CTA, call summary, lab stagger/no-replay and health-card event motion observed in live DOM |
+| Lifestyle recovery | **PASS** — selected B/พี่แดง, tomorrow, 15:00; opened payment; close restored all three selections and enabled CTA |
+| 1366×768 normal + Elder layout | **PASS** at exact 1366×768 — document/app/modal horizontal overflow all 0; `fitPhone` kept phone bottom at 750.67px; u3 Elder Mode confirmed; SOS dialog scrolls vertically |
+| Default viewport | **PASS** at 1280×720 — document/app/modal horizontal overflow all 0; phone bottom 701.75px; Elder SOS dialog remains scrollable |
+| SOS confirmation/callback | **PASS** — first tap showed exactly 3 actions and no tracker; cancel returned to unchanged u3 Home; callback retained health summary and caregiver confirmation |
+| SOS tracker | **PASS** — observed ETA 8, progress, all mock vehicle/health/caregiver/simulation content; ArrowRight changed 8→7; live arrival reached green “รถถึงหน้าบ้านแล้ว”, “ถึงแล้ว” 22px and 100% progress |
+| SOS persistence/timer | **PASS** — reload during dispatch returned to the tracker with persisted progress; measured successive timer changes 4→3→2 with 4,979ms separation; cancel followed by 5.4s wait left no tracker/overlay; repeated open/close used one cadence |
+| Privacy/gating | **PASS** — u3-only emergency UI appears while logged in; after logout, SOS/health/caregiver/blood data and overlay are absent |
+| Presenter-key regression | **PASS** — queue ArrowRight reached queue zero; tracker ArrowRight accelerated ETA; ArrowRight on u3 Home with no tracker caused no overlay/state-visible change |
+| Reduced motion | **PASS by deterministic static rule** — all new lab/SOS progress/event selectors are included in the existing `prefers-reduced-motion: reduce` block; lab animation is scoped to `.screen-enter`; count-up retains its existing `matchMedia` guard |
+| Console | **PASS** — 0 errors after all flows/reloads; only the pre-existing embedded Tailwind production-use warning |
+| Offline packaging | **PASS** — source/diff scan found no new outbound reference and the local server log contained only three requests for `/index.html` (200, 200, 304), no other resource/network request |
 
-Direct file:// automation remains unavailable under the Browser URL security policy; no bypass was attempted. Runtime used loopback-only HTTP and offline behavior was independently checked through source/reference scans and the local request log.
+Direct `file://` automation is blocked by the in-app Browser URL policy, so runtime used loopback-only HTTP; no bypass was attempted. Single-file packaging and offline behavior were separately verified by added-reference scan and request log.
 
-The available browser viewport was 1280×720 rather than exact 1366×768. It is smaller in both dimensions, exercised fitPhone’s constrained path, and produced no overflow.
+Final `index.html` fingerprints: file SHA-1 `36fcb910765859ccabd997407d8da5ded4448fcc`; SHA-256 `600184fe378deb64b1ac54e0800bd1a776b517317bc7bf5161ce9b8963f5d49f`; 2,802 lines; 1,876,266 bytes.
 
 ## 5. Acceptance Criteria
 
 | AC | Result | Evidence |
 |---|---|---|
-| AC-D-01 | PASS | Actual-function harness loaded “{oops”; hydrate returned fresh home/logged-out state and removed the corrupt key with no uncaught error |
-| AC-D-02 | PASS | Values 123, “x”, null and [] were rejected and cleared without mutating fresh defaults |
-| AC-D-03 | PASS | Stubbed setItem threw QuotaExceededError; two actual setState calls still updated state and invoked render twice with no uncaught error |
-| AC-D-04 | PASS | Isolated normal hydration restored every required field; browser reload independently preserved booking, queue, login, u3 and exact symptom text |
-| AC-J-01 | PASS | u3 card contains blood type O, penicillin allergy, both conditions and mock emergency contact |
-| AC-J-02 | PASS | u3 SOS contains all required health summary fields and exact sent-to-care-team confirmation |
-| AC-J-03 | PASS | Health-card action opens a closable existing-style dialog; close returns to the same home and preserves booking/queue/pets |
-| AC-J-04 | PASS | All fields use esc(); injection harness found no raw element; health/SOS dialogs had no horizontal overflow and are vertically scrollable in Elder Mode |
-| AC-J-05 | PASS | Logged-out, u1/u2/u4 and u3 non-home checks found no card or emergency values |
-| AC-K-01 | PASS | u3 caregiver resolves to existing mock user “สมหญิง สุขใจ” with relation “บุตรสาว” |
-| AC-K-02 | PASS | Caregiver card appears once only on logged-in u3 home; absent logged out, other users and other screens |
-| AC-K-03 | PASS | SOS displays “แจ้งผู้ดูแล (สมหญิง) แล้ว” plus an explicit simulation label |
-| AC-K-04 | PASS | Data is synthetic; SOS dialog has zero links/forms and code adds no outbound messaging/network action; privacy checks found no pre-login leak |
+| AC-L-01 | PASS | All three Group A outcomes observed: logged-out sales hero/chips, ฿400/+฿100 pricing, green consult `screenHero` with non-green reassurance card |
+| AC-L-02 | PASS | Forbidden colors absent; specified typography/colors present; all eight changed contrast pairs ≥4.5:1 |
+| AC-L-03 | PASS | Modal headings, chevrons, 3xl shadow, serif sections, palette cleanup and upgraded medication empty state verified by source scan and browser DOM |
+| AC-L-04 | PASS | All items 18–25 implemented; queue and lifestyle recovery exercised live; evening/tomorrow fallback verified in the explicit `every(isPastSlot)` branch |
+| AC-L-05 | PASS | Call summary/listen ring, lab stagger/no replay, queue-zero CTA and health event motion observed; notification change gate and reduced-motion closure verified in source |
+| AC-L-06 | PASS | Protected mechanics hash-identical; 1366×768/default/Elder horizontal overflow 0; console errors 0; offline request log clean |
+| AC-M-01 | PASS | One SOS tap produced confirmation with exactly three large actions; no dispatch occurred; cancel returned to intact u3 Home |
+| AC-M-02 | PASS | Tracker started at 8, advanced at ~5s, ArrowRight accelerated, progress reached 100% and arrival state changed clearly; vehicle mock complete |
+| AC-M-03 | PASS | Health/caregiver values and permanent simulation label present; no added anchor, `tel:`, form or network action |
+| AC-M-04 | PASS | Callback path retained v0.8 callback copy, full emergency summary, sent-to-team line and caregiver line |
+| AC-M-05 | PASS | Cancel/close work; F5 restored dispatch; cadence measured 4,979ms with no stacked interval; cancellation remained clean beyond one tick |
+| AC-M-06 | PASS | Exact 1366×768 + stricter 1280×720 Elder layouts scroll without horizontal overflow; logged-in u3 gate retained; keyboard paths do not conflict |
 
-**Overall: 13/13 PASS.**
+**Overall: 12/12 PASS.**
 
 ## 6. Deviations and Cosmetic Decisions
 
-Functional or scope deviations: **None**.
+Functional or scope deviation: **None**.
 
-All implementation and cosmetic decisions are disclosed:
+Disclosed cosmetic/supporting decisions:
 
-- Storage recovery remains intentionally silent with no toast, exactly as §5.14 requires.
-- The emergency contact number is the deliberately invalid-looking 000-000-0000 and is labeled “เบอร์จำลอง”.
-- The home emergency area is a three-card stack: the existing clay/red SOS action, a cream health-card action with heart-pulse icon and a pale-green static caregiver card.
-- The health dialog uses a two-column blood/allergy summary, separate condition/contact blocks, top-right close and bottom close controls.
-- SOS uses a pale-red bordered health summary and a pale-green caregiver confirmation. “· จำลอง” was appended to the required caregiver line as an explicit cosmetic safety label.
-- Verification used the stricter available 1280×720 viewport; direct file:// browser automation was policy-blocked.
-- SPEC.md’s 62d25830… hash is inconsistent with its named Git baseline; the exact commit/blob/working-byte reconciliation is documented in §1.
+- Disabled time-slot background changed from `#EFEAE0` to `#FFFDF8`. This keeps the exact mandated 10px `#6D7766` caption while raising contrast from 3.909:1 to 4.610:1, resolving the tension between L10’s exact color and AC-L-02’s ≥4.5:1 requirement. Disabled state remains distinguishable through muted main text, line-through/status text and the disabled attribute.
+- Live SOS arrival now updates ETA text to green 22px as well as the heading/icon/progress. This makes direct-DOM arrival visually identical to an F5 render at ETA 0.
+- No generated assets, data changes, animation redesign or architecture refactor were introduced.
 
 ## 7. Pre-existing Work Preserved
 
-- HEAD 88a6ccc and its README/SPEC/TODO documentation changes were preserved.
-- The accepted ca68ddb application baseline was the sole parent for the code diff.
-- INC-C escaping, INC-G Elder/SOS behavior, PIA-001 nav mapping, INC-F lab results, INC-A queue controls, INC-E notifications, INC-B privacy gate and success celebration logic were not refactored.
-- Protected-region SHA-256 comparisons are listed in §4 and all are identical.
-- No destructive Git operation, dependency installation, commit or push occurred.
+- Unstaged Product Owner/Claude changes in `README.md`, `SPEC.md` and `TODO.md` were preserved byte-for-byte throughout Codex implementation.
+- The clean `a948687` application baseline was used for ownership/diff separation; only approved regions in `index.html` were changed.
+- INC-C escaping, INC-D storage recovery, INC-J/K data/gating, payment celebration mechanics, count-up behavior and the privacy gate were not refactored; protected-block hashes are recorded in §4.
+- No destructive Git command, dependency installation, staging, commit or push occurred.
 
 ## 8. Residual Risks
 
-- The repository has no automated test framework; storage and safe-render probes are repeatable Node harnesses, while UI evidence is browser-driven.
-- Recovery intentionally validates only parseability and top-level plain-object shape. Field-level schema validation/version migration remains a non-goal, so a syntactically valid object with malformed nested fields is not repaired.
-- A quota failure keeps the current in-memory session usable but cannot persist later actions; state may be lost on reload, which is the approved silent-degradation behavior.
-- Direct file:// runtime automation remains unexecuted because of browser security policy; unchanged single-file packaging and no external references mitigate this tooling limitation.
-- CSS zoom was verified in Chromium; browsers outside the approved Chrome/macOS direction were not tested.
-- All health/caregiver behavior is presentation-only synthetic data. Real use would require authentication, authorization, consent, encryption, audit and regulated data handling outside this architecture.
+- The repository has no automated test framework; verification combines deterministic Node/static checks with repeatable browser flows.
+- Direct `file://` runtime automation and reduced-motion media emulation are unavailable in the in-app browser. Offline behavior and reduced-motion closure therefore use source/request-log evidence; a final OS-level reduced-motion spot-check remains prudent before presentation.
+- The all-today-slots-passed condition was source-verified because the real test clock still had a 19:00 slot available; changing system time was not necessary or authorized.
+- The embedded Tailwind runtime emits its existing production-use warning; there are no console errors.
+- Existing modal accessibility debt remains: no focus trap/return, dialog semantics, ETA `aria-live` or progressbar semantics. These are outside approved L/M scope and should be separately specified if required.
+- SOS, health, caregiver, payment and VDO behavior remain synthetic presentation simulations, not production health/emergency services.
+- Background-tab timer throttling remains browser-dependent; persisted ETA and F5 restoration mitigate presentation recovery but do not model real dispatch time.
 
 ## 9. Git Status at Handoff
 
 Expected final status after this report update:
 
-    ## main...origin/main
-     M COMPLETION_REPORT.md
-     M index.html
+```text
+## main...origin/main
+ M COMPLETION_REPORT.md
+ M README.md
+ M SPEC.md
+ M TODO.md
+ M index.html
+```
 
-- HEAD and origin/main are both 88a6ccc.
-- index.html is the unstaged Codex implementation.
-- COMPLETION_REPORT.md is the unstaged Codex report update.
-- No staged or untracked files; no Codex commit or push.
+Ownership:
+
+- Pre-existing preserved work: `README.md`, `SPEC.md`, `TODO.md`.
+- Codex work in this round: `index.html`, `COMPLETION_REPORT.md`.
+- No staged or untracked files; HEAD and origin/main remain `a948687`; no Codex commit or push.
 
 ## 10. Recommended Next Step
 
-Hand off to Claude for the required Post-implementation Audit: review every index.html hunk against SPEC.md §5.14–§5.17, independently rerun the 13 AC with emphasis on storage recovery/privacy/Elder overflow, assess the disclosed cosmetic choices and baseline-hash discrepancy, then present the result to the Product Owner for acceptance.
+Hand off to Claude for the mandatory Post-implementation Audit: reconcile the stale §16 sentence, review every `index.html` hunk against SPEC §§5.19–§5.21, independently recheck the 30-item inventory and 12 AC (especially contrast support decision, timer cleanup/F5 and protected-region hashes), then present the audited result to the Product Owner for acceptance.

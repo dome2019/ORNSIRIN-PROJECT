@@ -11,14 +11,16 @@ Status: APPROVED_FOR_IMPLEMENTATION
 | Implementation and Verification Lead | Codex |
 | Repository | `/Users/dome/Desktop/ORNSIRIN PROJECT` |
 | Baseline branch | `main` tracking `origin/main` |
-| Baseline HEAD | `ca68ddb` — batch INC-C+G+PIA-001 committed + pushed โดย Product Owner · ก่อนหน้า: `45df5f9` (approve v0.6), `e2a50ec` |
+| Baseline HEAD | `a948687` — batch INC-D+J+K committed + pushed โดย Product Owner · ก่อนหน้า: `88a6ccc` (approve v0.8), `ca68ddb` |
 | Baseline audit date | 2026-07-18 (Asia/Bangkok) |
 | Phase 1 architecture audit date | 2026-07-18 (Asia/Bangkok, late evening) |
-| Specification version | 0.8 |
+| Specification version | 0.9 |
 | Blocking Questions | NONE |
-| Implementation authorization | **GRANTED — batch INC-D + INC-J + INC-K (§5.14–§5.17) อนุมัติ v0.8 เมื่อ 2026-07-19** · รอบก่อนหน้า: batch INC-C+G+PIA-001 COMPLETED + ตรวจรับ (§5.13, `ca68ddb`, DEC-012/013) |
+| Implementation authorization | **GRANTED — batch INC-L + INC-M (§5.19–§5.21) อนุมัติ v0.9 เมื่อ 2026-07-19** · รอบก่อนหน้า: INC-D+J+K (`a948687`), INC-C+G+PIA-001 (`ca68ddb`), INC-A+E+B (`2a8bd34`), INC-F (`22f413c`) — COMPLETED ทั้งหมด |
 
-> Approval Gate: **อนุมัติแล้ว (v0.8, 2026-07-19)** — ขอบเขตที่อนุมัติคือ **batch INC-D + INC-J + INC-K ตาม §5.14–§5.17 เท่านั้น** (Codex หนึ่งรอบ, ลำดับแนะนำ D→J→K, verification 13 AC) · baseline application blob = `ca68ddb` (`index.html` สะอาด, hash `62d25830…`) — doc diff ของ README/SPEC/TODO ที่ค้างเป็นงานเอกสารรอบ v0.7/v0.8 ไม่ block · Codex ต้องทำ Mandatory Preflight ตาม `AGENTS.md` ก่อนเริ่ม · งานนอก §5.14–§5.17 ไม่ได้รับอนุญาต · Completion Report ต้องระบุ cosmetic deviation ทุกจุด · ข้อมูลใหม่ทั้งหมดต้องเป็นข้อมูลจำลอง (ASM-002) · Claude ไม่แก้ implementation
+> Approval Gate: **อนุมัติแล้ว (v0.9, 2026-07-19)** — ขอบเขตที่อนุมัติคือ **batch INC-L (design pack 30 ข้อ) + INC-M (SOS เรียกรถพยาบาลจำลอง) ตาม §5.19–§5.21 เท่านั้น** · ลำดับแนะนำ L→M ใน Codex รอบเดียว — ถ้า Codex ประเมินว่าใหญ่เกินให้แจ้งขอแบ่ง L ก่อน M ตาม AGENTS.md §6 ได้ · baseline application blob = `a948687` (`index.html` สะอาด, SHA-1 `41323998…`) — doc diff ของ README/SPEC/TODO ที่ค้างไม่ block · Mandatory Preflight ก่อนเริ่ม · งานนอก §5.19–§5.21 ไม่อนุญาต · ห้ามแตะจุดแข็ง 33 ข้อ/บริเวณ protected เดิม · INC-M ต้องจำลอง 100% ไม่มี tel:/network (ASM-002) · Completion Report: inventory L รายข้อ + cosmetic deviation ครบ + hash ระบุ SHA-1 · Claude ไม่แก้ implementation
+>
+> **หมายเหตุ hash (PIA-007):** ค่า hash ของ `index.html` ที่บันทึกในเอกสารนี้เป็น **SHA-1** (จากคำสั่ง `shasum` ค่าเริ่มต้น) — เช่น baseline `a948687` = SHA-1 `41323998…`, ก่อนหน้า `ca68ddb` = SHA-1 `62d25830…` (SHA-256 = `0faf0c33…`) · รอบ v0.8 Codex ใช้ SHA-256 จึงรายงานว่า "ไม่ตรง" — เป็นคนละอัลกอริทึม ไม่ใช่ drift
 
 ## 1. Objective
 
@@ -199,7 +201,7 @@ Hardcoded data + user form input + timer output
 | INC-J | บัตรสุขภาพฉุกเฉิน (กรุ๊ปเลือด/แพ้ยา/โรคประจำตัว/ผู้ติดต่อฉุกเฉิน) — เด้งใน SOS | คำขอผู้ใช้ (แนวสุขภาพ) | S-M | `users`/data ใหม่ + `sosModal()` + healthCard viewer + u3 home |
 | INC-K | ผู้ดูแล / แจ้งลูกหลาน (care circle) — ครอบครัวได้รับแจ้งเมื่อ SOS/นัด | คำขอผู้ใช้ (แนวสุขภาพ) | M | caregiver data + การ์ดผู้ดูแลบน u3 home + SOS notify line |
 
-สถานะการเลือก (อัปเดตหลังปิด batch 2026-07-19): **INC-0 = เสร็จ** (commit `2bbb500`) · **INC-F = เสร็จ + ตรวจรับแล้ว** (§5.3.1, commit `22f413c`) · **INC-A + INC-E + INC-B = เสร็จ + ตรวจรับแล้ว** (audit PASS §5.8, commits `2a8bd34`/`418ef45`, DEC-010) · **ยังเปิดให้เลือก:** INC-C (escape user input), INC-D (storage recovery), INC-G (โหมดผู้สูงอายุ), INC-H (สถิติผู้ประกอบการ), INC-I (accessibility) — เมื่อเลือกแล้ว Claude จะเขียนสเปกเต็มใน §5.x ก่อนขออนุมัติ · **อัปเดตหลังปิด v0.6 (2026-07-19):** INC-C + INC-G + PIA-001 + README = เสร็จ + ตรวจรับแล้ว (§5.13, `ca68ddb`, DEC-012/013) · **ยังเปิดให้เลือก:** INC-D (storage recovery), INC-H (สถิติผู้ประกอบการ), INC-I (accessibility) — INC-C/G ปิดครบแล้ว · **อัปเดต 2026-07-19:** ผู้ใช้เลือก **INC-D + INC-J + INC-K** เป็นรอบถัดไป (DEC-014, สเปกเต็ม §5.14–§5.17 — รออนุมัติ v0.8)
+สถานะการเลือก (อัปเดตหลังปิด batch 2026-07-19): **INC-0 = เสร็จ** (commit `2bbb500`) · **INC-F = เสร็จ + ตรวจรับแล้ว** (§5.3.1, commit `22f413c`) · **INC-A + INC-E + INC-B = เสร็จ + ตรวจรับแล้ว** (audit PASS §5.8, commits `2a8bd34`/`418ef45`, DEC-010) · **ยังเปิดให้เลือก:** INC-C (escape user input), INC-D (storage recovery), INC-G (โหมดผู้สูงอายุ), INC-H (สถิติผู้ประกอบการ), INC-I (accessibility) — เมื่อเลือกแล้ว Claude จะเขียนสเปกเต็มใน §5.x ก่อนขออนุมัติ · **อัปเดตหลังปิด v0.6 (2026-07-19):** INC-C + INC-G + PIA-001 + README = เสร็จ + ตรวจรับแล้ว (§5.13, `ca68ddb`, DEC-012/013) · **ยังเปิดให้เลือก:** INC-D (storage recovery), INC-H (สถิติผู้ประกอบการ), INC-I (accessibility) — INC-C/G ปิดครบแล้ว · **อัปเดต 2026-07-19:** ผู้ใช้เลือก **INC-D + INC-J + INC-K** เป็นรอบถัดไป (DEC-014) · **ปิดรอบแล้ว:** INC-D+J+K = เสร็จ + ตรวจรับ (audit PASS §5.18, `a948687`, DEC-015) · **ยังเปิดให้เลือก:** INC-H (สถิติผู้ประกอบการ), INC-I (accessibility) · **คำขอใหม่ 2026-07-19:** ผู้ใช้ขอ (1) design ให้ user-friendly + น่าดึงดูด (2) SOS เรียกรถพยาบาลทันที → Claude ทำ design audit 4 มุมมอง (49 findings) แล้วเขียนสเปก INC-L + INC-M (§5.19–§5.21) — รออนุมัติ v0.9
 
 ข้อจำกัดการจัดลำดับ (ปิดแล้ว — INC-0 เสร็จตั้งแต่ `2bbb500` และถูกปฏิบัติครบใน INC-F/batch): เดิมกำหนดว่า **INC-0 ต้องเสร็จก่อน increment ใดที่แก้ `index.html`** เพราะงานค้างปัจจุบันทับซ้อน `successModal()` และ `render()` — หากข้าม INC-0 แล้วแก้บริเวณเดียวกัน จะแยกเจ้าของ diff ไม่ได้และ rollback ยาก (เข้าเงื่อนไขหยุดงานของ Codex ตาม `AGENTS.md` §6)
 
@@ -541,6 +543,138 @@ Hardcoded data + user form input + timer output
 - Verification รวม: AC 13 ข้อ (D-01…04, J-01…05, K-01…04) + มาตรฐานเดิม (syntax check, console 0 error, offline ไม่มี external ref ใหม่, `git status` ไฟล์เดียว) + ไม่แตะบริเวณ INC-F/celebration/batch ก่อนหน้า + คง escaping (INC-C), elder mode/SOS เดิม (INC-G) ทำงานปกติ + **Completion Report ระบุ cosmetic deviation ทุกจุด**
 - Rollback: revert diff เดียว — ไม่กระทบ `ca68ddb` และก่อนหน้า
 
+### 5.18 Batch INC-D+J+K Post-implementation Audit result (2026-07-19)
+
+**ผล: PASS — 13/13 Acceptance Criteria** (Claude ตรวจ runtime ด้วยตนเองครบทุก AC ผ่านสำเนา byte-identical) · Product Owner ตรวจรับแล้ว (DEC-015)
+
+| หัวข้อ | ผลตรวจ |
+|---|---|
+| Diff review | 127+/5− (`index.html` ไฟล์เดียว) ทุก hunk map เข้า INC-D / INC-J / INC-K — ไม่มี hidden scope |
+| INC-D | JSON เน่า → บูตสด + ล้าง key ที่เสีย (แก้ปัญหาเดิมที่ล้มซ้ำ) · non-object (`123`/`"x"`/`null`/`[]`) → ปฏิเสธ+ล้าง · quota เต็ม (stub throw) → `setState` เดินต่อ ไม่มี uncaught error · round-trip ปกติกู้ครบ (bookingSeq 42) |
+| INC-J | บัตรสุขภาพครบ 4 หมวด · SOS แสดงสรุป + "ส่งให้ทีมดูแลแล้ว" · เปิด/ปิดบัตรสถานะอื่นครบ · **inject XSS เข้า data จริง → esc() กันได้ทุก sink** · 1366×768 + elder: dialog ในกรอบ overflow 0 เลื่อนได้ |
+| INC-K | ผู้ดูแล = สมหญิง (บุตรสาว) จาก users เดิม · การ์ดผู้ดูแลบนหน้าแรก u3 · SOS "แจ้งผู้ดูแล (สมหญิง) แล้ว · จำลอง" · ไม่มี link/form/network |
+| Privacy | ก่อนล็อกอิน / u1-u2-u4 / u3 หน้าอื่น — ไม่มี SOS/บัตร/ผู้ดูแล/กรุ๊ปเลือดหลุด · เปิด modal healthCard ตอน logged-out ถูก `overlayAllowed` บล็อก |
+| Regression | `esc`, `bottomNav`, `notificationsModal`, `labResultsScreen`, `successModal`, `persistState` byte-identical กับ `ca68ddb` · เปลี่ยนแค่ `hydrateState` (ตาม INC-D) |
+| Console / offline | 0 error · ไม่มี external ref ใหม่ · network เหลือแค่ data: URI ไอคอน |
+| Completion Report | ถูกต้องตามข้อเท็จจริง (diff stat 127+/5−, baseline blob) · เปิดเผย cosmetic ครบตามกติกา PIA-003 |
+
+การตรวจรับ: Product Owner commit `a948687` + push และยืนยัน "เรียบร้อย" ในแชท 2026-07-19
+
+**Finding ใหม่จากรอบนี้:**
+
+#### PIA-007 — hash algorithm ในเอกสารไม่ตรงกันระหว่าง Claude (SHA-1) กับ Codex (SHA-256)
+
+- Severity: LOW · State: CONFIRMED · Confidence: High
+- Evidence: SPEC บันทึก `62d25830…` (SHA-1 จาก `shasum`) แต่ Completion Report v0.8 §1/§6 ตีความว่าเป็น SHA-256 แล้วรายงานว่า "ไม่ตรง" · ตรวจแล้ว blob `ca68ddb:index.html` = SHA-1 `62d25830…` = SHA-256 `0faf0c33…` (ไฟล์เดียวกันเป๊ะ)
+- Observed: ไม่ใช่ application drift — เป็นความสับสนของอัลกอริทึม hash
+- Impact: จำกัดที่ audit trail — ไม่กระทบโค้ด
+- Recommendation: ระบุใน Document Control ว่า hash เป็น SHA-1 (ทำแล้วในหมายเหตุ Approval Gate v0.9) · รอบหน้าใช้อัลกอริทึมเดียวกันทั้งสองฝ่าย
+- Scope relation: Process — ไม่ต้องแก้โค้ด
+
+#### PIA-008 — quota degradation ไม่ persist action หลังเต็ม (expected, non-goal)
+
+- Severity: LOW (observation) · State: CONFIRMED · Confidence: High
+- Evidence: INC-D คง persist แบบ silent try/catch — quota เต็มแล้ว action ถัดไปทำงานใน in-memory ได้ แต่ไม่ถูกเก็บ (หายเมื่อ reload)
+- Observed: เป็น silent degradation ที่สเปก §5.14 อนุมัติไว้ (ไม่ทำ toast กันรบกวนเดโม)
+- Recommendation: ไม่ต้องแก้ · หากรอบอนาคตต้องการเตือนผู้ใช้ค่อยเพิ่ม
+- Scope relation: No action
+
+### 5.19 INC-L specification — Design polish pack (user-friendly + น่าดึงดูด)
+
+**Objective:** ยกระดับความสวย/อ่านง่าย/ลื่นไหลทั้งแอปจากผล design audit อิสระ 4 มุมมอง (visual consistency, UX friction, elder readability, delight) — โดย**ห้ามแตะ**จุดแข็งที่บันทึกไว้ (ระบบ motion replay-safe, service color coding, screenHero pattern, การ์ด/ปุ่มมาตรฐานเดิม, payment celebration)
+
+**ที่มา:** design audit 2026-07-19 (ผู้ตรวจอิสระ 4 ราย, 49 findings + 33 strengths, evidence ต่อรายการเป็น template+line ณ `a948687`)
+
+**งานแบ่ง 5 กลุ่ม (ทุกข้อเป็น template/inline-style/copy edit — ไม่มี architecture change):**
+
+**L-A ขายตั้งแต่วินาทีแรก:**
+1. Hero ก่อนล็อกอิน: copy ขายแทนสั่ง ("ดูแลสุขภาพและไลฟ์สไตล์ของทุกคนในบ้าน — หมอ พยาบาล และทีมดูแล ถึงหน้าบ้านคุณ") + แถวชิป benefit 3 ชิ้นสไตล์ pill เดิมของ hero (ลูกบ้านลด 15% · ส่งถึงบ้านฟรี · ดูแลทั้งครอบครัวรวมสัตว์เลี้ยง) + คำสั่งล็อกอินลดเป็น hint เล็ก (~line 925-933)
+2. ราคาปรึกษา ฿400 (+฿100 ใบรับรอง) แสดงบนฟอร์มก่อนกด "ส่งคำขอปรึกษา"
+3. `consultForm` เปลี่ยนจาก `topBar` เป็น `screenHero` โทนเขียวเดียวกับ specialty (~line 1126) — ปรับการ์ดจิตแพทย์ใต้ hero ไม่ให้เขียวซ้อนเขียว
+
+**L-B อ่านง่าย (ผู้สูงอายุ/โปรเจกเตอร์):**
+4. เพิ่ม token `--ink-soft:#5B6350` แทน #8A9080 (×33) และ #7A8271 (×14) ทั้งหมด
+5. Bottom nav label 10→11.5px + w500 + inactive ใช้ #5B6350
+6. เวลารอคิวแยกบรรทัด 13px #5B6350 เด่น (~line 1226)
+7. ชิปผลแล็บ 9.5→11px หนา สีเข้มขึ้น (#7A5115/#F8E8C7, #3D5636/#DDE9D7) + icon alert-circle นำหน้า "ควรติดตาม"
+8. บรรทัดสิทธิ์ลูกบ้าน hero 11→12px #E7EFDD w500 · ค่าแพ้ยา healthCard 12.5→15px w600 · label ใน SOS summary 9.5→11px
+9. แถบบน: avatar 20→26px (12px), กระดิ่ง 25→30px, ปุ่มออก py-1.5 · ชื่อผู้ใช้ max-width 88→64px ชดเชย
+10. ชิปอาการ py-2.5 + 13px · ปุ่มปิด overlay ทุกตัว w-10 + aria-label="ปิด" · caption ช่องเวลา 8.5→10px #6D7766
+
+**L-C ความสม่ำเสมอ (mechanical):**
+11. หัว modal ทุกตัว 17px (bookingDetail 15.5, detail/addPet/success 16 → 17)
+12. chevron-right มาตรฐาน 16px บนการ์ดเต็มแถว (คง 13px เฉพาะแถวสถานะ pet)
+13. เงา card ครอบ `#app .rounded-3xl` ด้วย (lab-results empty + login gate)
+14. หัว section หน้า service เป็น serif-th 14px semibold (~6 จุด)
+15. token `--danger:#B0543F` + แก้ #C0503F 2 จุด (ปุ่มวางสาย, validation border)
+16. ฟอร์มล็อกอินใช้ palette (แทน text-black/text-gray-400) · icon ยาใส่ color:var(--clay) · gradient hero ใช้ var(--primary/-dark)
+17. Empty state หน้ายา ยกระดับเป็นแบบหน้าผลแล็บ (icon circle + serif heading + hint)
+
+**L-D ลด friction:**
+18. หน้าคิวยังไม่จ่าย: ปุ่มหลัก = "ชำระเงินเพื่อยืนยันคิว" · "กลับหน้าแรก" เป็น secondary
+19. ปิด payment sheet ของ lifestyle กลางคัน → กลับ detail sheet โดย selection ครบ (เดิมทิ้งหมด)
+20. Payment คิวปรึกษามี line items (ค่าปรึกษา ฿400 · ใบรับรอง +฿100)
+21. Disabled CTA มี helper caption + aria-disabled: "ถัดไป" หน้า specialty ("เลือกแผนกก่อน") และ "ส่งคำขอปรึกษา" ("เลือกอาการหรือพิมพ์อย่างน้อย 5 ตัวอักษร")
+22. หมอไม่ว่างมี label "ไม่ว่าง" (pattern จาก detailModal) + opacity 0.6
+23. การ์ด carousel ไลฟ์สไตล์: กดได้ทั้งใบ + icon circle สีตาม service + chevron แทน "→" + ชิป "ลูกบ้าน −15%" (resident) / ราคาเริ่มต้น (non-resident)
+24. Day picker: ถ้า slot วันนี้ผ่านหมด default "พรุ่งนี้" (เดโมตอนเย็น)
+25. แสดงหน่วยราคา (/ชม., /ครั้ง) ตาม data เดิม · แก้ "เป็นเวลา 00:23 นาที" ให้ format ถูก
+
+**L-E จังหวะมีชีวิต (reuse motion เดิม + reduced-motion ครบ):**
+26. จบสาย VDO: การ์ดหมอ (ชื่อ+staffAvatar) + ระยะเวลา + "✓ สรุปคำแนะนำและใบสั่งยา ส่งเข้าแอปใน 15 นาที" + title "ขอบคุณที่ดูแลตัวเองวันนี้"
+27. ผลแล็บ stagger reveal (CSS scoped ใต้ .screen-enter เท่านั้น — re-render ภายในนิ่ง)
+28. สายเชื่อมต่อแล้ว: วง avatar หายใจต่อ (class listen-ring เดิมให้วง static ~1289)
+29. ถึงคิว #0: ปุ่ม CTA ได้ exhale-once (ใน guard prevQueuePos เดิม)
+30. แจ้งเตือนคิว: chip clay + ป้าย "ด่วน" · badge กระดิ่ง exhale เมื่อจำนวนเปลี่ยน (prevNotifCount pattern เดิม) · icon healthCard exhale ตอนเปิด
+
+**Non-goals (candidate รอบหน้า):** แจ้งเตือน per-user จริง · dialog ยืนยันก่อนยกเลิกนัด · พฤติกรรม SOS (อยู่ใน INC-M) · redesign นอกรายการ
+
+**Acceptance Criteria (กลุ่มละหนึ่ง pass/fail):**
+- AC-L-01: กลุ่ม A ครบ 3 — hero ขาย+ชิป, ราคาบนฟอร์ม, consultForm screenHero ไม่เขียวซ้อน
+- AC-L-02: กลุ่ม B — ไม่เหลือ #8A9080/#7A8271 ในไฟล์, ขนาด/สีตามระบุ, contrast จุดที่แก้ ≥4.5:1
+- AC-L-03: กลุ่ม C — หัว modal 17px ทุกตัว, chevron มาตรฐาน, เงา 3xl, section serif, ไม่เหลือ #C0503F/text-gray-400/text-black, meds empty ใหม่
+- AC-L-04: กลุ่ม D ครบ 8 (18–25) — flow จริง: ปิด payment lifestyle แล้ว selection อยู่, default พรุ่งนี้เมื่อ slot หมด, hierarchy ปุ่มคิวใหม่
+- AC-L-05: กลุ่ม E ครบ 5 (26–30) — เล่นครั้งเดียวตอนเหตุการณ์จริง, ไม่ replay ตอน re-render, ปิดสนิทใต้ reduced-motion
+- AC-L-06: Guard — จุดแข็งไม่ถูกแตะ (motion gating, service colors, celebration), ไม่มี horizontal overflow (ปกติ/1366×768/elder), console 0, offline เดิม
+
+### 5.20 INC-M specification — SOS เรียกรถพยาบาล (จำลองเต็มรูปแบบ)
+
+**Objective:** เปลี่ยน SOS จาก "โทรกลับใน 1 นาที" เป็น **flow เรียกรถพยาบาลแบบ ride-hailing** — ไคลแมกซ์ใหม่ของเรื่องเล่าผู้สูงอายุ · **จำลอง 100%** (ASM-002): ไม่มี tel:, ไม่มี network, ป้าย "จำลอง" ชัดเจนถาวร
+
+**Flow ใหม่ (แทน sosModal เดิม — และปิด design finding "แตะพลาดครั้งเดียว = แจ้งเหตุทันที"):**
+
+1. **Stage ยืนยัน** — แตะการ์ด SOS → dialog ปุ่มใหญ่ (เต็มความกว้าง py-3.5+):
+   - "เรียกรถพยาบาลทันที" (primary, var(--danger), icon ambulance/truck ที่มีใน lucide)
+   - "ให้ทีมดูแลโทรกลับ" (secondary) → เนื้อหา/พฤติกรรมเดิมของ v0.8 ครบ (สรุปบัตรสุขภาพ + แจ้งผู้ดูแล)
+   - "ยกเลิก" → ปิดเฉย ๆ
+2. **Stage รถกำลังมา (dispatch tracker):**
+   - หัว "รถพยาบาลกำลังมา" + วง pulse (reuse success-ring/celebrate)
+   - **ETA เริ่ม 8 นาที ถอยหลัง ~5 วินาที/นาที** (direct-DOM timer แบบ call-timer — ไม่ re-render) + progress bar → จบที่ **"รถถึงหน้าบ้านแล้ว"** (หัวเปลี่ยน+เขียว+exhale)
+   - ข้อมูลจำลอง: "รพ.คู่สัญญาเชียงใหม่ · รถ กข 1234 · พยาบาลวิชาชีพ 1 ท่าน"
+   - ✓ ส่งบัตรสุขภาพฉุกเฉิน (ค่าจาก INC-J) ให้ทีมรถแล้ว · ✓ แจ้งผู้ดูแล (สมหญิง · บุตรสาว) แล้ว
+   - ป้ายถาวร: "การจำลองสำหรับเดโม — ไม่มีการเรียกรถจริง"
+   - ปุ่ม "ยกเลิกการเรียก (จำลอง)" + ปุ่มปิด
+3. **State:** `modal:{kind:"sos", stage:"confirm"|"dispatch", ...}` — persist ผ่านกลไกเดิม → F5 กลาง dispatch กลับมาที่ tracker
+4. **Presenter shortcut:** ArrowRight เร่ง ETA ลง 1 นาที เฉพาะตอน tracker เปิด (ขยาย listener เดิม — ไม่ชนคีย์ลัดคิวเพราะเดิม gate ด้วย !state.modal)
+5. คงกติกาเดิม: เฉพาะ u3+ล็อกอิน, `overlayAllowed`, esc() ทุก field, elder zoom, timer หยุดสะอาดเมื่อปิด
+
+**Non-goals:** ไม่มีแผนที่/GPS จริง · ไม่มีการโทร/ข้อความจริง · INC-J/K data คงเดิม · ไม่เพิ่ม persisted key ใหม่
+
+**Acceptance Criteria:**
+- AC-M-01: แตะ SOS ครั้งเดียว**ไม่** dispatch — เจอ stage ยืนยัน 3 ปุ่มใหญ่ · "ยกเลิก" ปิดโดย state ครบ
+- AC-M-02: "เรียกรถพยาบาล" → tracker: ETA 8 นาทีถอยหลังจนถึง "รถถึงหน้าบ้านแล้ว" + progress + ข้อมูลรถ mock ครบ
+- AC-M-03: tracker มี ✓ บัตรสุขภาพ (ค่าตรง INC-J) + ✓ ผู้ดูแล + ป้ายจำลองถาวร · ไม่มี a[href]/tel:/form/network ใหม่
+- AC-M-04: "ให้ทีมดูแลโทรกลับ" → เนื้อหา/พฤติกรรม v0.8 เดิมครบ (regression)
+- AC-M-05: ยกเลิกการเรียกได้ · ปิดแล้ว timer หยุด ไม่มี interval รั่ว (เปิด-ปิดหลายรอบไม่ซ้อน) · F5 ระหว่าง dispatch → กลับมาที่ tracker
+- AC-M-06: elder mode + 1366×768 ไม่ล้น เลื่อนได้ · gating u3/ล็อกอินเดิม · ArrowRight เร่ง ETA เฉพาะ tracker เปิด ไม่รบกวนคีย์ลัดคิว
+
+### 5.21 Round execution terms (INC-L + INC-M)
+
+- **หนึ่งรอบ Codex** ลำดับ L (mechanical ก่อน) → M · diff เดียว `index.html` — **รอบใหญ่สุดที่ผ่านมา**: ถ้า Codex ประเมินว่าเสี่ยง แจ้งขอแบ่ง L ก่อน M ได้ตาม AGENTS.md §6
+- Precondition: application baseline = `a948687` (SHA-1 `41323998…`, `index.html` สะอาด) · doc diff ของ SPEC/README/TODO ไม่ block
+- Verification: AC 12 ข้อ (L-01…06, M-01…06) + มาตรฐานเดิม (syntax, console 0, offline, `git status` ไฟล์เดียว, ไม่แตะบริเวณ protected: celebration/INC-F/escaping/queue controls/notifications/privacy gate/INC-D/J/K) · **Completion Report ต้องมี inventory รายข้อ L 1–30: ทำ/ข้าม + เหตุผล** + cosmetic deviation ทุกจุด + hash ระบุ SHA-1
+- Rollback: revert diff เดียว — ไม่กระทบ `a948687` และก่อนหน้า
+
 ## 6. Non-goals
 
 Phase 0 ไม่รวม:
@@ -675,7 +809,7 @@ These are verification candidates, not authorized fixes
 | AUD-004 | MEDIUM | **RESOLVED** (INC-A, `2a8bd34`) | Presenter cannot control/re-enter the timer-driven queue — ปิดโดยแบนเนอร์+คีย์ลัด (§5.8) |
 | AUD-005 | MEDIUM | **RESOLVED** (INC-0, `2bbb500`) | Significant uncommitted app work exists before workflow setup — ผู้ใช้ commit เป็น baseline แล้ว |
 | AUD-006 | MEDIUM | CONFIRMED LIMITATION | Authentication, payment and VDO are simulation-only |
-| AUD-007 | LOW | CONFIRMED | Persistence failures are silently ignored |
+| AUD-007 | LOW | **RESOLVED** (INC-D, `a948687`) | Persistence failures are silently ignored — hydrate เน่า/quota กู้สะอาดแล้ว (§5.18) |
 | AUD-008 | LOW | CONFIRMED / NEEDS_VERIFICATION | Login labels are placeholder-only; modal focus behavior still needs manual audit |
 | PIA-001 | LOW | OPEN (candidate) | หน้า lab-results ไม่มีแท็บ active ของตัวเองใน bottom nav (§5.3.1) — polish เล็ก รอผู้ใช้เลือก |
 | PIA-002 | LOW | **RESOLVED** (`418ef45`) | ขอให้ Codex ส่ง Completion Report เป็นไฟล์ใน repo — ทำแล้วในรอบ batch |
@@ -941,6 +1075,8 @@ Assumptions must not be converted into implementation requirements without Produ
 | DEC-012 | 2026-07-19 | Batch INC-C+G+PIA-001 audit = PASS (12/12 AC, ยืนยันด้วยผู้ตรวจอิสระ 4 ราย); Product Owner ตรวจรับด้วย commit `ca68ddb` + push และยืนยัน "approve" ในแชท | Product Owner |
 | DEC-013 | 2026-07-19 | Claude อัปเดต README ครอบคลุมฟีเจอร์ใหม่ทั้งหมด (ผลแล็บ, กระดิ่ง, privacy gate, ตัวควบคุมคิว + คีย์ลัด, โหมดผู้สูงอายุ + SOS, escaping) ตามสเปก §5.12 หลัง audit PASS | Product Owner / Claude |
 | DEC-014 | 2026-07-19 | เลือกรอบถัดไป (แนวสุขภาพ): INC-D (storage recovery) + INC-J (บัตรสุขภาพฉุกเฉิน) + INC-K (ผู้ดูแล/แจ้งลูกหลาน) — Codex batch เดียว, สเปก §5.14–§5.17 | Product Owner |
+| DEC-015 | 2026-07-19 | Batch INC-D+J+K audit = PASS (13/13 AC); Product Owner ตรวจรับด้วย commit `a948687` + push และยืนยัน "เรียบร้อย" ในแชท | Product Owner |
+| DEC-016 | 2026-07-19 | เลือก + อนุมัติรอบ design: INC-L (design polish pack จาก audit 4 มุมมอง) + INC-M (SOS เรียกรถพยาบาล — จำลอง 100%, ออกแบบ 2 จังหวะกันแตะพลาด) — สเปก §5.19–§5.21 | Product Owner |
 
 ## 20. Approval Record
 
@@ -960,3 +1096,6 @@ Only the Product Owner may authorize changing the first line to `Status: APPROVE
 | 0.7 | DRAFT | None — batch INC-C+G+PIA-001 + README ปิดรอบแล้ว (audit PASS §5.13, ตรวจรับ DEC-012/013) | Pending Product Owner | — | ไม่มี scope ค้าง · เมนู increment ที่เหลือใน §5.2 (INC-D/H/I) รอผู้ใช้เลือก · AUD-002 ปิดแล้ว เหลือ finding เปิด: AUD-003/006/007/008 |
 | 0.8 | DRAFT | None (batch INC-D + INC-J + INC-K §5.14–§5.17 awaiting approval) | Pending Product Owner | — | รอบ INC-C+G+PIA-001 ปิดแล้ว; สเปกรอบใหม่ครบ 13 AC (D-01…04, J-01…05, K-01…04); ไม่มี blocking question — รออนุมัติอย่างเป็นทางการ |
 | 0.8 | APPROVED_FOR_IMPLEMENTATION | Batch INC-D + INC-J + INC-K ตาม §5.14–§5.17 ทั้งหมด (หนึ่งรอบ Codex, ลำดับแนะนำ D→J→K, verification 13 AC + มาตรฐานเดิม) | Product Owner (ผู้ใช้) — อนุมัติเป็นลายลักษณ์อักษรในแชท ("อนุมัติ v0.8") | 2026-07-19 (Asia/Bangkok) | เงื่อนไข: (1) baseline application blob = `ca68ddb`, `index.html` สะอาด ณ เวลาอนุมัติ (hash `62d25830…`); (2) doc diff ของ README/SPEC/TODO (งานปิดรอบ v0.7 + สเปก v0.8) ค้างอยู่ — ผู้ใช้ commit เองตามสะดวก ไม่ block งาน Codex; (3) Completion Report ต้องระบุ cosmetic deviation ทุกจุด; (4) ข้อมูลใหม่เป็นข้อมูลจำลองล้วน (ASM-002) ห้ามเบอร์โทร/ข้อมูลจริง; (5) Claude ห้ามแก้ implementation — Codex เท่านั้น |
+| 0.9 | DRAFT | None — batch INC-D+J+K ปิดรอบแล้ว (audit PASS §5.18, ตรวจรับ DEC-015) | Pending Product Owner | — | ไม่มี scope ค้าง · AUD-007 ปิดแล้ว (เหลือเปิด: AUD-003 monolith/no-test, AUD-006 simulation-only, AUD-008 accessibility) · เมนู increment ที่เหลือ §5.2: INC-H, INC-I |
+| 0.9 | DRAFT | None (INC-L design pack + INC-M SOS ambulance §5.19–§5.21 awaiting approval) | Pending Product Owner | — | design audit 4 มุมมอง (49 findings/33 strengths) แปลงเป็นสเปกแล้ว; ไม่มี blocking question — รออนุมัติ v0.9 |
+| 0.9 | APPROVED_FOR_IMPLEMENTATION | Batch INC-L + INC-M ตาม §5.19–§5.21 ทั้งหมด (Codex รอบเดียว ลำดับ L→M, verification 12 AC + inventory L รายข้อ) | Product Owner (ผู้ใช้) — อนุมัติเป็นลายลักษณ์อักษรในแชท ("อนุมัติ v0.9") | 2026-07-19 (Asia/Bangkok) | เงื่อนไข: (1) baseline `a948687` (SHA-1 `41323998…`), `index.html` สะอาด; (2) doc diff README/SPEC/TODO ค้าง — ผู้ใช้ commit เอง ไม่ block; (3) Codex ขอแบ่งรอบ L→M ได้ถ้าประเมินว่าเสี่ยง; (4) INC-M จำลอง 100% ห้าม tel:/network; (5) ห้ามแตะจุดแข็ง/บริเวณ protected; (6) Claude ห้ามแก้ implementation |

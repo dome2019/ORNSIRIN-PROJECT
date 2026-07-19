@@ -347,7 +347,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   :root{
     --bg:#F6F2EA; --ink:#2B3328; --primary:#4A6741; --primary-dark:#41593A;
     --clay:#B8763E; --slate:#6E8098; --surface:#FCFAF4; --line:#E3DCCB;
-    --muted:#9AA08F;
+    --muted:#9AA08F; --ink-soft:#5B6350; --danger:#B0543F;
   }
   html,body{ margin:0; background:#EDE7D8; font-family:'Noto Sans Thai','Noto Serif Thai',sans-serif; color:var(--ink); }
   .serif-th{ font-family:'Noto Serif Thai',serif; }
@@ -357,6 +357,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   .listen-ring1{ animation: breathe 3.4s ease-in-out infinite; }
   .listen-ring2{ animation: breathe2 3.4s ease-in-out infinite; animation-delay:.3s; }
   textarea:focus, input:focus { outline: none; }
+  .login-input::placeholder{ color:var(--ink-soft); opacity:1; }
   input[type="checkbox"]{ accent-color: var(--primary); }
   .tab-scroll::-webkit-scrollbar{ display:none; }
 
@@ -367,6 +368,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   @keyframes fadeIn { from{ opacity:0; } to{ opacity:1; } }
   @keyframes dialogIn { from{ opacity:0; transform:scale(.98); } to{ opacity:1; transform:none; } }
   @keyframes exhaleOnce { 0%{ transform:scale(1); } 50%{ transform:scale(1.04); } 100%{ transform:scale(1); } }
+  @keyframes labReveal { from{ opacity:0; transform:translateY(7px); } to{ opacity:1; transform:none; } }
   .screen-enter.fwd{ animation: screenFwd .22s cubic-bezier(.32,.72,0,1) both; }
   .screen-enter.back{ animation: screenBack .2s cubic-bezier(.32,.72,0,1) both; }
   .sheet-enter{ animation: sheetUp .26s cubic-bezier(.32,.72,0,1) both; }
@@ -374,6 +376,10 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   .dialog-enter{ animation: dialogIn .2s cubic-bezier(.32,.72,0,1) both; }
   .exhale-once{ animation: exhaleOnce .6s ease-in-out 1; }
   .panel-enter{ animation: fadeIn .14s ease both; }
+  .screen-enter .lab-result-card{ animation: labReveal .32s cubic-bezier(.32,.72,0,1) both; }
+  .screen-enter .lab-result-card:nth-child(2){ animation-delay:.06s; }
+  .screen-enter .lab-result-card:nth-child(3){ animation-delay:.12s; }
+  .screen-enter .lab-result-card:nth-child(4){ animation-delay:.18s; }
   /* ---- จังหวะฉลองตอนจ่ายเงินสำเร็จ (เล่นครั้งเดียวต่อการเปิด dialog ผ่านคลาส .celebrate) ---- */
   @keyframes checkDraw { from{ stroke-dashoffset:24; } to{ stroke-dashoffset:0; } }
   @keyframes ringPulse { 0%{ transform:scale(.65); opacity:.4; } 100%{ transform:scale(2.05); opacity:0; } }
@@ -395,14 +401,14 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   zoom:1.15;
 }
   /* เงานุ่มให้การ์ดยกตัวจากพื้นเบา ๆ ทั่วทั้งแอป */
-  #app .rounded-2xl, #modal-root .rounded-2xl{ box-shadow: 0 1px 2px rgba(43,51,40,0.04), 0 8px 20px -12px rgba(43,51,40,0.16); }
+  #app .rounded-2xl, #modal-root .rounded-2xl, #app .rounded-3xl, #modal-root .rounded-3xl{ box-shadow: 0 1px 2px rgba(43,51,40,0.04), 0 8px 20px -12px rgba(43,51,40,0.16); }
   @media (prefers-reduced-motion: reduce){
     .listen-ring1,.listen-ring2{ animation:none; }
-    .screen-enter.fwd,.screen-enter.back,.sheet-enter,.backdrop-enter,.dialog-enter,.exhale-once,.panel-enter,.spin{ animation:none; }
+    .screen-enter.fwd,.screen-enter.back,.screen-enter .lab-result-card,.sheet-enter,.backdrop-enter,.dialog-enter,.exhale-once,.panel-enter,.spin{ animation:none; }
     .celebrate .check-draw,.celebrate .success-ring,.celebrate .confetti-bit{ animation:none; }
     button:not([disabled]){ transition:none; }
     button:not([disabled]):active{ transform:none; }
-    #queue-fill{ transition:none !important; }
+    #queue-fill,#sos-progress{ transition:none !important; }
   }
 </style>
 </head>
@@ -668,6 +674,14 @@ function getItemConfig(category, itemId){
   return { ...cfg, item };
 }
 
+function priceUnitFor(category, item){
+  if (category === "maid") return String(item.unit || "").replace(/^บาท/, "");
+  if (category === "icebath") return item.id === "ice2" ? "/แพ็กเกจ" : "/ครั้ง";
+  if (category === "petcare") return item.id === "pc5" ? "/เดือน" : "/ครั้ง";
+  if (["massage", "physio"].includes(category)) return "/ครั้ง";
+  return "";
+}
+
 /* กัน refresh กลางเดโม — เก็บ state ลง sessionStorage ทุกครั้งที่เปลี่ยน แล้วกู้คืนตอนเปิดหน้า
    ใช้ sessionStorage (ไม่ใช่ localStorage) โดยตั้งใจ: F5 ในแท็บเดิม = งานอยู่ครบ, เปิดแท็บใหม่ = เดโมสดเริ่มต้น */
 const STATE_KEY = "ornsirin-demo-state-v1";
@@ -695,7 +709,7 @@ function hydrateState(){
 function setState(patch){ Object.assign(state, patch); persistState(); render(); }
 /* สี avatar อ่อน ๆ ต่างกันรายคน (A เขียว / B ทราย / C ฟ้าหม่น) */
 function staffAvatar(id){
-  const c = { A: ["#E7EDDF", "#4A6741"], B: ["#F3E9DB", "#8A6A3F"], C: ["#E3E8EF", "#5B6B85"] }[id] || ["#F3E9DB", "#5B6350"];
+  const c = { A: ["#E7EDDF", "#4A6741"], B: ["#F3E9DB", "#8A6A3F"], C: ["#E3E8EF", "#5B6B85"] }[id] || ["#F3E9DB", "var(--ink-soft)"];
   return `background:${c[0]};color:${c[1]};`;
 }
 
@@ -764,7 +778,7 @@ function formatLabSlot(){
 /* ลำดับความลึกของแต่ละหน้า — ใช้ตัดสินทิศทางอนิเมชัน (ไปหน้า = ลอยขึ้น, ถอยกลับ = วางลง) */
 const DEPTH = { home: 0, "consult-specialty": 1, lab: 1, meds: 1, lifestyle: 1, "consult-form": 2, "lab-results": 2, queue: 3, call: 4 };
 /* ค่าจาก render รอบก่อน — อนิเมชันจะเล่นก็ต่อเมื่อค่าเหล่านี้เปลี่ยนจริง ไม่ใช่แค่ re-render */
-let prevScreen = null, prevModalKey = null, prevLifestyleTab = "maid", prevProgress = 35, prevQueuePos = null;
+let prevScreen = null, prevModalKey = null, prevLifestyleTab = "maid", prevProgress = 35, prevQueuePos = null, prevNotifCount = null;
 
 /* รหัสการจองรันนิ่ง — โชว์ใน sheet รายละเอียดนัดหมาย */
 let bookingSeq = 0;
@@ -772,6 +786,12 @@ function nextBookingRef(){ bookingSeq += 1; return `OSR-${String(bookingSeq).pad
 
 /* ---- VDO call จำลอง: เชื่อมต่อ ~2 วิ แล้วตัวนับเวลาเดินจริง ---- */
 function fmtCallTime(s){ return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; }
+function fmtCallDuration(s){
+  const mins = Math.floor(s / 60), secs = s % 60;
+  if (!mins) return `${secs} วินาที`;
+  if (!secs) return `${mins} นาที`;
+  return `${mins} นาที ${secs} วินาที`;
+}
 
 let callTimer = null, callConnectTimer = null;
 function startCallTimers(){
@@ -797,6 +817,69 @@ function startCallTimers(){
 function stopCallTimers(){
   if (callTimer) { clearInterval(callTimer); callTimer = null; }
   if (callConnectTimer) { clearTimeout(callConnectTimer); callConnectTimer = null; }
+}
+
+/* ---- SOS tracker จำลอง: ETA ลดหนึ่งนาทีทุก ~5 วินาที และแก้ DOM ตรง ๆ ไม่ re-render overlay ---- */
+const SOS_START_ETA = 8;
+let sosTimer = null;
+function sosEtaValue(){
+  const raw = state.modal && state.modal.eta;
+  return typeof raw === "number" && Number.isFinite(raw)
+    ? Math.max(0, Math.min(SOS_START_ETA, Math.floor(raw)))
+    : SOS_START_ETA;
+}
+function updateSosTrackerDom(justArrived = false){
+  const eta = sosEtaValue();
+  const arrived = eta === 0;
+  const title = document.getElementById("sos-tracker-title");
+  const etaEl = document.getElementById("sos-eta");
+  const etaLabel = document.getElementById("sos-eta-label");
+  const progress = document.getElementById("sos-progress");
+  const mark = document.getElementById("sos-status-mark");
+  if (title) {
+    title.textContent = arrived ? "รถถึงหน้าบ้านแล้ว" : "รถพยาบาลกำลังมา";
+    title.style.color = arrived ? "var(--primary)" : "var(--ink)";
+  }
+  if (etaEl) {
+    etaEl.textContent = arrived ? "ถึงแล้ว" : String(eta);
+    etaEl.style.fontSize = arrived ? "22px" : "30px";
+    etaEl.style.color = arrived ? "var(--primary)" : "var(--danger)";
+  }
+  if (etaLabel) etaLabel.textContent = arrived ? "ทีมรถพร้อมรับช่วงดูแล" : "นาทีโดยประมาณ";
+  if (progress) progress.style.width = `${Math.round(((SOS_START_ETA - eta) / SOS_START_ETA) * 100)}%`;
+  if (mark) {
+    mark.style.background = arrived ? "var(--primary)" : "var(--danger)";
+    if (justArrived) mark.classList.add("exhale-once");
+  }
+}
+function setSosEta(nextEta){
+  if (!state.modal || state.modal.kind !== "sos" || state.modal.stage !== "dispatch") return;
+  const previous = sosEtaValue();
+  const eta = Math.max(0, Math.min(SOS_START_ETA, Math.floor(nextEta)));
+  state.modal = { ...state.modal, eta };
+  persistState();
+  updateSosTrackerDom(previous > 0 && eta === 0);
+  if (eta === 0) stopSosTimer();
+}
+function startSosTimer(){
+  if (!state.modal || state.modal.kind !== "sos" || state.modal.stage !== "dispatch") return;
+  const eta = sosEtaValue();
+  if (state.modal.eta !== eta) {
+    state.modal = { ...state.modal, eta };
+    persistState();
+  }
+  updateSosTrackerDom(false);
+  if (eta === 0 || sosTimer) return;
+  sosTimer = setInterval(() => {
+    if (!state.loggedIn || !emergencyProfileFor() || !state.modal || state.modal.kind !== "sos" || state.modal.stage !== "dispatch") {
+      stopSosTimer();
+      return;
+    }
+    setSosEta(sosEtaValue() - 1);
+  }, 5000);
+}
+function stopSosTimer(){
+  if (sosTimer) { clearInterval(sosTimer); sosTimer = null; }
 }
 
 /* คิวเดินเองระหว่างอยู่หน้าคิว เพื่อให้เห็นความคืบหน้าตอนเดโม */
@@ -847,9 +930,9 @@ function bottomNav(){
   return `
   <div class="absolute bottom-0 left-0 right-0 flex justify-between px-3 py-2.5" style="background:var(--surface);border-top:1px solid var(--line)">
     ${items.map(it => `
-      <button data-nav="${it.id}" class="flex flex-col items-center gap-1 px-2.5 py-1 rounded-xl" style="color:${isActive(it.id) ? "var(--primary)" : "var(--muted)"};background:${isActive(it.id) ? "#E7EDDF" : "transparent"}">
+      <button data-nav="${it.id}" class="flex flex-col items-center gap-1 px-2.5 py-1 rounded-xl" style="color:${isActive(it.id) ? "var(--primary)" : "var(--ink-soft)"};background:${isActive(it.id) ? "#E7EDDF" : "transparent"}">
         ${icon(it.icon, 20)}
-        <span style="font-size:10px">${it.label}</span>
+        <span style="font-size:11.5px;font-weight:500">${it.label}</span>
       </button>
     `).join("")}
   </div>`;
@@ -867,17 +950,18 @@ function userBar(){
     </div>`;
 
   if (!state.loggedIn) {
+    prevNotifCount = null;
     return `
     <div class="flex items-center justify-between gap-1.5 px-3 py-2 w-full" style="background:var(--primary-dark);color:#fff">
       ${logo}
       <form id="login-form" class="flex-1 flex items-center justify-end gap-1.5 min-w-0">
-        <div class="flex items-center gap-1 rounded-full px-2 py-1" style="background:#fff;border:1px solid rgba(255,255,255,0.2); width: 75px;">
-          ${icon("user", 11, "text-gray-400 shrink-0")}
-          <input type="text" id="login-id" placeholder="ไอดี" class="w-full min-w-0 bg-transparent text-[11px] text-black" style="outline:none;" />
+        <div class="flex items-center gap-1 rounded-full px-2 py-1" style="background:#fff;border:1px solid rgba(255,255,255,0.2);color:var(--ink-soft);width:75px;">
+          ${icon("user", 11, "shrink-0")}
+          <input type="text" id="login-id" placeholder="ไอดี" class="login-input w-full min-w-0 bg-transparent text-[11px]" style="outline:none;color:var(--ink);" />
         </div>
-        <div class="flex items-center gap-1 rounded-full px-2 py-1" style="background:#fff;border:1px solid rgba(255,255,255,0.2); width: 75px;">
-          ${icon("lock", 11, "text-gray-400 shrink-0")}
-          <input type="password" id="login-pw" placeholder="รหัสผ่าน" class="w-full min-w-0 bg-transparent text-[11px] text-black" style="outline:none;" />
+        <div class="flex items-center gap-1 rounded-full px-2 py-1" style="background:#fff;border:1px solid rgba(255,255,255,0.2);color:var(--ink-soft);width:75px;">
+          ${icon("lock", 11, "shrink-0")}
+          <input type="password" id="login-pw" placeholder="รหัสผ่าน" class="login-input w-full min-w-0 bg-transparent text-[11px]" style="outline:none;color:var(--ink);" />
         </div>
         <button type="submit" class="shrink-0 rounded-full px-2.5 py-1" style="background:var(--clay);color:#fff;border:1px solid rgba(255,255,255,0.3)">
           <span style="font-size:11px;white-space:nowrap">เข้าสู่ระบบ</span>
@@ -888,22 +972,24 @@ function userBar(){
 
   // เข้าสู่ระบบแล้ว — สลับดูข้อมูลของสมาชิกในครอบครัวได้
   const notificationCount = state.queue ? 4 : 3;
+  const notificationChanged = prevNotifCount !== null && prevNotifCount !== notificationCount;
+  prevNotifCount = notificationCount;
   return `
   <div class="flex items-center justify-between gap-1.5 px-3 py-2 w-full" style="background:var(--primary-dark);color:#fff">
     ${logo}
     <div class="flex-1 flex items-center justify-end gap-1 min-w-0">
-      <button data-notifications-open class="relative shrink-0 rounded-full flex items-center justify-center" style="width:25px;height:25px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25)" aria-label="การแจ้งเตือน ${notificationCount} รายการ">
-        ${icon("bell", 13)}
-        <span class="absolute flex items-center justify-center rounded-full" style="right:-4px;top:-5px;min-width:15px;height:15px;padding:0 3px;background:var(--clay);color:#fff;border:1.5px solid var(--primary-dark);font-size:8.5px;font-weight:600">${notificationCount}</span>
+      <button data-notifications-open class="relative shrink-0 rounded-full flex items-center justify-center" style="width:30px;height:30px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25)" aria-label="การแจ้งเตือน ${notificationCount} รายการ">
+        ${icon("bell", 16)}
+        <span class="absolute flex items-center justify-center rounded-full ${notificationChanged ? "exhale-once" : ""}" style="right:-4px;top:-5px;min-width:16px;height:16px;padding:0 3px;background:var(--clay);color:#fff;border:1.5px solid var(--primary-dark);font-size:9px;font-weight:600">${notificationCount}</span>
       </button>
       <div class="flex items-center gap-1 rounded-full p-0.5" style="background:rgba(255,255,255,0.12)">
         ${users.map(u => `
         <button data-user="${u.id}" class="rounded-full flex items-center justify-center"
-          style="width:20px;height:20px;font-size:10px;background:${state.currentUser === u.id ? "var(--clay)" : "transparent"};color:#fff"
+          style="width:26px;height:26px;font-size:12px;background:${state.currentUser === u.id ? "var(--clay)" : "transparent"};color:#fff"
           title="${u.name}">${u.initial}</button>`).join("")}
       </div>
-      <span style="font-size:11px;white-space:nowrap;max-width:88px;overflow:hidden;text-overflow:ellipsis">${(users.find(u => u.id === state.currentUser) || users[0]).short}</span>
-      <button data-logout class="shrink-0 rounded-full px-1.5 py-1 flex items-center gap-1" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25)">
+      <span style="font-size:11px;white-space:nowrap;max-width:64px;overflow:hidden;text-overflow:ellipsis">${(users.find(u => u.id === state.currentUser) || users[0]).short}</span>
+      <button data-logout class="shrink-0 rounded-full px-1.5 py-1.5 flex items-center gap-1" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25)">
         ${icon("log-out", 11, "shrink-0")}
         <span style="font-size:10.5px;white-space:nowrap">ออก</span>
       </button>
@@ -921,14 +1007,24 @@ function homeScreen(){
     { id:"meds", title:"ส่งยาต่อเนื่อง", sub:"ยาประจำ & ยาสามัญ", icon:"pill", bg:"var(--clay)", fg:"#fff" },
     { id:"lifestyle", title:"บริการไลฟ์สไตล์", sub:"แม่บ้าน · นวด · Ice bath · Pet care", icon:"sparkles", bg:"var(--surface)", fg:"var(--ink)", border:true },
   ];
+  const lifestyleHighlights = [
+    { tab:"icebath", title:"Ice bath ริมสวน", icon:"snowflake", iconBg:"#E8ECF2", iconColor:"var(--slate)", price:350 },
+    { tab:"massage", title:"นวดแผนไทยพาร์ทเนอร์", icon:"sparkle", iconBg:"#F3E9DB", iconColor:"var(--clay)", price:450 },
+    { tab:"physio", title:"กายภาพบำบัดที่บ้าน", icon:"activity", iconBg:"#E7EDDF", iconColor:"var(--primary)", price:800 },
+    { tab:"petcare", title:"Pet Care ครบวงจร", icon:"paw-print", iconBg:"#F9EFDF", iconColor:"var(--clay)", price:250 },
+  ];
   if (!state.loggedIn) {
     return `
     <div class="pb-28">
-      <div class="px-6 pt-10 pb-8 relative overflow-hidden text-center" style="background:linear-gradient(180deg,#4A6741 0%,#41593A 100%);border-radius:0 0 26px 26px">
+      <div class="px-6 pt-10 pb-8 relative overflow-hidden text-center" style="background:linear-gradient(180deg,var(--primary) 0%,var(--primary-dark) 100%);border-radius:0 0 26px 26px">
         <img src="${LOGO_IMG}" alt="" style="position:absolute;right:-16px;top:10px;height:118px;opacity:0.07;transform:rotate(-6deg);pointer-events:none" />
         <img src="${LOGO_IMG}" alt="Ornsirin" class="mx-auto" style="height:34px;width:auto;display:block" />
-        <h1 class="serif-th text-white mt-5" style="font-size:22px">ยินดีต้อนรับสู่ Ornsirin Health Link</h1>
-        <p class="mt-2" style="color:#D7E2CC;font-size:12.5px;line-height:1.6">เข้าสู่ระบบที่แถบด้านบนเพื่อดูข้อมูลสุขภาพ นัดหมาย และสิทธิ์ของคุณ</p>
+        <h1 class="serif-th text-white mt-5" style="font-size:22px">ทุกการดูแล อยู่ใกล้กว่าที่เคย</h1>
+        <p class="mt-2" style="color:#E7EFDD;font-size:12.5px;line-height:1.6">ดูแลสุขภาพและไลฟ์สไตล์ของทุกคนในบ้าน — หมอ พยาบาล และทีมดูแล ถึงหน้าบ้านคุณ</p>
+        <div class="flex flex-wrap justify-center gap-1.5 mt-4">
+          ${["ลูกบ้านลด 15%", "ส่งถึงบ้านฟรี", "ดูแลทั้งครอบครัวรวมสัตว์เลี้ยง"].map(label => `<span class="rounded-full px-2.5 py-1" style="background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.22);color:#F5EFDF;font-size:10px">${label}</span>`).join("")}
+        </div>
+        <p class="mt-3" style="color:#C7D4BC;font-size:10.5px">เข้าสู่ระบบที่แถบด้านบนเพื่อดูข้อมูลของคุณ</p>
       </div>
 
       <div class="px-5 mt-5 grid grid-cols-2 gap-3">
@@ -946,14 +1042,14 @@ function homeScreen(){
   }
   return `
   <div class="pb-28">
-    <div class="px-6 pt-8 pb-6 relative overflow-hidden" style="background:linear-gradient(180deg,#4A6741 0%,#41593A 100%);border-radius:0 0 26px 26px">
+    <div class="px-6 pt-8 pb-6 relative overflow-hidden" style="background:linear-gradient(180deg,var(--primary) 0%,var(--primary-dark) 100%);border-radius:0 0 26px 26px">
       <img src="${LOGO_IMG}" alt="" style="position:absolute;right:-16px;top:10px;height:118px;opacity:0.07;transform:rotate(-6deg);pointer-events:none" />
       <p style="color:#D7E2CC;font-size:13px">${greetingByHour()}</p>
       <h1 class="serif-th text-white text-2xl mt-1">คุณ${user.name.replace(/^คุณ/, "")}</h1>
       <div class="flex items-center flex-wrap gap-1.5 mt-1.5">
         ${user.resident ? `
         <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5" style="background:rgba(255,255,255,0.18);color:#F5EFDF;font-size:10.5px;border:1px solid rgba(255,255,255,0.25)">${icon("badge-check",11)} ลูกบ้าน Ornsirin · บ้านเลขที่ ${user.houseNo}</span>
-        <span style="color:#C7D4BC;font-size:11px">ส่วนลดไลฟ์สไตล์ 15% · ส่งถึงบ้านฟรี</span>` : `
+        <span style="color:#E7EFDD;font-size:12px;font-weight:500">ส่วนลดไลฟ์สไตล์ 15% · ส่งถึงบ้านฟรี</span>` : `
         <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5" style="background:rgba(255,255,255,0.12);color:#DDE5D2;font-size:10.5px;border:1px solid rgba(255,255,255,0.18)">${icon("user",11)} ลูกค้าทั่วไป</span>
         <span style="color:#C7D4BC;font-size:11px">Ornsirin Health Link</span>`}
       </div>
@@ -967,8 +1063,8 @@ function homeScreen(){
     <div class="px-5 mt-4 space-y-2.5">
       <button data-sos-open class="w-full rounded-2xl p-4 flex items-center gap-3 text-left" style="background:#F7E3DE;border:1px solid #D99A89;color:#8F3528">
         <div class="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style="background:#B0543F;color:#fff">${icon("phone-call",20)}</div>
-        <p class="flex-1 font-medium" style="font-size:13.5px;line-height:1.5">SOS แจ้งเหตุฉุกเฉิน · แตะเพื่อเรียกทีมดูแล</p>
-        ${icon("chevron-right",17,"shrink-0")}
+        <p class="flex-1 font-medium" style="font-size:13.5px;line-height:1.5">SOS แจ้งเหตุฉุกเฉิน · แตะเพื่อขอความช่วยเหลือ</p>
+        ${icon("chevron-right",16,"shrink-0")}
       </button>
       <button data-health-card-open class="w-full rounded-2xl p-3.5 flex items-center gap-3 text-left" style="background:var(--surface);border:1px solid #D8C7AE;color:var(--ink)">
         <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:#F3E9DB;color:var(--clay)">${icon("heart-pulse",18)}</div>
@@ -1006,7 +1102,7 @@ function homeScreen(){
         <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:var(--primary);color:#fff">${icon("stethoscope",18)}</div>
         <div class="flex-1 min-w-0">
           <p style="font-size:12.5px" class="font-medium">${state.queue.position === 0 ? "ถึงคิวแล้ว — แพทย์พร้อม" : `คิวปรึกษาหมอ #${state.queue.position} · แตะเพื่อกลับเข้าคิว`}</p>
-          <p style="font-size:10.5px;color:#7A8271" class="mt-0.5">สถานะคิวและการชำระเงินของคุณยังอยู่ครบ</p>
+          <p style="font-size:10.5px;color:var(--ink-soft)" class="mt-0.5">สถานะคิวและการชำระเงินของคุณยังอยู่ครบ</p>
         </div>
         ${icon("chevron-right",16,"shrink-0")}
       </button>
@@ -1021,13 +1117,13 @@ function homeScreen(){
           <div class="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style="background:#EDE9DA">${icon(b.icon, 18)}</div>
           <div class="flex-1 min-w-0">
             <p style="font-size:13px" class="font-medium">${b.title}</p>
-            <p style="font-size:11px;color:#7A8271" class="mt-0.5">${b.sub}</p>
+            <p style="font-size:11px;color:var(--ink-soft)" class="mt-0.5">${b.sub}</p>
           </div>
           <div class="text-right shrink-0">
             <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5" style="background:#E4EBDD;color:var(--primary);font-size:9.5px">${icon("check", 10)} ยืนยันแล้ว</span>
             <p class="serif-th mt-1" style="font-size:12.5px;color:var(--clay)">฿${b.amount.toLocaleString()}</p>
           </div>
-          ${icon("chevron-right", 14, "shrink-0")}
+          ${icon("chevron-right", 16, "shrink-0")}
         </button>`).join("")}
       </div>` : ""}
       ${state.bookings.some(b => b.kind === "lab") ? "" : `
@@ -1037,7 +1133,7 @@ function homeScreen(){
         <div class="flex-1 min-w-0">
           <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5" style="background:var(--clay);color:#fff;font-size:9px">${icon("sparkles", 9)} แนะนำสำหรับคุณ</span>
           <p style="font-size:13px" class="font-medium mt-1">เจาะเลือดตรวจสุขภาพประจำปี</p>
-          <p style="font-size:11px;color:#8A9080" class="mt-0.5">คิวว่างวัน${tomorrowThai()} 09:00 น. · แตะเพื่อจองเลย</p>
+          <p style="font-size:11px;color:var(--ink-soft)" class="mt-0.5">คิวว่างวัน${tomorrowThai()} 09:00 น. · แตะเพื่อจองเลย</p>
         </div>
         ${icon("chevron-right",16,"shrink-0")}
       </button>`}
@@ -1046,26 +1142,15 @@ function homeScreen(){
     <div class="px-5 mt-6">
       <p class="serif-th font-semibold mb-2" style="font-size:15px">บริการไลฟ์สไตล์แนะนำ</p>
       <div class="flex gap-3 overflow-x-auto phone-scroll pb-1">
-        <div class="rounded-2xl p-4 shrink-0" style="width:160px;background:var(--surface);border:1px solid var(--line)">
-          ${icon("snowflake",18)}
-          <p style="font-size:12.5px" class="mt-2 font-medium">Ice bath ริมสวน</p>
-          <button data-nav="lifestyle" data-set-tab="icebath" style="font-size:11px;color:var(--primary)" class="mt-2 font-medium">ดูรายละเอียด →</button>
-        </div>
-        <div class="rounded-2xl p-4 shrink-0" style="width:160px;background:var(--surface);border:1px solid var(--line)">
-          ${icon("sparkle",18)}
-          <p style="font-size:12.5px" class="mt-2 font-medium">นวดแผนไทยพาร์ทเนอร์</p>
-          <button data-nav="lifestyle" data-set-tab="massage" style="font-size:11px;color:var(--primary)" class="mt-2 font-medium">ดูรายละเอียด →</button>
-        </div>
-        <div class="rounded-2xl p-4 shrink-0" style="width:160px;background:var(--surface);border:1px solid var(--line)">
-          ${icon("activity",18)}
-          <p style="font-size:12.5px" class="mt-2 font-medium">กายภาพบำบัดที่บ้าน</p>
-          <button data-nav="lifestyle" data-set-tab="physio" style="font-size:11px;color:var(--primary)" class="mt-2 font-medium">ดูรายละเอียด →</button>
-        </div>
-        <div class="rounded-2xl p-4 shrink-0" style="width:160px;background:var(--surface);border:1px solid var(--line)">
-          ${icon("paw-print",18)}
-          <p style="font-size:12.5px" class="mt-2 font-medium">Pet Care ครบวงจร</p>
-          <button data-nav="lifestyle" data-set-tab="petcare" style="font-size:11px;color:var(--primary)" class="mt-2 font-medium">ดูรายละเอียด →</button>
-        </div>
+        ${lifestyleHighlights.map(item => `
+        <button data-nav="lifestyle" data-set-tab="${item.tab}" class="rounded-2xl p-4 shrink-0 text-left" style="width:168px;background:var(--surface);border:1px solid var(--line)">
+          <div class="flex items-center justify-between">
+            <span class="w-9 h-9 rounded-full flex items-center justify-center" style="background:${item.iconBg};color:${item.iconColor}">${icon(item.icon,17)}</span>
+            ${icon("chevron-right",16,"shrink-0")}
+          </div>
+          <p style="font-size:12.5px;min-height:38px" class="mt-2 font-medium">${item.title}</p>
+          <span class="inline-flex rounded-full px-2 py-1 mt-2" style="background:${isResident() ? "#E7EDDF" : "#F3E9DB"};color:${isResident() ? "var(--primary)" : "var(--clay)"};font-size:10px;font-weight:600">${isResident() ? "ลูกบ้าน −15%" : `เริ่มต้น ฿${item.price.toLocaleString()}`}</span>
+        </button>`).join("")}
       </div>
     </div>
   </div>`;
@@ -1077,7 +1162,7 @@ function specialtyScreen(){
   const others = specialties.filter(s => !s.featured);
   return `
   <div class="pb-28">
-    ${screenHero({ title: "เลือกผู้เชี่ยวชาญ", sub: "เล่าให้เราฟัง แล้วเราจะจัดคิวกับคนที่เหมาะที่สุด", icon: "stethoscope", from: "#4A6741", to: "#3A4E33" })}
+    ${screenHero({ title: "เลือกผู้เชี่ยวชาญ", sub: "เล่าให้เราฟัง แล้วเราจะจัดคิวกับคนที่เหมาะที่สุด", icon: "stethoscope", from: "var(--primary)", to: "var(--primary-dark)" })}
     <div class="px-5">
       ${featured.map(s => {
         const selected = state.specialty === s.id;
@@ -1092,7 +1177,7 @@ function specialtyScreen(){
         </button>`;
       }).join("")}
 
-      <p style="font-size:11.5px;color:var(--muted)" class="mb-2 mt-1">ผู้เชี่ยวชาญด้านอื่น</p>
+      <p style="font-size:14px;color:var(--ink-soft)" class="serif-th font-semibold mb-2 mt-1">ผู้เชี่ยวชาญด้านอื่น</p>
       <div class="grid grid-cols-2 gap-2.5">
         ${others.map(s => {
           const selected = state.specialty === s.id;
@@ -1100,17 +1185,18 @@ function specialtyScreen(){
           <button data-pick-specialty="${s.id}" class="text-left rounded-xl p-3" style="background:${selected ? "#EDE9DA" : "var(--surface)"};border:${selected ? "1.5px solid var(--primary)" : "1px solid var(--line)"}">
             ${icon(s.icon,17)}
             <p style="font-size:12px" class="font-medium mt-2 leading-tight">${s.name}</p>
-            <p style="font-size:10px;color:#8A9080" class="mt-0.5 leading-tight">${s.sub}</p>
+            <p style="font-size:10px;color:var(--ink-soft)" class="mt-0.5 leading-tight">${s.sub}</p>
           </button>`;
         }).join("")}
       </div>
     </div>
 
     <div class="px-5 mt-6">
-      <button data-next-from-specialty class="w-full rounded-full py-3.5 font-medium flex items-center justify-center gap-2"
-        style="background:${state.specialty ? "var(--clay)" : "#DCD5C2"};color:${state.specialty ? "#fff" : "var(--muted)"};font-size:14px">
+      <button data-next-from-specialty ${state.specialty ? "" : "disabled"} aria-disabled="${state.specialty ? "false" : "true"}" class="w-full rounded-full py-3.5 font-medium flex items-center justify-center gap-2"
+        style="background:${state.specialty ? "var(--clay)" : "#DCD5C2"};color:${state.specialty ? "#fff" : "var(--ink-soft)"};font-size:14px">
         ถัดไป ${icon("chevron-right",16)}
       </button>
+      ${state.specialty ? "" : `<p class="text-center mt-2" style="font-size:10.5px;color:var(--ink-soft)">เลือกแผนกก่อน</p>`}
     </div>
   </div>`;
 }
@@ -1123,44 +1209,44 @@ function consultForm(){
   const doctors = staffFor("doctor");
   return `
   <div class="pb-28">
-    ${topBar("เล่าอาการของคุณ", true)}
+    ${screenHero({ title: "เล่าอาการของคุณ", sub: spec ? `ปรึกษา${spec.name} แบบเป็นส่วนตัว` : "เล่าให้ทีมดูแลฟังอย่างเป็นส่วนตัว", icon: "message-circle", from: "var(--primary)", to: "var(--primary-dark)" })}
     <div class="px-5">
       ${isPsych ? `
-      <div class="rounded-2xl p-5 mb-4 text-center" style="background:var(--primary-dark)">
+      <div class="rounded-2xl p-5 mb-4 text-center" style="background:#EFF3EA;border:1px solid #C9D6BD">
         <div class="relative w-16 h-16 mx-auto mb-3 flex items-center justify-center">
           <span class="absolute inset-0 rounded-full listen-ring2" style="background:#8FAE7F"></span>
           <span class="absolute inset-1.5 rounded-full listen-ring1" style="background:#A9C79A"></span>
           <span class="relative w-8 h-8 rounded-full flex items-center justify-center" style="background:#fff">${icon("heart-pulse",16)}</span>
         </div>
-        <p class="serif-th text-white" style="font-size:14.5px">เราคือคนกลางที่พร้อมรับฟังคุณ</p>
-        <p style="font-size:11.5px;color:#D7E2CC" class="mt-1.5 leading-relaxed">
+        <p class="serif-th" style="font-size:14.5px;color:var(--primary-dark)">เราคือคนกลางที่พร้อมรับฟังคุณ</p>
+        <p style="font-size:11.5px;color:var(--ink-soft)" class="mt-1.5 leading-relaxed">
           พิมพ์เล่าได้ตามที่คุณสบายใจ ไม่มีคำตอบไหนผิด และทุกอย่างที่คุณเล่าจะถูกเก็บเป็นความลับ
         </p>
       </div>` : ""}
 
-      <p style="font-size:12.5px" class="font-medium mb-2">เลือกแพทย์ที่สะดวกให้คำปรึกษาวันนี้</p>
+      <p style="font-size:14px" class="serif-th font-semibold mb-2">เลือกแพทย์ที่สะดวกให้คำปรึกษาวันนี้</p>
       <div class="space-y-2 mb-5">
         ${doctors.map(d => `
-        <button data-doctor="${d.id}" ${d.avail ? "" : "disabled"} class="w-full flex items-center gap-3 rounded-xl p-3 text-left" style="background:${state.selectedDoctor===d.id ? "#EDE9DA" : "var(--surface)"};border:${state.selectedDoctor===d.id ? "1.5px solid var(--primary)" : "1px solid var(--line)"};opacity:${d.avail ? 1 : 0.45}">
+        <button data-doctor="${d.id}" ${d.avail ? "" : "disabled"} class="w-full flex items-center gap-3 rounded-xl p-3 text-left" style="background:${state.selectedDoctor===d.id ? "#EDE9DA" : "var(--surface)"};border:${state.selectedDoctor===d.id ? "1.5px solid var(--primary)" : "1px solid var(--line)"};opacity:${d.avail ? 1 : 0.6}">
           <div class="w-9 h-9 rounded-full flex items-center justify-center shrink-0 font-medium" style="${staffAvatar(d.id)}font-size:13px">${d.id}</div>
           <div class="flex-1">
             <p style="font-size:12.5px" class="font-medium">${d.name}</p>
-            <p style="font-size:10.5px;color:#8A9080">${d.role}</p>
+            <p style="font-size:10.5px;color:var(--ink-soft)">${d.role}</p>
           </div>
-          ${state.selectedDoctor===d.id ? icon("check",16,"shrink-0") : ""}
+          ${d.avail ? (state.selectedDoctor===d.id ? icon("check",16,"shrink-0") : "") : `<span style="font-size:10px;color:var(--ink-soft)">ไม่ว่าง</span>`}
         </button>`).join("")}
       </div>
 
-      <label style="font-size:12.5px" class="font-medium mb-2 block">${isPsych ? "เรื่องที่อยากปรึกษา (เลือกได้หลายข้อ)" : "อาการที่คุณกำลังเผชิญอยู่ (เลือกได้หลายข้อ)"}</label>
+      <label style="font-size:14px" class="serif-th font-semibold mb-2 block">${isPsych ? "เรื่องที่อยากปรึกษา (เลือกได้หลายข้อ)" : "อาการที่คุณกำลังเผชิญอยู่ (เลือกได้หลายข้อ)"}</label>
       <div class="flex flex-wrap gap-2 mb-4">
         ${(symptomChips[state.specialty] || symptomChips.gp).map(tag => {
           const sel = state.symptomTags.includes(tag);
           return `
-        <button data-symptom-tag="${tag}" class="rounded-full px-3.5 py-2" style="background:${sel ? "var(--primary)" : "var(--surface)"};color:${sel ? "#fff" : "var(--ink)"};border:1px solid ${sel ? "var(--primary)" : "var(--line)"};font-size:12px">${tag}</button>`;
+        <button data-symptom-tag="${tag}" class="rounded-full px-3.5 py-2.5" style="background:${sel ? "var(--primary)" : "var(--surface)"};color:${sel ? "#fff" : "var(--ink)"};border:1px solid ${sel ? "var(--primary)" : "var(--line)"};font-size:13px">${tag}</button>`;
         }).join("")}
       </div>
 
-      <label style="font-size:12.5px" class="font-medium mb-2 block">อื่น ๆ / รายละเอียดเพิ่มเติม <span style="color:var(--muted);font-weight:400">(พิมพ์เพิ่มได้)</span></label>
+      <label style="font-size:14px" class="serif-th font-semibold mb-2 block">อื่น ๆ / รายละเอียดเพิ่มเติม <span style="color:var(--ink-soft);font-family:'Noto Sans Thai',sans-serif;font-size:11px;font-weight:400">(พิมพ์เพิ่มได้)</span></label>
       <textarea id="symptom-input" rows="3" maxlength="500" placeholder="${isPsych ? "เช่น เล่าสิ่งที่เจอมา หรือสิ่งที่อยากให้หมอรู้เพิ่มเติม..." : "เช่น เป็นมากี่วัน มีโรคประจำตัว หรือแพ้ยาอะไร..."}"
         class="w-full rounded-2xl p-4" style="background:var(--surface);border:1px solid var(--line);font-size:13px;resize:none">${esc(state.symptom)}</textarea>
       <div class="flex justify-end mt-1"><span style="font-size:10.5px;color:var(--muted)" id="char-count">${state.symptom.length}/500</span></div>
@@ -1169,23 +1255,36 @@ function consultForm(){
         <input type="checkbox" id="need-cert" ${state.needCert ? "checked" : ""} class="w-4 h-4" />
         <div class="flex-1">
           <p style="font-size:12.5px" class="font-medium">ต้องการใบรับรองแพทย์</p>
-          <p style="font-size:10.5px;color:#8A9080">ค่าบริการเพิ่ม 100 บาท</p>
+          <p style="font-size:10.5px;color:var(--ink-soft)">ค่าบริการเพิ่ม 100 บาท</p>
         </div>
       </label>
 
+      <div class="rounded-2xl p-3.5 mt-3" style="background:var(--surface);border:1px solid var(--line)">
+        <div class="flex items-center justify-between">
+          <span style="font-size:12px;color:var(--ink-soft)">ค่าปรึกษา</span>
+          <span class="font-medium" style="font-size:12.5px">฿400</span>
+        </div>
+        ${state.needCert ? `<div class="flex items-center justify-between mt-1.5"><span style="font-size:12px;color:var(--ink-soft)">ใบรับรองแพทย์</span><span class="font-medium" style="font-size:12.5px">+฿100</span></div>` : ""}
+        <div class="flex items-center justify-between mt-2.5 pt-2.5" style="border-top:1px solid var(--line)">
+          <span class="font-medium" style="font-size:12.5px">ยอดยืนยันคิว</span>
+          <span class="serif-th" style="font-size:17px;color:var(--clay)">฿${state.needCert ? 500 : 400}</span>
+        </div>
+      </div>
+
       <div class="rounded-2xl p-3.5 mt-3 flex items-start gap-2.5" style="background:#EFEAE0">
         ${icon("info",15,"shrink-0 mt-0.5")}
-        <p style="font-size:10.5px;color:#5B6350;line-height:1.5">
+        <p style="font-size:10.5px;color:var(--ink-soft);line-height:1.5">
           หากคุณกำลังอยู่ในภาวะฉุกเฉินหรือเป็นอันตรายต่อตัวเอง กรุณาโทร 1669 หรือสายด่วนสุขภาพจิต 1323 ทันที ระบบนี้ไม่ใช่บริการฉุกเฉิน
         </p>
       </div>
     </div>
 
     <div class="px-5 mt-6">
-      <button id="submit-consult" ${canSubmit ? "" : "disabled"} class="w-full rounded-full py-3.5 font-medium flex items-center justify-center gap-2"
-        style="background:${canSubmit ? "var(--clay)" : "#DCD5C2"};color:${canSubmit ? "#fff" : "var(--muted)"};font-size:14px">
+      <button id="submit-consult" ${canSubmit ? "" : "disabled"} aria-disabled="${canSubmit ? "false" : "true"}" class="w-full rounded-full py-3.5 font-medium flex items-center justify-center gap-2"
+        style="background:${canSubmit ? "var(--clay)" : "#DCD5C2"};color:${canSubmit ? "#fff" : "var(--ink-soft)"};font-size:14px">
         ส่งคำขอปรึกษา ${icon("send",15)}
       </button>
+      <p id="consult-submit-helper" class="text-center mt-2" style="font-size:10.5px;color:var(--ink-soft);${canSubmit ? "display:none" : ""}">เลือกอาการหรือพิมพ์อย่างน้อย 5 ตัวอักษร</p>
     </div>
   </div>`;
 }
@@ -1209,21 +1308,22 @@ function queueScreen(){
   return `
   <div class="pb-10 px-5 pt-6">
     <div class="flex justify-end">
-      <button data-nav="home" class="w-8 h-8 rounded-full flex items-center justify-center" style="background:var(--surface);border:1px solid var(--line)">${icon("x",16)}</button>
+      <button data-nav="home" class="w-10 h-10 rounded-full flex items-center justify-center" style="background:var(--surface);border:1px solid var(--line)" aria-label="ปิด">${icon("x",16)}</button>
     </div>
     <div class="text-center mt-2">
       <div class="w-14 h-14 rounded-full mx-auto flex items-center justify-center" style="background:var(--primary);color:#fff">${icon("check",24,"")}</div>
       <h2 class="serif-th mt-4" style="font-size:18px">ส่งคำขอเรียบร้อยแล้ว</h2>
-      <p style="font-size:12.5px;color:#7A8271" class="mt-1">ขอบคุณที่ไว้วางใจเล่าให้เราฟัง ทีมงานกำลังจัดคิวให้คุณ</p>
+      <p style="font-size:12.5px;color:var(--ink-soft)" class="mt-1">ขอบคุณที่ไว้วางใจเล่าให้เราฟัง ทีมงานกำลังจัดคิวให้คุณ</p>
     </div>
 
     <div class="rounded-2xl p-4 mt-6" style="background:var(--surface);border:1px solid var(--line)">
       <div class="flex items-center justify-between">
-        <span style="font-size:12.5px;color:#5B6350">คิวปัจจุบันของคุณ</span>
+        <span style="font-size:12.5px;color:var(--ink-soft)">คิวปัจจุบันของคุณ</span>
         <span id="queue-pos" class="serif-th" style="font-size:20px;color:var(--primary);display:inline-block">${ready ? "ถึงคิวแล้ว" : `#${q.position}`}</span>
       </div>
       <div class="h-1.5 rounded-full mt-3" style="background:#EDE9DA"><div id="queue-fill" data-target="${progress}" class="h-1.5 rounded-full" style="width:${prevProgress}%;background:var(--primary);transition:width .6s ease"></div></div>
-      <p style="font-size:11px;color:var(--muted)" class="mt-2">${ready ? "แพทย์พร้อมให้คำปรึกษาแล้ว" : `เวลารอโดยประมาณ ${q.wait} นาที`} · ${spec ? spec.name : "แพทย์ทั่วไป"}${doctor ? ` · ${doctor.name}` : ""}</p>
+      <p style="font-size:13px;color:var(--ink-soft);font-weight:600" class="mt-2">${ready ? "แพทย์พร้อมให้คำปรึกษาแล้ว" : `เวลารอโดยประมาณ ${q.wait} นาที`}</p>
+      <p style="font-size:10.5px;color:var(--ink-soft)" class="mt-0.5">${spec ? spec.name : "แพทย์ทั่วไป"}${doctor ? ` · ${doctor.name}` : ""}</p>
     </div>
 
     ${state.queuePaid ? `
@@ -1231,7 +1331,7 @@ function queueScreen(){
       <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:var(--primary);color:#fff">${icon("check",18)}</div>
       <div class="flex-1">
         <p style="font-size:12.5px" class="font-medium" >ชำระแล้ว · คิวได้รับการยืนยัน</p>
-        <p style="font-size:11px;color:#7A8271">พร้อมเพย์ · Ornsirin Health Link</p>
+        <p style="font-size:11px;color:var(--ink-soft)">พร้อมเพย์ · Ornsirin Health Link</p>
       </div>
       <p class="serif-th" style="font-size:16px;color:var(--primary)">฿${price}</p>
     </div>` : `
@@ -1239,20 +1339,21 @@ function queueScreen(){
       <div class="shrink-0 rounded-lg p-1" style="width:44px;height:44px;background:#fff;border:1px solid var(--line)">${QR_SVG}</div>
       <div class="flex-1">
         <p style="font-size:12.5px" class="font-medium">ชำระเงินเพื่อยืนยันคิว</p>
-        <p style="font-size:11px;color:#8A9080">สแกนจ่ายผ่าน QR พร้อมเพย์</p>
+        <p style="font-size:11px;color:var(--ink-soft)">สแกนจ่ายผ่าน QR พร้อมเพย์</p>
       </div>
       <p class="serif-th" style="font-size:16px;color:var(--clay)">฿${price}</p>
     </button>`}
 
-    ${ready ? `
-    ${state.queuePaid ? `
-    <button data-queue-call class="w-full rounded-full py-3.5 font-medium mt-6 flex items-center justify-center gap-2" style="background:var(--clay);color:#fff;font-size:14px">
+    ${ready && state.queuePaid ? `
+    <button data-queue-call data-queue-primary class="w-full rounded-full py-3.5 font-medium mt-6 flex items-center justify-center gap-2" style="background:var(--clay);color:#fff;font-size:14px">
       ${icon("video",16)} เข้าสู่ห้อง VDO call
-    </button>` : `
-    <button data-queue-pay class="w-full rounded-full py-3.5 font-medium mt-6 flex items-center justify-center gap-2" style="background:var(--surface);color:var(--clay);border:1.5px solid var(--clay);font-size:14px">
-      ${icon("lock",15)} ชำระเงินก่อนเข้าห้อง VDO call
     </button>
-    <p class="text-center mt-2" style="font-size:10.5px;color:var(--muted)">แพทย์พร้อมแล้ว — ชำระเงินเพื่อเริ่มการปรึกษา</p>`}
+    <button data-nav="home" class="w-full rounded-full py-3 font-medium mt-2.5" style="background:var(--surface);color:var(--primary);border:1px solid var(--primary);font-size:13px">กลับหน้าแรก</button>
+    ` : !state.queuePaid ? `
+    <button data-queue-pay data-queue-primary class="w-full rounded-full py-3.5 font-medium mt-6 flex items-center justify-center gap-2" style="background:var(--clay);color:#fff;font-size:14px">
+      ${icon("lock",15)} ชำระเงินเพื่อยืนยันคิว
+    </button>
+    ${ready ? `<p class="text-center mt-2" style="font-size:10.5px;color:var(--ink-soft)">แพทย์พร้อมแล้ว — ยืนยันคิวเพื่อเริ่มการปรึกษา</p>` : ""}
     <button data-nav="home" class="w-full rounded-full py-3 font-medium mt-2.5" style="background:var(--surface);color:var(--primary);border:1px solid var(--primary);font-size:13px">กลับหน้าแรก</button>
     ` : `
     <button data-nav="home" class="w-full rounded-full py-3.5 font-medium mt-6" style="background:var(--primary);color:#fff;font-size:14px">กลับหน้าแรก</button>
@@ -1286,7 +1387,7 @@ function callScreen(){
         ${connecting ? `
         <span class="absolute inset-0 rounded-full listen-ring2" style="background:#39452F"></span>
         <span class="absolute inset-3 rounded-full listen-ring1" style="background:#48583B"></span>` : `
-        <span class="absolute inset-1 rounded-full" style="background:#39452F"></span>`}
+        <span class="absolute inset-1 rounded-full listen-ring1" style="background:#39452F"></span>`}
         <div class="relative w-24 h-24 rounded-full flex items-center justify-center serif-th" style="background:#5C6E4C;color:#fff;font-size:36px">${docInitial}</div>
       </div>
       <p class="serif-th mt-6" style="font-size:16px;color:#fff">${connecting ? "กำลังเชื่อมต่อห้องสนทนา" : `อยู่ในสายกับ ${doctor.name}`}</p>
@@ -1303,7 +1404,7 @@ function callScreen(){
       <div class="flex items-center justify-center gap-5">
         <button data-call-mute class="w-12 h-12 rounded-full flex items-center justify-center"
           style="background:${c.muted ? "#F2EFE6" : "rgba(255,255,255,0.12)"};color:${c.muted ? "#232B20" : "#F2EFE6"}">${icon(c.muted ? "mic-off" : "mic", 20)}</button>
-        <button data-call-end class="w-16 h-16 rounded-full flex items-center justify-center" style="background:#C0503F;color:#fff">
+        <button data-call-end class="w-16 h-16 rounded-full flex items-center justify-center" style="background:var(--danger);color:#fff">
           <span style="display:inline-block;transform:rotate(135deg)">${icon("phone", 24)}</span>
         </button>
         <button data-call-camera class="w-12 h-12 rounded-full flex items-center justify-center"
@@ -1347,16 +1448,16 @@ function labScreen(){
         </span>
         ${icon("chevron-right",16)}
       </button>
-      <p style="font-size:12.5px" class="font-medium mb-2">เลือกรายการตรวจ</p>
+      <p style="font-size:14px" class="serif-th font-semibold mb-2">เลือกรายการตรวจ</p>
       <div class="space-y-2 mb-4">
         ${tests.map(t => `
         <label class="flex items-center gap-3 rounded-xl p-3" style="background:var(--surface);border:1px solid var(--line)">
           <input type="checkbox" data-test="${t.name}" ${state.pickedTests.includes(t.name) ? "checked" : ""} class="w-4 h-4" />
           <span style="font-size:12.5px" class="flex-1">${t.name}</span>
-          <span style="font-size:11.5px;color:#8A9080">฿${t.price.toLocaleString()}</span>
+          <span style="font-size:11.5px;color:var(--ink-soft)">฿${t.price.toLocaleString()}</span>
         </label>`).join("")}
       </div>
-      <p style="font-size:12.5px" class="font-medium mb-2">วันและเวลาที่สะดวก</p>
+      <p style="font-size:14px" class="serif-th font-semibold mb-2">วันและเวลาที่สะดวก</p>
       <div class="flex gap-2.5 mb-4">
         <div class="flex-1 rounded-xl p-3 flex items-center gap-2" style="background:var(--surface);border:1px solid var(--line)">
           ${icon("calendar",15)}<input type="date" id="lab-date" value="${state.labDate}" class="bg-transparent outline-none w-full" style="font-size:12px" />
@@ -1371,14 +1472,14 @@ function labScreen(){
 
       <div class="rounded-2xl p-4 mb-5" style="background:var(--surface);border:1px solid var(--line)">
         <div class="flex items-center justify-between mb-1.5">
-          <span style="font-size:11.5px;color:#7A8271">ค่าตรวจ ${state.pickedTests.length} รายการ</span>
-          <span style="font-size:11.5px;color:#7A8271">฿${tests.filter(t => state.pickedTests.includes(t.name)).reduce((a, t) => a + t.price, 0).toLocaleString()}</span>
+          <span style="font-size:11.5px;color:var(--ink-soft)">ค่าตรวจ ${state.pickedTests.length} รายการ</span>
+          <span style="font-size:11.5px;color:var(--ink-soft)">฿${tests.filter(t => state.pickedTests.includes(t.name)).reduce((a, t) => a + t.price, 0).toLocaleString()}</span>
         </div>
         <div class="flex items-center justify-between mb-2.5">
-          <span style="font-size:11.5px;color:#7A8271">ค่าบริการถึงบ้าน</span>
+          <span style="font-size:11.5px;color:var(--ink-soft)">ค่าบริการถึงบ้าน</span>
           ${isResident() ? `
           <span style="font-size:11.5px"><s style="color:var(--muted)">฿${LAB_HOME_FEE}</s> <span style="color:var(--primary)" class="font-medium">ฟรี · สิทธิ์ลูกบ้าน</span></span>` : `
-          <span style="font-size:11.5px;color:#7A8271">฿${(total ? LAB_HOME_FEE : 0).toLocaleString()}</span>`}
+          <span style="font-size:11.5px;color:var(--ink-soft)">฿${(total ? LAB_HOME_FEE : 0).toLocaleString()}</span>`}
         </div>
         <div class="flex items-center justify-between pt-2.5" style="border-top:1px solid var(--line)">
           <span style="font-size:12.5px" class="font-medium">ยอดชำระ</span>
@@ -1431,26 +1532,26 @@ function labResultsScreen(){
             <p class="font-medium" style="font-size:12px">ผลตรวจสุขภาพล่าสุด</p>
             <p class="mt-0.5" style="font-size:10.5px;color:#6E8098">ตรวจเมื่อ ${labResultDate(results[0].daysAgo)} · ${results.length} รายการ</p>
           </div>
-          <span class="rounded-full px-2 py-1" style="font-size:9.5px;background:#DDE9D7;color:#4A6741">ตรวจแล้ว</span>
+          <span class="rounded-full px-2 py-1 font-semibold" style="font-size:11px;background:#DDE9D7;color:#3D5636">ตรวจแล้ว</span>
         </div>
         <div class="space-y-2.5">
           ${results.map(result => {
             const follow = result.status === "follow";
             return `
-            <div class="rounded-2xl p-3.5" style="background:var(--surface);border:1px solid var(--line)">
+            <div class="lab-result-card rounded-2xl p-3.5" style="background:var(--surface);border:1px solid var(--line)">
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
                   <p class="font-medium" style="font-size:12.5px">${result.name}</p>
-                  <p class="mt-0.5" style="font-size:10px;color:#8A9080">วันที่ตรวจ ${labResultDate(result.daysAgo)}</p>
+                  <p class="mt-0.5" style="font-size:10px;color:var(--ink-soft)">วันที่ตรวจ ${labResultDate(result.daysAgo)}</p>
                 </div>
-                <span class="shrink-0 rounded-full px-2 py-1" style="font-size:9.5px;background:${follow ? "#F8E8C7" : "#DDE9D7"};color:${follow ? "#9A6A20" : "#4A6741"}">${follow ? "ควรติดตาม" : "ปกติ"}</span>
+                <span class="shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-1 font-semibold" style="font-size:11px;background:${follow ? "#F8E8C7" : "#DDE9D7"};color:${follow ? "#7A5115" : "#3D5636"}">${follow ? `${icon("alert-circle",11)} ควรติดตาม` : "ปกติ"}</span>
               </div>
               <div class="flex items-end justify-between gap-3 mt-3 pt-3" style="border-top:1px solid var(--line)">
                 <div>
                   <span class="serif-th" style="font-size:18px;color:${follow ? "#B8763E" : "var(--ink)"}">${result.value}</span>
-                  <span style="font-size:10px;color:#7A8271"> ${result.unit}</span>
+                  <span style="font-size:10px;color:var(--ink-soft)"> ${result.unit}</span>
                 </div>
-                <p class="text-right" style="font-size:10px;color:#8A9080">ช่วงอ้างอิง<br><span style="color:#5B6350">${result.reference} ${result.unit}</span></p>
+                <p class="text-right" style="font-size:10px;color:var(--ink-soft)">ช่วงอ้างอิง<br><span style="color:var(--ink-soft)">${result.reference} ${result.unit}</span></p>
               </div>
             </div>`;
           }).join("")}
@@ -1461,7 +1562,7 @@ function labResultsScreen(){
         <div class="rounded-3xl p-7 text-center" style="background:var(--surface);border:1px solid var(--line)">
           <span class="w-14 h-14 rounded-full mx-auto flex items-center justify-center" style="background:#E8ECF2;color:#586A85">${icon("clipboard-x",24)}</span>
           <h2 class="serif-th mt-4" style="font-size:17px">ยังไม่มีผลตรวจ</h2>
-          <p class="mt-1.5 leading-relaxed" style="font-size:11.5px;color:#7A8271">เมื่อผลตรวจพร้อม ระบบจะแจ้งและแสดงรายการทั้งหมดไว้ที่หน้านี้</p>
+          <p class="mt-1.5 leading-relaxed" style="font-size:11.5px;color:var(--ink-soft)">เมื่อผลตรวจพร้อม ระบบจะแจ้งและแสดงรายการทั้งหมดไว้ที่หน้านี้</p>
           <button data-nav="lab" class="w-full rounded-full py-3 mt-5 font-medium" style="background:var(--slate);color:#fff;font-size:13px">จองเจาะเลือด</button>
         </div>
       `}
@@ -1499,22 +1600,24 @@ function medsScreen(){
   <div class="pb-28">
     ${screenHero({ title: "ยาต่อเนื่อง", sub: "ยาประจำและยาสามัญ จัดส่งถึงหน้าบ้านคุณ", icon: "pill", from: "#B8763E", to: "#9A6030" })}
     <div class="px-5">
-      <p style="font-size:12.5px" class="font-medium mb-2">ยาประจำของคุณ</p>
+      <p style="font-size:14px" class="serif-th font-semibold mb-2">ยาประจำของคุณ</p>
       <div class="space-y-2.5 mb-5">
         ${current.length ? current.map(m => `
         <div class="rounded-2xl p-3.5 flex items-center gap-3" style="background:var(--surface);border:1px solid var(--line)">
-          <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:#F3E9DB">${icon("pill",16)}</div>
+          <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:#F3E9DB;color:var(--clay)">${icon("pill",16)}</div>
           <div class="flex-1">
             <p style="font-size:12.5px" class="font-medium">${m.name}</p>
-            <p style="font-size:10.5px;color:#8A9080">${m.freq}</p>
+            <p style="font-size:10.5px;color:var(--ink-soft)">${m.freq}</p>
           </div>
           <div class="text-right shrink-0">
             <p style="font-size:10px;color:var(--clay)" class="font-medium">${m.left}</p>
-            <p style="font-size:11.5px;color:#8A9080" class="mt-0.5">฿${m.price.toLocaleString()}</p>
+            <p style="font-size:11.5px;color:var(--ink-soft)" class="mt-0.5">฿${m.price.toLocaleString()}</p>
           </div>
         </div>`).join("") : `
-        <div class="rounded-2xl p-4 text-center" style="background:var(--surface);border:1px solid var(--line)">
-          <p style="font-size:11.5px;color:#8A9080">ไม่มีรายการยาประจำที่ต้องรับประทานในขณะนี้</p>
+        <div class="rounded-3xl p-6 text-center" style="background:var(--surface);border:1px solid var(--line)">
+          <span class="w-14 h-14 rounded-full mx-auto flex items-center justify-center" style="background:#F3E9DB;color:var(--clay)">${icon("pill",24)}</span>
+          <h2 class="serif-th mt-4 font-semibold" style="font-size:17px">ยังไม่มียาประจำ</h2>
+          <p class="mt-1.5 leading-relaxed" style="font-size:11.5px;color:var(--ink-soft)">เมื่อมีรายการยาต่อเนื่อง ระบบจะแสดงจำนวนคงเหลือและช่วยเตือนให้สั่งเติมล่วงหน้า</p>
         </div>`}
       </div>
       <button id="meds-otc" class="w-full rounded-full py-3 font-medium mb-3 flex items-center justify-center gap-1.5"
@@ -1527,17 +1630,17 @@ function medsScreen(){
         <label class="flex items-center gap-3 rounded-xl p-3" style="background:var(--surface);border:1px solid var(--line)">
           <input type="checkbox" data-otc="${o.name}" ${state.pickedOtc.includes(o.name) ? "checked" : ""} class="w-4 h-4" />
           <span style="font-size:12.5px" class="flex-1">${o.name}</span>
-          <span style="font-size:11.5px;color:#8A9080">฿${o.price}</span>
+          <span style="font-size:11.5px;color:var(--ink-soft)">฿${o.price}</span>
         </label>`).join("")}
       </div>` : `<div class="mb-3"></div>`}
-      <p style="font-size:12.5px" class="font-medium mb-2">จัดส่งไปที่</p>
+      <p style="font-size:14px" class="serif-th font-semibold mb-2">จัดส่งไปที่</p>
       <div class="rounded-xl p-3 flex items-center gap-2.5 mb-4" style="background:var(--surface);border:1px solid var(--line)">
         ${icon("map-pin",15)}<span style="font-size:12px">${userAddress()}</span>
       </div>
       ${itemCount ? `
       <div class="rounded-2xl p-4 mb-5" style="background:var(--surface);border:1px solid var(--line)">
         ${current.length ? `
-        <p style="font-size:10.5px;color:#8A9080" class="mb-1.5">ยาประจำ · ${current.length} รายการ</p>
+        <p style="font-size:10.5px;color:var(--ink-soft)" class="mb-1.5">ยาประจำ · ${current.length} รายการ</p>
         <div class="space-y-1.5 mb-2.5">
           ${current.map(m => `
           <div class="flex items-center justify-between gap-3">
@@ -1545,11 +1648,11 @@ function medsScreen(){
               <span class="rounded-full shrink-0" style="width:5px;height:5px;background:var(--primary)"></span>
               <p style="font-size:11.5px" class="min-w-0">${m.name}</p>
             </div>
-            <span style="font-size:11px;color:#8A9080" class="shrink-0">฿${m.price.toLocaleString()}</span>
+            <span style="font-size:11px;color:var(--ink-soft)" class="shrink-0">฿${m.price.toLocaleString()}</span>
           </div>`).join("")}
         </div>` : ""}
         ${otcPicked.length ? `
-        <p style="font-size:10.5px;color:#8A9080" class="mb-1.5">ยาสามัญ · ${otcPicked.length} รายการ</p>
+        <p style="font-size:10.5px;color:var(--ink-soft)" class="mb-1.5">ยาสามัญ · ${otcPicked.length} รายการ</p>
         <div class="space-y-1.5 mb-2.5">
           ${otcPicked.map(o => `
           <div class="flex items-center justify-between gap-3">
@@ -1557,14 +1660,14 @@ function medsScreen(){
               <span class="rounded-full shrink-0" style="width:5px;height:5px;background:var(--clay)"></span>
               <p style="font-size:11.5px" class="min-w-0">${o.name}</p>
             </div>
-            <span style="font-size:11px;color:#8A9080" class="shrink-0">฿${o.price.toLocaleString()}</span>
+            <span style="font-size:11px;color:var(--ink-soft)" class="shrink-0">฿${o.price.toLocaleString()}</span>
           </div>`).join("")}
         </div>` : ""}
         <div class="flex items-center justify-between mb-2.5">
-          <span style="font-size:11px;color:#8A9080">ค่าจัดส่งถึงบ้าน</span>
+          <span style="font-size:11px;color:var(--ink-soft)">ค่าจัดส่งถึงบ้าน</span>
           ${isResident() ? `
           <span style="font-size:11px"><s style="color:var(--muted)">฿${MEDS_DELIVERY_FEE}</s> <span style="color:var(--primary)" class="font-medium">ฟรี · สิทธิ์ลูกบ้าน</span></span>` : `
-          <span style="font-size:11px;color:#8A9080">฿${MEDS_DELIVERY_FEE}</span>`}
+          <span style="font-size:11px;color:var(--ink-soft)">฿${MEDS_DELIVERY_FEE}</span>`}
         </div>
         <div class="flex items-center justify-between pt-2.5" style="border-top:1px solid var(--line)">
           <span style="font-size:12.5px" class="font-medium">ยอดชำระ</span>
@@ -1580,16 +1683,17 @@ function medsScreen(){
 
 /* ---------------- lifestyle ---------------- */
 function bookableCard(category, item, cfg){
+  const unit = priceUnitFor(category, item);
   return `
   <button data-item-category="${category}" data-item-id="${item.id}" class="w-full text-left rounded-2xl p-4 flex items-center gap-3" style="background:var(--surface);border:1px solid var(--line)">
     <div class="flex-1">
       <p style="font-size:13px" class="font-medium">${cfg.title(item)}</p>
-      <p style="font-size:10.5px;color:#8A9080" class="mt-0.5">${cfg.sub(item)}</p>
+      <p style="font-size:10.5px;color:var(--ink-soft)" class="mt-0.5">${cfg.sub(item)}</p>
     </div>
     <div class="text-right shrink-0">
-      <p class="serif-th" style="font-size:15px;color:var(--primary)">${cfg.price(item) === "-" ? "ดูราคา" : `฿${cfg.price(item)}`}</p>
+      <p class="serif-th" style="font-size:15px;color:var(--primary)">${cfg.price(item) === "-" ? "ดูราคา" : `฿${cfg.price(item)}`} ${unit ? `<span style="font-family:'Noto Sans Thai',sans-serif;font-size:10px;color:var(--ink-soft)">${unit}</span>` : ""}</p>
     </div>
-    ${icon("chevron-right",15,"shrink-0")}
+    ${icon("chevron-right",16,"shrink-0")}
   </button>`;
 }
 
@@ -1609,7 +1713,7 @@ function lifestyleScreen(){
       icebath: "ฟื้นฟูร่างกาย ลดการอักเสบ มีเจ้าหน้าที่ดูแลตลอดเซสชัน",
       physio: "นักกายภาพบำบัดวิชาชีพ ถึงบ้านหรือห้องส่วนกลาง",
       petcare: "ดูแลน้องหมาน้องแมวครบวงจร ถึงบ้าน",
-    })[state.lifestyleTab] || "", icon: "sparkles", from: "#41593A", to: "#33452D" })}
+    })[state.lifestyleTab] || "", icon: "sparkles", from: "var(--primary)", to: "var(--primary-dark)" })}
     <div class="px-5">
       <div class="flex gap-1.5 mb-5 rounded-full p-1 overflow-x-auto tab-scroll" style="background:#EDE9DA">
         ${tabs.map(t => `
@@ -1648,11 +1752,11 @@ function lifestyleScreen(){
             <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0" style="background:#F3E9DB;color:var(--clay)">${icon(pet.icon, 22)}</div>
             <div class="flex-1 min-w-0">
               <p style="font-size:13.5px" class="font-medium">${esc(pet.name)}</p>
-              <p style="font-size:10.5px;color:#8A9080" class="mt-0.5">${[pet.breed, pet.age, pet.weight].filter(Boolean).map(esc).join(" · ")}</p>
+              <p style="font-size:10.5px;color:var(--ink-soft)" class="mt-0.5">${[pet.breed, pet.age, pet.weight].filter(Boolean).map(esc).join(" · ")}</p>
             </div>
             <div class="flex flex-col items-end gap-1.5 shrink-0">
-              <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5" style="background:#EDE9DA;color:#5B6350;font-size:9.5px">${icon("heart", 10)} สัตว์เลี้ยงของ${currentUser().short}</span>
-              <button data-editpet="${pet.id}" class="inline-flex items-center gap-1 rounded-full px-2 py-0.5" style="background:transparent;border:1px solid var(--line);color:#8A9080;font-size:9.5px">${icon("pencil", 10)} แก้ไข</button>
+              <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5" style="background:#EDE9DA;color:var(--ink-soft);font-size:9.5px">${icon("heart", 10)} สัตว์เลี้ยงของ${currentUser().short}</span>
+              <button data-editpet="${pet.id}" class="inline-flex items-center gap-1 rounded-full px-2 py-0.5" style="background:transparent;border:1px solid var(--line);color:var(--ink-soft);font-size:9.5px">${icon("pencil", 10)} แก้ไข</button>
             </div>
           </div>
           ${pet.vaccineDue ? `
@@ -1663,15 +1767,15 @@ function lifestyleScreen(){
           </button>` : pet.lastCheck ? `
           <div class="mt-3 rounded-xl p-2.5 flex items-center gap-2" style="background:#EFF3EA;border:1px solid #C9D6BD">
             <span style="color:var(--primary)">${icon("badge-check", 14)}</span>
-            <span style="font-size:11px;color:#5B6350">วัคซีนครบ สุขภาพดี · ตรวจล่าสุด ${pet.lastCheck}</span>
+            <span style="font-size:11px;color:var(--ink-soft)">วัคซีนครบ สุขภาพดี · ตรวจล่าสุด ${pet.lastCheck}</span>
           </div>` : `
           <button data-item-category="petcare" data-item-id="pc4" data-pet-id="${pet.id}" class="w-full mt-3 rounded-xl p-2.5 flex items-center gap-2 text-left" style="background:#EDE9DA;border:1px solid var(--line)">
-            <span style="color:#5B6350">${icon("clipboard-list", 14)}</span>
-            <span class="flex-1" style="font-size:11px;color:#5B6350">ยังไม่มีประวัติสุขภาพในระบบ — แตะเพื่อนัดตรวจครั้งแรก</span>
+            <span style="color:var(--ink-soft)">${icon("clipboard-list", 14)}</span>
+            <span class="flex-1" style="font-size:11px;color:var(--ink-soft)">ยังไม่มีประวัติสุขภาพในระบบ — แตะเพื่อนัดตรวจครั้งแรก</span>
             ${icon("chevron-right", 13, "shrink-0")}
           </button>`}
         </div>`).join("")}
-        <button data-addpet-open class="w-full rounded-2xl p-3 flex items-center justify-center gap-2" style="background:transparent;border:1.5px dashed #C9C2B0;color:#8A9080;font-size:12px">
+        <button data-addpet-open class="w-full rounded-2xl p-3 flex items-center justify-center gap-2" style="background:transparent;border:1.5px dashed #C9C2B0;color:var(--ink-soft);font-size:12px">
           ${icon("plus", 14)} เพิ่มโปรไฟล์สัตว์เลี้ยง
         </button>
         ${petCareServices.map(p => bookableCard("petcare", p, getItemConfig("petcare", p.id))).join("")}
@@ -1685,7 +1789,7 @@ function lifestyleScreen(){
 /* ---------------- notifications sheet ---------------- */
 function notificationsModal(){
   const items = [
-    ...(state.queue ? [{ target: "queue", icon: "stethoscope", title: `ใกล้ถึงคิวปรึกษาหมอแล้ว (#${state.queue.position})`, sub: state.queue.position === 0 ? "แพทย์พร้อมให้คำปรึกษาแล้ว" : `เหลือประมาณ ${state.queue.wait} นาที` }] : []),
+    ...(state.queue ? [{ target: "queue", icon: "stethoscope", urgent: true, title: `ใกล้ถึงคิวปรึกษาหมอแล้ว (#${state.queue.position})`, sub: state.queue.position === 0 ? "แพทย์พร้อมให้คำปรึกษาแล้ว" : `เหลือประมาณ ${state.queue.wait} นาที` }] : []),
     { target: "meds", icon: "pill", title: "ยาประจำใกล้หมด — สั่งเติมล่วงหน้าได้เลย", sub: "จัดส่งยาถึงบ้านภายใน 24 ชั่วโมง" },
     { target: "lab-results", icon: "clipboard-check", title: "ผลตรวจสุขภาพพร้อมดูแล้ว", sub: "เปิดดูผลตรวจล่าสุดของคุณ" },
     { target: "lifestyle", tab: "petcare", icon: "paw-print", title: "วัคซีนสัตว์เลี้ยงใกล้ครบกำหนด", sub: "เลือกบริการ Pet Care ที่เหมาะกับน้อง" },
@@ -1698,17 +1802,20 @@ function notificationsModal(){
           <h2 class="serif-th font-semibold" style="font-size:17px">การแจ้งเตือน</h2>
           <p style="font-size:10.5px;color:var(--muted)" class="mt-0.5">${items.length} รายการ</p>
         </div>
-        <button data-modal-close class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background:var(--surface);border:1px solid var(--line)">${icon("x",16)}</button>
+        <button data-modal-close class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:var(--surface);border:1px solid var(--line)" aria-label="ปิด">${icon("x",16)}</button>
       </div>
       <div class="space-y-2.5">
         ${items.map(item => `
         <button data-notification-target="${item.target}" ${item.tab ? `data-notification-tab="${item.tab}"` : ""} class="w-full text-left rounded-2xl p-3.5 flex items-center gap-3" style="background:var(--surface);border:1px solid var(--line)">
-          <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:#E7EDDF;color:var(--primary)">${icon(item.icon,17)}</div>
+          <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:${item.urgent ? "#F3E9DB" : "#E7EDDF"};color:${item.urgent ? "var(--clay)" : "var(--primary)"}">${icon(item.icon,17)}</div>
           <div class="flex-1 min-w-0">
-            <p class="font-medium" style="font-size:12.5px;line-height:1.4">${item.title}</p>
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <p class="font-medium" style="font-size:12.5px;line-height:1.4">${item.title}</p>
+              ${item.urgent ? `<span class="rounded-full px-2 py-0.5" style="background:var(--clay);color:#fff;font-size:9.5px;font-weight:600">ด่วน</span>` : ""}
+            </div>
             <p class="mt-0.5" style="font-size:10.5px;color:var(--muted)">${item.sub}</p>
           </div>
-          ${icon("chevron-right",15,"shrink-0")}
+          ${icon("chevron-right",16,"shrink-0")}
         </button>`).join("")}
       </div>
     </div>
@@ -1727,18 +1834,19 @@ function detailModal(){
   const gross = priceBase + surcharge;
   const discount = isResident() ? Math.round(gross * RESIDENT_LIFESTYLE_DISCOUNT) : 0;   // สิทธิ์ลูกบ้าน 15%
   const total = gross - discount;
+  const unit = priceUnitFor(m.category, item);
 
   return `
   <div class="absolute inset-0 z-40 flex flex-col justify-end" style="background:rgba(43,51,40,0.55);pointer-events:auto">
     <div class="sheet-body rounded-t-3xl p-5" style="background:var(--bg);max-height:88%;overflow-y:auto">
       <div class="flex items-center justify-between mb-1">
-        <h2 class="serif-th font-semibold" style="font-size:16px">${cfg.title(item)}</h2>
-        <button data-modal-close class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background:var(--surface);border:1px solid var(--line)">${icon("x",16)}</button>
+        <h2 class="serif-th font-semibold" style="font-size:17px">${cfg.title(item)}</h2>
+        <button data-modal-close class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:var(--surface);border:1px solid var(--line)" aria-label="ปิด">${icon("x",16)}</button>
       </div>
-      <p style="font-size:11.5px;color:#7A8271" class="mb-4">${cfg.sub(item)}</p>
+      <p style="font-size:11.5px;color:var(--ink-soft)" class="mb-4">${cfg.sub(item)}</p>
 
       ${m.category === "petcare" && userPets().length ? `
-      <p style="font-size:12.5px" class="font-medium mb-2">ใช้บริการสำหรับ</p>
+      <p style="font-size:14px" class="serif-th font-semibold mb-2">ใช้บริการสำหรับ</p>
       <div class="flex gap-2 mb-4 flex-wrap">
         ${userPets().map(pt => `
         <button data-modal-pet="${pt.id}" class="flex items-center gap-1.5 rounded-full px-3.5 py-2"
@@ -1748,26 +1856,26 @@ function detailModal(){
       </div>` : ""}
 
       ${cfg.supportsLocation ? `
-      <p style="font-size:12.5px" class="font-medium mb-2">เลือกสถานที่ใช้บริการ</p>
+      <p style="font-size:14px" class="serif-th font-semibold mb-2">เลือกสถานที่ใช้บริการ</p>
       <div class="flex gap-2 mb-4">
         <button data-modal-location="center" class="flex-1 rounded-xl py-2.5 text-center" style="background:${m.location==="center" ? "var(--primary)" : "var(--surface)"};color:${m.location==="center" ? "#fff" : "var(--ink)"};border:1px solid var(--line);font-size:12px">พื้นที่ส่วนกลาง</button>
         <button data-modal-location="home" class="flex-1 rounded-xl py-2.5 text-center" style="background:${m.location==="home" ? "var(--primary)" : "var(--surface)"};color:${m.location==="home" ? "#fff" : "var(--ink)"};border:1px solid var(--line);font-size:12px">ที่บ้าน${cfg.homeSurcharge ? ` (+฿${cfg.homeSurcharge})` : ""}</button>
       </div>` : ""}
 
-      <p style="font-size:12.5px" class="font-medium mb-2">เลือกผู้ให้บริการที่ว่างวันนี้</p>
+      <p style="font-size:14px" class="serif-th font-semibold mb-2">เลือกผู้ให้บริการที่ว่างวันนี้</p>
       <div class="space-y-2 mb-5">
         ${staffList.map(s => `
-        <button data-modal-staff="${s.id}" ${s.avail ? "" : "disabled"} class="w-full flex items-center gap-3 rounded-xl p-3 text-left" style="background:${m.staffId===s.id ? "#EDE9DA" : "var(--surface)"};border:${m.staffId===s.id ? "1.5px solid var(--primary)" : "1px solid var(--line)"};opacity:${s.avail ? 1 : 0.45}">
+        <button data-modal-staff="${s.id}" ${s.avail ? "" : "disabled"} class="w-full flex items-center gap-3 rounded-xl p-3 text-left" style="background:${m.staffId===s.id ? "#EDE9DA" : "var(--surface)"};border:${m.staffId===s.id ? "1.5px solid var(--primary)" : "1px solid var(--line)"};opacity:${s.avail ? 1 : 0.6}">
           <div class="w-9 h-9 rounded-full flex items-center justify-center shrink-0 font-medium" style="${staffAvatar(s.id)}font-size:13px">${s.id}</div>
           <div class="flex-1">
             <p style="font-size:12.5px" class="font-medium">${s.name}</p>
-            <p style="font-size:10.5px;color:#8A9080">${s.role}</p>
+            <p style="font-size:10.5px;color:var(--ink-soft)">${s.role}</p>
           </div>
           <span style="font-size:10px;color:${s.avail ? "var(--primary)" : "var(--muted)"}">${s.avail ? "ว่างวันนี้" : "ไม่ว่าง"}</span>
         </button>`).join("")}
       </div>
 
-      <p style="font-size:12.5px" class="font-medium mb-2">เลือกวันและเวลานัด</p>
+      <p style="font-size:14px" class="serif-th font-semibold mb-2">เลือกวันและเวลานัด</p>
       <div class="flex gap-2 mb-2.5">
         ${["today", "tomorrow"].map(d => `
         <button data-modal-day="${d}" class="flex-1 rounded-xl py-2 text-center" style="background:${m.day === d ? "var(--primary)" : "var(--surface)"};color:${m.day === d ? "#fff" : "var(--ink)"};border:1px solid var(--line)">
@@ -1784,21 +1892,21 @@ function detailModal(){
           const sel = m.time === t;
           return `
           <button data-modal-time="${t}" ${dis ? "disabled" : ""} class="rounded-xl py-2 text-center"
-            style="background:${sel ? "var(--primary)" : dis ? "#EFEAE0" : "var(--surface)"};color:${sel ? "#fff" : dis ? "var(--muted)" : "var(--ink)"};border:${sel ? "1.5px solid var(--primary)" : "1px solid var(--line)"}">
+            style="background:${sel ? "var(--primary)" : dis ? "#FFFDF8" : "var(--surface)"};color:${sel ? "#fff" : dis ? "var(--muted)" : "var(--ink)"};border:${sel ? "1.5px solid var(--primary)" : "1px solid var(--line)"}">
             <span style="font-size:12px;${taken ? "text-decoration:line-through" : ""}" class="font-medium">${t}</span>
-            ${taken ? `<span style="font-size:8.5px;display:block">มีนัดแล้ว</span>` : past ? `<span style="font-size:8.5px;display:block">ผ่านไปแล้ว</span>` : ""}
+            ${taken ? `<span style="font-size:10px;display:block;color:#6D7766">มีนัดแล้ว</span>` : past ? `<span style="font-size:10px;display:block;color:#6D7766">ผ่านไปแล้ว</span>` : ""}
           </button>`;
         }).join("")}
       </div>` : `
       <div class="rounded-xl p-3 mb-5 text-center" style="background:#EFEAE0">
-        <p style="font-size:11px;color:#8A9080">เลือกผู้ให้บริการก่อน เพื่อดูช่วงเวลาว่างของแต่ละคน</p>
+        <p style="font-size:11px;color:var(--ink-soft)">เลือกผู้ให้บริการก่อน เพื่อดูช่วงเวลาว่างของแต่ละคน</p>
       </div>`}
 
       <div class="rounded-2xl p-4 mb-4" style="background:var(--surface);border:1px solid var(--line)">
         ${discount ? `
         <div class="flex items-center justify-between mb-1.5">
-          <span style="font-size:11px;color:#8A9080">ราคาบริการ${surcharge ? " (รวมค่าเดินทางถึงบ้าน)" : ""}</span>
-          <span style="font-size:11px;color:#8A9080">฿${gross.toLocaleString()}</span>
+          <span style="font-size:11px;color:var(--ink-soft)">ราคาบริการ${surcharge ? " (รวมค่าเดินทางถึงบ้าน)" : ""}</span>
+          <span style="font-size:11px;color:var(--ink-soft)">฿${gross.toLocaleString()}${unit ? ` ${unit}` : ""}</span>
         </div>
         <div class="flex items-center justify-between mb-2.5">
           <span style="font-size:11px;color:var(--primary)" class="font-medium">ส่วนลดลูกบ้าน Ornsirin 15%</span>
@@ -1806,11 +1914,11 @@ function detailModal(){
         </div>
         <div class="flex items-center justify-between pt-2.5" style="border-top:1px solid var(--line)">
           <span style="font-size:12.5px" class="font-medium">ยอดชำระ</span>
-          <span class="serif-th" style="font-size:17px;color:var(--clay)">฿${total.toLocaleString()}</span>
+          <span class="serif-th" style="font-size:17px;color:var(--clay)">฿${total.toLocaleString()} ${unit ? `<small style="font-family:'Noto Sans Thai',sans-serif;font-size:10px">${unit}</small>` : ""}</span>
         </div>` : `
         <div class="flex items-center justify-between">
           <span style="font-size:12.5px" class="font-medium">ยอดชำระ</span>
-          <span class="serif-th" style="font-size:17px;color:var(--clay)">฿${total.toLocaleString()}</span>
+          <span class="serif-th" style="font-size:17px;color:var(--clay)">฿${total.toLocaleString()} ${unit ? `<small style="font-family:'Noto Sans Thai',sans-serif;font-size:10px">${unit}</small>` : ""}</span>
         </div>`}
       </div>
 
@@ -1830,10 +1938,10 @@ function bookingDetailModal(){
       <div class="flex items-center gap-3 mb-1">
         <div class="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style="background:#EDE9DA">${icon(b.icon, 18)}</div>
         <div class="flex-1 min-w-0">
-          <h2 class="serif-th font-semibold" style="font-size:15.5px">${b.title}</h2>
-          <p style="font-size:10.5px;color:#8A9080" class="mt-0.5">รหัสการจอง ${b.ref || "-"}</p>
+          <h2 class="serif-th font-semibold" style="font-size:17px">${b.title}</h2>
+          <p style="font-size:10.5px;color:var(--ink-soft)" class="mt-0.5">รหัสการจอง ${b.ref || "-"}</p>
         </div>
-        <button data-modal-close class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background:var(--surface);border:1px solid var(--line)">${icon("x",16)}</button>
+        <button data-modal-close class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:var(--surface);border:1px solid var(--line)" aria-label="ปิด">${icon("x",16)}</button>
       </div>
 
       <div class="flex gap-1.5 mt-3 mb-4">
@@ -1844,7 +1952,7 @@ function bookingDetailModal(){
       <div class="rounded-2xl p-4 space-y-3" style="background:var(--surface);border:1px solid var(--line)">
         ${(b.details || []).map(d => `
         <div>
-          <p style="font-size:10.5px;color:#8A9080">${d.label}</p>
+          <p style="font-size:10.5px;color:var(--ink-soft)">${d.label}</p>
           ${d.items ? `
           <div class="mt-1.5 space-y-2">
             ${d.items.map(it => `
@@ -1853,10 +1961,10 @@ function bookingDetailModal(){
                 <span class="rounded-full shrink-0" style="width:6px;height:6px;margin-top:6px;background:var(--primary)"></span>
                 <div class="min-w-0">
                   <p style="font-size:12.5px" class="font-medium">${it.name}</p>
-                  ${it.note ? `<p style="font-size:10.5px;color:#8A9080" class="mt-0.5">${it.note}</p>` : ""}
+                  ${it.note ? `<p style="font-size:10.5px;color:var(--ink-soft)" class="mt-0.5">${it.note}</p>` : ""}
                 </div>
               </div>
-              ${it.price != null ? `<span style="font-size:11.5px;color:#8A9080" class="shrink-0">฿${it.price.toLocaleString()}</span>` : ""}
+              ${it.price != null ? `<span style="font-size:11.5px;color:var(--ink-soft)" class="shrink-0">฿${it.price.toLocaleString()}</span>` : ""}
             </div>`).join("")}
           </div>` : `
           <p style="font-size:12.5px;line-height:1.5" class="font-medium mt-0.5">${esc(d.value)}</p>`}
@@ -1866,7 +1974,7 @@ function bookingDetailModal(){
       <div class="rounded-2xl p-4 mt-3 flex items-center justify-between" style="background:var(--surface);border:1px solid var(--line)">
         <div>
           <p style="font-size:12.5px" class="font-medium">ชำระแล้ว · พร้อมเพย์</p>
-          <p style="font-size:10.5px;color:#8A9080">Ornsirin Health Link</p>
+          <p style="font-size:10.5px;color:var(--ink-soft)">Ornsirin Health Link</p>
         </div>
         <span class="serif-th" style="font-size:17px;color:var(--clay)">฿${b.amount.toLocaleString()}</span>
       </div>
@@ -1884,10 +1992,10 @@ function addPetModal(){
   <div class="absolute inset-0 z-40 flex flex-col justify-end" style="background:rgba(43,51,40,0.55);pointer-events:auto">
     <div class="sheet-body rounded-t-3xl p-5" style="background:var(--bg);max-height:88%;overflow-y:auto">
       <div class="flex items-center justify-between mb-1">
-        <h2 class="serif-th font-semibold" style="font-size:16px">${editPet ? "แก้ไขโปรไฟล์สัตว์เลี้ยง" : "เพิ่มโปรไฟล์สัตว์เลี้ยง"}</h2>
-        <button data-modal-close class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background:var(--surface);border:1px solid var(--line)">${icon("x",16)}</button>
+        <h2 class="serif-th font-semibold" style="font-size:17px">${editPet ? "แก้ไขโปรไฟล์สัตว์เลี้ยง" : "เพิ่มโปรไฟล์สัตว์เลี้ยง"}</h2>
+        <button data-modal-close class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:var(--surface);border:1px solid var(--line)" aria-label="ปิด">${icon("x",16)}</button>
       </div>
-      <p style="font-size:11.5px;color:#7A8271" class="mb-4">ของ${currentUser().short} · ใช้เลือกตอนจองบริการ Pet Care ได้ทันที</p>
+      <p style="font-size:11.5px;color:var(--ink-soft)" class="mb-4">ของ${currentUser().short} · ใช้เลือกตอนจองบริการ Pet Care ได้ทันที</p>
 
       <p style="font-size:12.5px" class="font-medium mb-2">ประเภท</p>
       <div id="addpet-type" data-type="${editPet ? editPet.icon : "dog"}" class="flex gap-2 mb-4">
@@ -1925,19 +2033,19 @@ function paymentModal(){
   const m = state.modal;
   // สรุปรายการให้ผู้ซื้อตรวจก่อนจ่าย — ดึงจากข้อมูลใบเสร็จของ booking (มีเฉพาะ flow ยา/เจาะเลือด)
   const itemDetail = m.booking && m.booking.details ? m.booking.details.find(d => d.items) : null;
-  const orderItems = itemDetail ? itemDetail.items : null;
+  const orderItems = m.lineItems || (itemDetail ? itemDetail.items : null);
   return `
   <div class="absolute inset-0 z-50 flex flex-col justify-end" style="background:rgba(43,51,40,0.6);pointer-events:auto">
     <div class="sheet-body rounded-t-3xl p-6 text-center" style="background:var(--bg);max-height:92%;overflow-y:auto">
       <div class="flex justify-end">
-        <button data-modal-close class="w-8 h-8 rounded-full flex items-center justify-center" style="background:var(--surface);border:1px solid var(--line)">${icon("x",16)}</button>
+        <button data-modal-close class="w-10 h-10 rounded-full flex items-center justify-center" style="background:var(--surface);border:1px solid var(--line)" aria-label="ปิด">${icon("x",16)}</button>
       </div>
       <div class="w-36 h-36 mx-auto rounded-2xl p-3" style="background:#fff;border:1px solid var(--line)">${QR_SVG}</div>
-      <p class="serif-th mt-4" style="font-size:15px">สแกนเพื่อชำระเงิน</p>
-      <p style="font-size:11.5px;color:#7A8271" class="mt-1">พร้อมเพย์ · Ornsirin Health Link</p>
+      <p class="serif-th mt-4 font-semibold" style="font-size:17px">สแกนเพื่อชำระเงิน</p>
+      <p style="font-size:11.5px;color:var(--ink-soft)" class="mt-1">พร้อมเพย์ · Ornsirin Health Link</p>
       ${orderItems ? `
       <div class="rounded-2xl p-3.5 mt-3 text-left" style="background:var(--surface);border:1px solid var(--line)">
-        <p style="font-size:10.5px;color:#8A9080" class="mb-2">ตรวจสอบรายการก่อนชำระเงิน · ${orderItems.length} รายการ</p>
+        <p style="font-size:10.5px;color:var(--ink-soft)" class="mb-2">ตรวจสอบรายการก่อนชำระเงิน · ${orderItems.length} รายการ</p>
         <div class="space-y-1.5" style="max-height:150px;overflow-y:auto">
           ${orderItems.map(it => `
           <div class="flex items-center justify-between gap-3">
@@ -1945,7 +2053,7 @@ function paymentModal(){
               <span class="rounded-full shrink-0" style="width:5px;height:5px;background:var(--primary)"></span>
               <p style="font-size:11.5px" class="min-w-0">${it.name}</p>
             </div>
-            <span style="font-size:11px;color:#8A9080" class="shrink-0">฿${(it.price || 0).toLocaleString()}</span>
+            <span style="font-size:11px;color:var(--ink-soft)" class="shrink-0">฿${(it.price || 0).toLocaleString()}</span>
           </div>`).join("")}
         </div>
       </div>` : ""}
@@ -1965,13 +2073,13 @@ function healthCardModal(){
     <div class="dialog-body rounded-3xl p-5 w-full text-left" style="background:var(--bg);max-height:88%;overflow-y:auto">
       <div class="flex items-start justify-between gap-3">
         <div class="flex items-center gap-3 min-w-0">
-          <div class="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style="background:#F3E9DB;color:var(--clay)">${icon("heart-pulse",20)}</div>
+          <div class="health-card-icon w-11 h-11 rounded-full flex items-center justify-center shrink-0" style="background:#F3E9DB;color:var(--clay)">${icon("heart-pulse",20)}</div>
           <div>
             <h2 class="serif-th font-semibold" style="font-size:17px">บัตรสุขภาพฉุกเฉิน</h2>
             <p style="font-size:10.5px;color:var(--muted)" class="mt-0.5">ข้อมูลจำลองสำหรับทีมดูแล</p>
           </div>
         </div>
-        <button data-modal-close class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background:var(--surface);border:1px solid var(--line)">${icon("x",16)}</button>
+        <button data-modal-close class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:var(--surface);border:1px solid var(--line)" aria-label="ปิด">${icon("x",16)}</button>
       </div>
 
       <div class="grid grid-cols-2 gap-2.5 mt-5">
@@ -1981,7 +2089,7 @@ function healthCardModal(){
         </div>
         <div class="rounded-2xl p-3.5" style="background:#F9EFDF;border:1px solid #E8CFA4">
           <p style="font-size:10.5px;color:#8A6A3F">แพ้ยา</p>
-          <p class="font-medium mt-1" style="font-size:12.5px;color:#6F4F2B;line-height:1.5">${profile.allergies.map(esc).join(" · ")}</p>
+          <p class="font-semibold mt-1" style="font-size:15px;color:#6F4F2B;line-height:1.5">${profile.allergies.map(esc).join(" · ")}</p>
         </div>
       </div>
 
@@ -2001,37 +2109,88 @@ function healthCardModal(){
   </div>`;
 }
 
-/* ---------------- elder SOS confirmation (simulation only) ---------------- */
+/* ---------------- elder SOS: confirm → callback เดิม หรือ dispatch tracker จำลอง ---------------- */
 function sosModal(){
   const profile = emergencyProfileFor();
   const caregiver = caregiverFor();
-  return `
+  const m = state.modal || { kind:"sos", stage:"confirm" };
+  if (!profile || !caregiver) return "";
+
+  if (m.stage === "confirm" && m.callback) return `
   <div class="absolute inset-0 z-50 flex items-center justify-center p-6" style="background:rgba(43,51,40,0.6);pointer-events:auto">
     <div class="dialog-body rounded-3xl p-6 text-center w-full" style="background:var(--bg);max-height:88%;overflow-y:auto">
-      <div class="w-14 h-14 rounded-full mx-auto flex items-center justify-center" style="background:#F7E3DE;color:#B0543F">${icon("phone-call",25)}</div>
-      <h2 class="serif-th mt-4" style="font-size:17px;color:#8F3528">รับแจ้งเหตุฉุกเฉินแล้ว</h2>
-      <p style="font-size:12.5px;color:#5B6350" class="mt-2 leading-relaxed">ทีมดูแลอรสิรินรับเรื่องแล้ว กำลังโทรกลับภายใน 1 นาที (จำลอง)</p>
-      ${profile ? `
+      <div class="w-14 h-14 rounded-full mx-auto flex items-center justify-center" style="background:#F7E3DE;color:var(--danger)">${icon("phone-call",25)}</div>
+      <h2 class="serif-th mt-4 font-semibold" style="font-size:17px;color:#8F3528">รับแจ้งเหตุฉุกเฉินแล้ว</h2>
+      <p style="font-size:12.5px;color:var(--ink-soft)" class="mt-2 leading-relaxed">ทีมดูแลอรสิรินรับเรื่องแล้ว กำลังโทรกลับภายใน 1 นาที (จำลอง)</p>
       <div class="rounded-2xl p-3.5 mt-4 text-left" style="background:#FFF8F2;border:1px solid #E8C6B8">
         <p class="font-medium" style="font-size:11.5px;color:#8F3528">สรุปบัตรสุขภาพฉุกเฉิน</p>
         <div class="grid grid-cols-2 gap-2 mt-2.5">
           <div>
-            <p style="font-size:9.5px;color:#8A6A62">กรุ๊ปเลือด</p>
+            <p style="font-size:11px;color:#8A6A62">กรุ๊ปเลือด</p>
             <p class="font-medium" style="font-size:12px">${esc(profile.bloodType)}</p>
           </div>
           <div>
-            <p style="font-size:9.5px;color:#8A6A62">แพ้ยา</p>
+            <p style="font-size:11px;color:#8A6A62">แพ้ยา</p>
             <p class="font-medium" style="font-size:12px">${profile.allergies.map(esc).join(" · ")}</p>
           </div>
         </div>
         <div class="mt-2">
-          <p style="font-size:9.5px;color:#8A6A62">โรคประจำตัว</p>
+          <p style="font-size:11px;color:#8A6A62">โรคประจำตัว</p>
           <p class="font-medium" style="font-size:11.5px;line-height:1.5">${profile.conditions.map(esc).join(" · ")}</p>
         </div>
         <p class="mt-2.5" style="font-size:10.5px;color:var(--primary)">✓ ข้อมูลนี้ถูกส่งให้ทีมดูแลแล้ว</p>
-      </div>` : ""}
-      ${caregiver ? `<p class="rounded-xl px-3 py-2.5 mt-2.5" style="background:#EFF3EA;color:var(--primary);font-size:11px">✓ แจ้งผู้ดูแล (${esc(caregiver.short)}) แล้ว · จำลอง</p>` : ""}
-      <button data-modal-close class="w-full rounded-full py-3 font-medium mt-5" style="background:var(--primary);color:#fff;font-size:13px">ปิด</button>
+      </div>
+      <p class="rounded-xl px-3 py-2.5 mt-2.5" style="background:#EFF3EA;color:var(--primary);font-size:11px">✓ แจ้งผู้ดูแล (${esc(caregiver.short)}) แล้ว · จำลอง</p>
+      <button data-modal-close class="w-full rounded-full py-3.5 font-medium mt-5" style="background:var(--primary);color:#fff;font-size:13px">ปิด</button>
+    </div>
+  </div>`;
+
+  if (m.stage === "dispatch") {
+    const eta = sosEtaValue();
+    const arrived = eta === 0;
+    const progress = Math.round(((SOS_START_ETA - eta) / SOS_START_ETA) * 100);
+    return `
+    <div class="absolute inset-0 z-50 flex items-center justify-center p-5" style="background:rgba(43,51,40,0.6);pointer-events:auto">
+      <div class="dialog-body rounded-3xl p-5 text-center w-full" style="background:var(--bg);max-height:90%;overflow-y:auto">
+        <div class="flex justify-end">
+          <button data-modal-close class="w-10 h-10 rounded-full flex items-center justify-center" style="background:var(--surface);border:1px solid var(--line)" aria-label="ปิด">${icon("x",16)}</button>
+        </div>
+        <div class="relative w-16 h-16 mx-auto mt-1">
+          <span class="success-ring absolute inset-0 rounded-full" style="background:var(--danger)"></span>
+          <div id="sos-status-mark" class="relative w-16 h-16 rounded-full flex items-center justify-center" style="background:${arrived ? "var(--primary)" : "var(--danger)"};color:#fff">${icon("ambulance",27)}</div>
+        </div>
+        <h2 id="sos-tracker-title" class="serif-th mt-4 font-semibold" style="font-size:17px;color:${arrived ? "var(--primary)" : "var(--ink)"}">${arrived ? "รถถึงหน้าบ้านแล้ว" : "รถพยาบาลกำลังมา"}</h2>
+        <div class="rounded-2xl p-3.5 mt-3" style="background:var(--surface);border:1px solid var(--line)">
+          <p id="sos-eta" class="serif-th font-semibold" style="font-size:${arrived ? "22px" : "30px"};color:${arrived ? "var(--primary)" : "var(--danger)"}">${arrived ? "ถึงแล้ว" : eta}</p>
+          <p id="sos-eta-label" style="font-size:11px;color:var(--ink-soft)">${arrived ? "ทีมรถพร้อมรับช่วงดูแล" : "นาทีโดยประมาณ"}</p>
+          <div class="h-2 rounded-full mt-3 overflow-hidden" style="background:#EDE9DA"><div id="sos-progress" class="h-full rounded-full" style="width:${progress}%;background:var(--primary);transition:width .35s ease"></div></div>
+        </div>
+
+        <div class="rounded-2xl p-3.5 mt-3 text-left" style="background:#E8ECF2;border:1px solid #CDD5E0">
+          <p class="font-semibold" style="font-size:12.5px;color:#42536C">รพ.คู่สัญญาเชียงใหม่</p>
+          <p class="mt-1" style="font-size:11px;color:#42536C">รถ กข 1234 · พยาบาลวิชาชีพ 1 ท่าน</p>
+        </div>
+        <div class="rounded-2xl p-3.5 mt-2.5 text-left space-y-2" style="background:#EFF3EA;border:1px solid #C9D6BD">
+          <p style="font-size:11px;color:var(--primary);line-height:1.55">✓ ส่งบัตรสุขภาพฉุกเฉิน (กรุ๊ปเลือด ${esc(profile.bloodType)} · แพ้ยา ${profile.allergies.map(esc).join(" · ")} · ${profile.conditions.map(esc).join(" · ")}) ให้ทีมรถแล้ว</p>
+          <p style="font-size:11px;color:var(--primary);line-height:1.55">✓ แจ้งผู้ดูแล (${esc(caregiver.short)} · ${esc(caregiver.relation)}) แล้ว</p>
+        </div>
+        <p class="rounded-xl px-3 py-2.5 mt-2.5" style="background:#FFF8F2;border:1px solid #E8C6B8;color:#8F3528;font-size:10.5px;font-weight:600">การจำลองสำหรับเดโม — ไม่มีการเรียกรถจริง</p>
+        <button data-sos-cancel class="w-full rounded-full py-3.5 font-medium mt-4" style="background:var(--surface);color:var(--danger);border:1.5px solid var(--danger);font-size:13px">ยกเลิกการเรียก (จำลอง)</button>
+        <button data-modal-close class="w-full rounded-full py-3 font-medium mt-2" style="background:transparent;color:var(--ink-soft);font-size:12px">ปิดหน้าต่าง</button>
+      </div>
+    </div>`;
+  }
+
+  return `
+  <div class="absolute inset-0 z-50 flex items-center justify-center p-6" style="background:rgba(43,51,40,0.6);pointer-events:auto">
+    <div class="dialog-body rounded-3xl p-6 text-center w-full" style="background:var(--bg);max-height:88%;overflow-y:auto">
+      <div class="w-14 h-14 rounded-full mx-auto flex items-center justify-center" style="background:#F7E3DE;color:var(--danger)">${icon("ambulance",25)}</div>
+      <h2 class="serif-th mt-4 font-semibold" style="font-size:17px">ต้องการความช่วยเหลือแบบใด</h2>
+      <p style="font-size:11.5px;color:var(--ink-soft)" class="mt-2 leading-relaxed">เลือกการช่วยเหลือที่เหมาะสม — ทุกปุ่มในหน้านี้เป็นการจำลองสำหรับเดโม</p>
+      <button data-sos-dispatch class="w-full rounded-full py-3.5 font-medium mt-5 flex items-center justify-center gap-2" style="background:var(--danger);color:#fff;font-size:14px">${icon("ambulance",18)} เรียกรถพยาบาลทันที</button>
+      <button data-sos-callback class="w-full rounded-full py-3.5 font-medium mt-2.5 flex items-center justify-center gap-2" style="background:var(--surface);color:var(--primary);border:1.5px solid var(--primary);font-size:13px">${icon("phone-call",17)} ให้ทีมดูแลโทรกลับ</button>
+      <button data-sos-cancel class="w-full rounded-full py-3.5 font-medium mt-2" style="background:transparent;color:var(--ink-soft);font-size:13px">ยกเลิก</button>
+      <p class="rounded-xl px-3 py-2.5 mt-3" style="background:#FFF8F2;border:1px solid #E8C6B8;color:#8F3528;font-size:10px;font-weight:600">การจำลองสำหรับเดโม — ไม่มีการเรียกรถจริง</p>
     </div>
   </div>`;
 }
@@ -2061,8 +2220,19 @@ function successModal(){
           <svg viewBox="0 0 24 24" style="width:27px;height:27px" fill="none"><path class="check-draw" d="M5.5 12.6l4.2 4.2L18.6 8" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
       </div>
-      <h2 class="serif-th mt-4" style="font-size:16px">${b.title}</h2>
-      <p style="font-size:12px;color:#7A8271" class="mt-1.5 leading-relaxed">${esc(b.detail)}</p>
+      <h2 class="serif-th mt-4 font-semibold" style="font-size:17px">${b.title}</h2>
+      ${b.consultSummary ? `
+      <div class="rounded-2xl p-3.5 mt-3 text-left" style="background:var(--surface);border:1px solid var(--line)">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-medium" style="${staffAvatar(b.consultSummary.doctorId)}font-size:13px">${esc(b.consultSummary.doctorId)}</div>
+          <div class="min-w-0">
+            <p class="font-medium" style="font-size:12.5px">${esc(b.consultSummary.doctorName)}</p>
+            <p style="font-size:10.5px;color:var(--ink-soft)">${esc(b.consultSummary.doctorRole)}</p>
+          </div>
+        </div>
+        <p class="mt-3" style="font-size:11.5px;color:var(--ink-soft)">ระยะเวลาการปรึกษา ${esc(b.consultSummary.duration)}</p>
+        <p class="rounded-xl px-3 py-2.5 mt-2.5" style="background:#EFF3EA;color:var(--primary);font-size:11px;line-height:1.5">✓ สรุปคำแนะนำและใบสั่งยา ส่งเข้าแอปใน 15 นาที</p>
+      </div>` : `<p style="font-size:12px;color:var(--ink-soft)" class="mt-1.5 leading-relaxed">${esc(b.detail)}</p>`}
       ${b.amount ? `<p class="serif-th mt-3" data-countup="${b.amount}" style="font-size:19px;color:var(--clay)">฿${b.amount.toLocaleString()}</p>` : ""}
       <button data-success-close class="w-full rounded-full py-3 font-medium mt-5" style="background:var(--primary);color:#fff;font-size:13px">เรียบร้อย</button>
     </div>
@@ -2132,6 +2302,10 @@ function render(){
     if (!screenChanged && state.queue && state.queue.position !== prevQueuePos) {
       const pos = document.getElementById("queue-pos");
       if (pos) pos.classList.add("exhale-once");
+      if (state.queue.position === 0) {
+        const cta = app.querySelector("[data-queue-primary]");
+        if (cta) cta.classList.add("exhale-once");
+      }
     }
     prevProgress = queueProgress();
   }
@@ -2147,7 +2321,9 @@ function render(){
   const modalRoot = document.getElementById("modal-root");
   modalRoot.classList.toggle("elder-mode", elderMode);
   const overlayAllowed = state.loggedIn;
-  const modalKey = overlayAllowed ? (state.modal ? state.modal.kind : (state.bookingSuccess ? "success" : null)) : null;
+  const modalKey = overlayAllowed ? (state.modal
+    ? (state.modal.kind === "sos" ? `sos:${state.modal.stage || "confirm"}:${state.modal.callback ? "callback" : "default"}` : state.modal.kind)
+    : (state.bookingSuccess ? "success" : null)) : null;
   const sameOverlay = modalKey !== null && modalKey === prevModalKey;
   const prevSheetEl = sameOverlay ? modalRoot.querySelector(".sheet-body") : null;
   const keepSheetScroll = prevSheetEl ? prevSheetEl.scrollTop : 0;
@@ -2158,9 +2334,12 @@ function render(){
   else if (overlayAllowed && state.modal && state.modal.kind === "payment") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = paymentModal(); }
   else if (overlayAllowed && state.modal && state.modal.kind === "notifications") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = notificationsModal(); }
   else if (overlayAllowed && state.modal && state.modal.kind === "healthCard" && emergencyProfileFor()) { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = healthCardModal(); }
-  else if (overlayAllowed && state.modal && state.modal.kind === "sos") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = sosModal(); }
+  else if (overlayAllowed && state.modal && state.modal.kind === "sos" && emergencyProfileFor()) { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = sosModal(); }
   else if (overlayAllowed && state.bookingSuccess) { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = successModal(); }
   else { modalRoot.style.pointerEvents = "none"; modalRoot.innerHTML = ""; }
+
+  if (overlayAllowed && emergencyProfileFor() && state.modal && state.modal.kind === "sos" && state.modal.stage === "dispatch") startSosTimer();
+  else stopSosTimer();
 
   if (sameOverlay) {
     // overlay เดิม (เช่น แตะเลือกพนักงานใน sheet) — คืนตำแหน่ง scroll และห้ามเล่นอนิเมชันซ้ำ
@@ -2178,6 +2357,8 @@ function render(){
         overlay.classList.add("celebrate");   // ลูกเล่นฉลองเล่นเฉพาะตอน dialog เพิ่งเปิด
         const check = overlay.querySelector(".success-check");
         if (check) check.classList.add("exhale-once");
+        const healthIcon = overlay.querySelector(".health-card-icon");
+        if (healthIcon) healthIcon.classList.add("exhale-once");
         // ยอดเงินวิ่งนับ 0 → ยอดจริง (~0.7 วิ) — ข้ามถ้าผู้ใช้ตั้งค่าลดการเคลื่อนไหว
         const amtEl = overlay.querySelector("[data-countup]");
         if (amtEl && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -2242,8 +2423,11 @@ function render(){
     const submitBtn = document.getElementById("submit-consult");
     const ok = state.symptomTags.length > 0 || state.symptom.trim().length >= 5;
     submitBtn.disabled = !ok;
+    submitBtn.setAttribute("aria-disabled", ok ? "false" : "true");
     submitBtn.style.background = ok ? "var(--clay)" : "#DCD5C2";
-    submitBtn.style.color = ok ? "#fff" : "var(--muted)";
+    submitBtn.style.color = ok ? "#fff" : "var(--ink-soft)";
+    const helper = document.getElementById("consult-submit-helper");
+    if (helper) helper.style.display = ok ? "none" : "block";
   });
   const needCertBox = document.getElementById("need-cert");
   if (needCertBox) needCertBox.addEventListener("change", (e) => { state.needCert = e.target.checked; persistState(); });
@@ -2331,7 +2515,12 @@ function render(){
   app.querySelectorAll("[data-queue-pay]").forEach(el => el.addEventListener("click", () => {
     const price = state.needCert ? 500 : 400;
     const atFront = state.queue && state.queue.position === 0;
-    setState({ modal: { kind: "payment", amount: price, queuePay: true, success: {
+    setState({ modal: { kind: "payment", amount: price, queuePay: true,
+      lineItems: [
+        { name: "ค่าปรึกษา", price: 400 },
+        ...(state.needCert ? [{ name: "ใบรับรองแพทย์", price: 100 }] : []),
+      ],
+      success: {
       title: "ยืนยันคิวเรียบร้อย",
       detail: atFront ? "แพทย์พร้อมแล้ว เข้าห้อง VDO call ได้เลย" : "เราจะแจ้งเตือนคุณเมื่อใกล้ถึงคิว กรุณาเปิดแอปค้างไว้",
       amount: price,
@@ -2357,9 +2546,15 @@ function render(){
     setState({
       screen: "home", call: null, queue: null, queuePaid: false,
       bookingSuccess: {
-        title: "จบการปรึกษาแล้ว",
-        detail: `คุณปรึกษา${doctor.name} เป็นเวลา ${fmtCallTime(dur)} นาที · สรุปคำแนะนำและใบสั่งยา (ถ้ามี) จะส่งเข้าแอปภายใน 15 นาที`,
+        title: "ขอบคุณที่ดูแลตัวเองวันนี้",
+        detail: "การปรึกษาสิ้นสุดแล้ว",
         amount: 0,
+        consultSummary: {
+          doctorId: doctor.id,
+          doctorName: doctor.name,
+          doctorRole: doctor.role.replace(" · ว่างวันนี้", ""),
+          duration: fmtCallDuration(dur),
+        },
       },
     });
   });
@@ -2377,7 +2572,7 @@ function render(){
   const healthCardOpen = app.querySelector("[data-health-card-open]");
   if (healthCardOpen) healthCardOpen.addEventListener("click", () => setState({ modal: { kind: "healthCard" } }));
   const sosOpen = app.querySelector("[data-sos-open]");
-  if (sosOpen) sosOpen.addEventListener("click", () => setState({ modal: { kind: "sos" } }));
+  if (sosOpen) sosOpen.addEventListener("click", () => setState({ modal: { kind: "sos", stage: "confirm" } }));
   document.querySelectorAll("[data-user]").forEach(el => el.addEventListener("click", () => setState({ currentUser: el.dataset.user })));
   const logoutBtn = document.querySelector("[data-logout]");
   if (logoutBtn) logoutBtn.addEventListener("click", () => setState({ loggedIn: false, screen: "home", modal: null, bookingSuccess: null }));
@@ -2400,11 +2595,23 @@ function render(){
     const cfg = getItemConfig(category, itemId);
     const pets = category === "petcare" ? userPets() : [];
     const petId = category === "petcare" ? (el.dataset.petId || (pets[0] && pets[0].id) || null) : null;
-    setState({ modal: { kind: "detail", category, itemId, location: cfg.supportsLocation ? "center" : null, staffId: null, day: "today", time: null, petId } });
+    const defaultDay = SLOT_TIMES.every(t => isPastSlot("today", t)) ? "tomorrow" : "today";
+    setState({ modal: { kind: "detail", category, itemId, location: cfg.supportsLocation ? "center" : null, staffId: null, day: defaultDay, time: null, petId } });
   }));
 
   // modal interactions
-  modalRoot.querySelectorAll("[data-modal-close]").forEach(el => el.addEventListener("click", () => setState({ modal: null })));
+  modalRoot.querySelectorAll("[data-modal-close]").forEach(el => el.addEventListener("click", () => {
+    const m = state.modal;
+    if (m && m.kind === "payment" && m.category && m.itemId) {
+      const { amount, success, booking, lineItems, queuePay, ...detailState } = m;
+      setState({ modal: { ...detailState, kind: "detail" } });
+    } else setState({ modal: null });
+  }));
+  const sosDispatch = modalRoot.querySelector("[data-sos-dispatch]");
+  if (sosDispatch) sosDispatch.addEventListener("click", () => setState({ modal: { kind: "sos", stage: "dispatch", eta: SOS_START_ETA } }));
+  const sosCallback = modalRoot.querySelector("[data-sos-callback]");
+  if (sosCallback) sosCallback.addEventListener("click", () => setState({ modal: { kind: "sos", stage: "confirm", callback: true } }));
+  modalRoot.querySelectorAll("[data-sos-cancel]").forEach(el => el.addEventListener("click", () => setState({ modal: null })));
   modalRoot.querySelectorAll("[data-notification-target]").forEach(el => el.addEventListener("click", () => {
     const patch = { screen: el.dataset.notificationTarget, modal: null };
     if (el.dataset.notificationTab) patch.lifestyleTab = el.dataset.notificationTab;
@@ -2416,8 +2623,10 @@ function render(){
   modalRoot.querySelectorAll("[data-modal-staff]:not([disabled])").forEach(el => el.addEventListener("click", () => {
     // ถ้าเวลาเดิมชนคิวที่ถูกจองของพนักงานคนใหม่ ให้ล้างเวลาทิ้ง
     const id = el.dataset.modalStaff;
-    const keepTime = state.modal.time && !takenSlots(id, state.modal.day).includes(state.modal.time) ? state.modal.time : null;
-    setState({ modal: { ...state.modal, staffId: id, time: keepTime } });
+    const todayUnavailable = SLOT_TIMES.every(t => takenSlots(id, "today").includes(t) || isPastSlot("today", t));
+    const day = state.modal.day === "today" && todayUnavailable ? "tomorrow" : state.modal.day;
+    const keepTime = state.modal.time && !takenSlots(id, day).includes(state.modal.time) && !isPastSlot(day, state.modal.time) ? state.modal.time : null;
+    setState({ modal: { ...state.modal, staffId: id, day, time: keepTime } });
   }));
   modalRoot.querySelectorAll("[data-modal-day]").forEach(el => el.addEventListener("click", () => {
     const day = el.dataset.modalDay;
@@ -2448,7 +2657,7 @@ function render(){
   if (addPetSave) addPetSave.addEventListener("click", () => {
     const nameEl = document.getElementById("addpet-name");
     const name = nameEl.value.trim();
-    if (!name) { nameEl.style.border = "1.5px solid #C0503F"; nameEl.focus(); return; }
+    if (!name) { nameEl.style.border = "1.5px solid var(--danger)"; nameEl.focus(); return; }
     const type = (document.getElementById("addpet-type").dataset.type) || "dog";
     const breed = document.getElementById("addpet-breed").value.trim();
     const age = document.getElementById("addpet-age").value.trim();
@@ -2553,8 +2762,13 @@ function render(){
 hydrateState();   // ถ้าเพิ่ง refresh มา จะกลับไปหน้าเดิม ล็อกอินเดิม นัดเดิมครบ
 render();
 
-/* คีย์ลัดสำหรับผู้พรีเซนต์ — ทำงานเฉพาะหน้าคิวเมื่อไม่มี overlay */
+/* คีย์ลัดสำหรับผู้พรีเซนต์ — SOS tracker ใช้ขวาเร่ง ETA; หน้าคิวใช้ซ้าย/ขวาเมื่อไม่มี overlay */
 document.addEventListener("keydown", (e) => {
+  if (state.loggedIn && emergencyProfileFor() && state.modal && state.modal.kind === "sos" && state.modal.stage === "dispatch" && e.key === "ArrowRight") {
+    e.preventDefault();
+    if (sosEtaValue() > 0) setSosEta(sosEtaValue() - 1);
+    return;
+  }
   if (!state.loggedIn || state.screen !== "queue" || !state.queue || state.modal || state.bookingSuccess) return;
   if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
   const delta = e.key === "ArrowRight" ? -1 : 1;
