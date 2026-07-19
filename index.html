@@ -390,6 +390,10 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
   button:not([disabled]){ transition: transform .12s ease; }
   button:not([disabled]):active{ transform: scale(.97); }
   button[data-nav]{ transition: transform .12s ease, background-color .25s ease, color .25s ease; }
+  /* Elder mode ขยายพื้นที่ใช้งานหลักและ overlay เท่ากัน โดย compose กับ fitPhone() ที่ #phone */
+#app.elder-mode, #modal-root.elder-mode{
+  zoom:1.15;
+}
   /* เงานุ่มให้การ์ดยกตัวจากพื้นเบา ๆ ทั่วทั้งแอป */
   #app .rounded-2xl, #modal-root .rounded-2xl{ box-shadow: 0 1px 2px rgba(43,51,40,0.04), 0 8px 20px -12px rgba(43,51,40,0.16); }
   @media (prefers-reduced-motion: reduce){
@@ -664,6 +668,16 @@ function staffAvatar(id){
 
 function icon(name, size=18, extra=""){ return `<i data-lucide="${name}" style="width:${size}px;height:${size}px" class="${extra}"></i>`; }
 
+/* Escape เฉพาะตอน render — state/sessionStorage ยังคงเก็บค่าดิบเพื่อแก้ไขและ persist ได้ตรงเดิม */
+function esc(s){
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 /* QR จริง สแกนได้ (ข้อความเดโม) — ใช้ร่วมทุก flow ที่มีการชำระเงิน */
 /* สัญลักษณ์หลังคาจากโลโก้อรสิรินจริง ย้อมครีม (PNG โปร่งใส base64 — คู่กับตัวอักษร ORNSIRIN/HEALTH LINK ที่พิมพ์แยก) */
 const LOGO_IMG = "data:image/png;base64,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";
@@ -796,7 +810,7 @@ function bottomNav(){
     { id:"meds", label:"ยาต่อเนื่อง", icon:"pill" },
     { id:"lifestyle", label:"ไลฟ์สไตล์", icon:"sparkles" },
   ];
-  const isActive = (id) => id === state.screen || (id === "consult-specialty" && state.screen === "consult-form");
+  const isActive = (id) => id === state.screen || (id === "consult-specialty" && state.screen === "consult-form") || (id === "lab" && state.screen === "lab-results");
   return `
   <div class="absolute bottom-0 left-0 right-0 flex justify-between px-3 py-2.5" style="background:var(--surface);border-top:1px solid var(--line)">
     ${items.map(it => `
@@ -913,6 +927,15 @@ function homeScreen(){
         <p style="color:#E7EFDD;font-size:12.5px;line-height:1.5">ทุกบทสนทนาของคุณเป็นความลับ เราเป็นคนกลางที่พร้อมรับฟังเสมอ</p>
       </div>
     </div>
+
+    ${state.currentUser === "u3" ? `
+    <div class="px-5 mt-4">
+      <button data-sos-open class="w-full rounded-2xl p-4 flex items-center gap-3 text-left" style="background:#F7E3DE;border:1px solid #D99A89;color:#8F3528">
+        <div class="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style="background:#B0543F;color:#fff">${icon("phone-call",20)}</div>
+        <p class="flex-1 font-medium" style="font-size:13.5px;line-height:1.5">SOS แจ้งเหตุฉุกเฉิน · แตะเพื่อเรียกทีมดูแล</p>
+        ${icon("chevron-right",17,"shrink-0")}
+      </button>
+    </div>` : ""}
 
     <div class="px-5 mt-5 grid grid-cols-2 gap-3">
       ${actions.map(a => `
@@ -1088,7 +1111,7 @@ function consultForm(){
 
       <label style="font-size:12.5px" class="font-medium mb-2 block">อื่น ๆ / รายละเอียดเพิ่มเติม <span style="color:var(--muted);font-weight:400">(พิมพ์เพิ่มได้)</span></label>
       <textarea id="symptom-input" rows="3" maxlength="500" placeholder="${isPsych ? "เช่น เล่าสิ่งที่เจอมา หรือสิ่งที่อยากให้หมอรู้เพิ่มเติม..." : "เช่น เป็นมากี่วัน มีโรคประจำตัว หรือแพ้ยาอะไร..."}"
-        class="w-full rounded-2xl p-4" style="background:var(--surface);border:1px solid var(--line);font-size:13px;resize:none">${state.symptom}</textarea>
+        class="w-full rounded-2xl p-4" style="background:var(--surface);border:1px solid var(--line);font-size:13px;resize:none">${esc(state.symptom)}</textarea>
       <div class="flex justify-end mt-1"><span style="font-size:10.5px;color:var(--muted)" id="char-count">${state.symptom.length}/500</span></div>
 
       <label class="flex items-center gap-3 mt-5 rounded-2xl p-3.5" style="background:var(--surface);border:1px solid var(--line)">
@@ -1573,8 +1596,8 @@ function lifestyleScreen(){
           <div class="flex items-center gap-3">
             <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0" style="background:#F3E9DB;color:var(--clay)">${icon(pet.icon, 22)}</div>
             <div class="flex-1 min-w-0">
-              <p style="font-size:13.5px" class="font-medium">${pet.name}</p>
-              <p style="font-size:10.5px;color:#8A9080" class="mt-0.5">${[pet.breed, pet.age, pet.weight].filter(Boolean).join(" · ")}</p>
+              <p style="font-size:13.5px" class="font-medium">${esc(pet.name)}</p>
+              <p style="font-size:10.5px;color:#8A9080" class="mt-0.5">${[pet.breed, pet.age, pet.weight].filter(Boolean).map(esc).join(" · ")}</p>
             </div>
             <div class="flex flex-col items-end gap-1.5 shrink-0">
               <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5" style="background:#EDE9DA;color:#5B6350;font-size:9.5px">${icon("heart", 10)} สัตว์เลี้ยงของ${currentUser().short}</span>
@@ -1584,7 +1607,7 @@ function lifestyleScreen(){
           ${pet.vaccineDue ? `
           <button data-item-category="petcare" data-item-id="pc1" data-pet-id="${pet.id}" class="w-full mt-3 rounded-xl p-2.5 flex items-center gap-2 text-left" style="background:#F9EFDF;border:1px solid #E8CFA4">
             <span style="color:var(--clay)">${icon("syringe", 14)}</span>
-            <span class="flex-1" style="font-size:11px;color:#8A6A3F">วัคซีน${pet.vaccineDue}ของ${pet.name}ครบกำหนด ${thaiDate(7)} — แตะเพื่อนัดสัตวแพทย์</span>
+            <span class="flex-1" style="font-size:11px;color:#8A6A3F">วัคซีน${pet.vaccineDue}ของ${esc(pet.name)}ครบกำหนด ${thaiDate(7)} — แตะเพื่อนัดสัตวแพทย์</span>
             ${icon("chevron-right", 13, "shrink-0")}
           </button>` : pet.lastCheck ? `
           <div class="mt-3 rounded-xl p-2.5 flex items-center gap-2" style="background:#EFF3EA;border:1px solid #C9D6BD">
@@ -1669,7 +1692,7 @@ function detailModal(){
         ${userPets().map(pt => `
         <button data-modal-pet="${pt.id}" class="flex items-center gap-1.5 rounded-full px-3.5 py-2"
           style="background:${m.petId === pt.id ? "var(--primary)" : "var(--surface)"};color:${m.petId === pt.id ? "#fff" : "var(--ink)"};border:${m.petId === pt.id ? "1px solid var(--primary)" : "1px solid var(--line)"};font-size:12px">
-          ${icon(pt.icon, 14)} ${pt.name}
+          ${icon(pt.icon, 14)} ${esc(pt.name)}
         </button>`).join("")}
       </div>` : ""}
 
@@ -1785,7 +1808,7 @@ function bookingDetailModal(){
               ${it.price != null ? `<span style="font-size:11.5px;color:#8A9080" class="shrink-0">฿${it.price.toLocaleString()}</span>` : ""}
             </div>`).join("")}
           </div>` : `
-          <p style="font-size:12.5px;line-height:1.5" class="font-medium mt-0.5">${d.value}</p>`}
+          <p style="font-size:12.5px;line-height:1.5" class="font-medium mt-0.5">${esc(d.value)}</p>`}
         </div>`).join("")}
       </div>
 
@@ -1824,18 +1847,18 @@ function addPetModal(){
       </div>
 
       <p style="font-size:12.5px" class="font-medium mb-2">ชื่อ</p>
-      <input id="addpet-name" type="text" maxlength="30" placeholder="เช่น น้องขนุน" value="${editPet ? editPet.name : ""}"
+      <input id="addpet-name" type="text" maxlength="30" placeholder="เช่น น้องขนุน" value="${esc(editPet ? editPet.name : "")}"
         class="w-full rounded-xl p-3 mb-4" style="background:var(--surface);border:1px solid var(--line);font-size:13px" />
 
       <div class="flex gap-2.5 mb-5">
         <div class="flex-1">
           <p style="font-size:12.5px" class="font-medium mb-2">พันธุ์</p>
-          <input id="addpet-breed" type="text" maxlength="30" placeholder="เช่น ชิวาวา" value="${editPet ? editPet.breed : ""}"
+          <input id="addpet-breed" type="text" maxlength="30" placeholder="เช่น ชิวาวา" value="${esc(editPet ? editPet.breed : "")}"
             class="w-full rounded-xl p-3" style="background:var(--surface);border:1px solid var(--line);font-size:13px" />
         </div>
         <div class="flex-1">
           <p style="font-size:12.5px" class="font-medium mb-2">อายุ</p>
-          <input id="addpet-age" type="text" maxlength="10" placeholder="เช่น 2 ปี" value="${editPet ? editPet.age : ""}"
+          <input id="addpet-age" type="text" maxlength="10" placeholder="เช่น 2 ปี" value="${esc(editPet ? editPet.age : "")}"
             class="w-full rounded-xl p-3" style="background:var(--surface);border:1px solid var(--line);font-size:13px" />
         </div>
       </div>
@@ -1881,6 +1904,19 @@ function paymentModal(){
   </div>`;
 }
 
+/* ---------------- elder SOS confirmation (simulation only) ---------------- */
+function sosModal(){
+  return `
+  <div class="absolute inset-0 z-50 flex items-center justify-center p-6" style="background:rgba(43,51,40,0.6);pointer-events:auto">
+    <div class="dialog-body rounded-3xl p-6 text-center w-full" style="background:var(--bg)">
+      <div class="w-14 h-14 rounded-full mx-auto flex items-center justify-center" style="background:#F7E3DE;color:#B0543F">${icon("phone-call",25)}</div>
+      <h2 class="serif-th mt-4" style="font-size:17px;color:#8F3528">รับแจ้งเหตุฉุกเฉินแล้ว</h2>
+      <p style="font-size:12.5px;color:#5B6350" class="mt-2 leading-relaxed">ทีมดูแลอรสิรินรับเรื่องแล้ว กำลังโทรกลับภายใน 1 นาที (จำลอง)</p>
+      <button data-modal-close class="w-full rounded-full py-3 font-medium mt-5" style="background:var(--primary);color:#fff;font-size:13px">ปิด</button>
+    </div>
+  </div>`;
+}
+
 /* ---------------- booking success overlay ---------------- */
 function successModal(){
   const b = state.bookingSuccess;
@@ -1907,7 +1943,7 @@ function successModal(){
         </div>
       </div>
       <h2 class="serif-th mt-4" style="font-size:16px">${b.title}</h2>
-      <p style="font-size:12px;color:#7A8271" class="mt-1.5 leading-relaxed">${b.detail}</p>
+      <p style="font-size:12px;color:#7A8271" class="mt-1.5 leading-relaxed">${esc(b.detail)}</p>
       ${b.amount ? `<p class="serif-th mt-3" data-countup="${b.amount}" style="font-size:19px;color:var(--clay)">฿${b.amount.toLocaleString()}</p>` : ""}
       <button data-success-close class="w-full rounded-full py-3 font-medium mt-5" style="background:var(--primary);color:#fff;font-size:13px">เรียบร้อย</button>
     </div>
@@ -1929,6 +1965,8 @@ function loginGateScreen(){
 /* ---------------- render + events ---------------- */
 function render(){
   const app = document.getElementById("app");
+  const elderMode = state.loggedIn && state.currentUser === "u3";
+  app.classList.toggle("elder-mode", elderMode);
   // อนิเมชันเข้าหน้าเล่นเฉพาะตอนเปลี่ยนหน้าจริง — การ re-render ภายในหน้า (ติ๊ก checkbox,
   // เลือกหมอ, สลับสมาชิก, timer คิว) ต้องนิ่งสนิท ไม่งั้นหน้าจะกระพริบซ้ำตอนเดโม
   // ต้องคำนวณก่อนสร้าง HTML เพราะ queueScreen ใช้ prevProgress เป็นจุดตั้งต้นของแถบคิว
@@ -1988,6 +2026,7 @@ function render(){
   document.getElementById("user-bar").innerHTML = userBar();
 
   const modalRoot = document.getElementById("modal-root");
+  modalRoot.classList.toggle("elder-mode", elderMode);
   const overlayAllowed = state.loggedIn;
   const modalKey = overlayAllowed ? (state.modal ? state.modal.kind : (state.bookingSuccess ? "success" : null)) : null;
   const sameOverlay = modalKey !== null && modalKey === prevModalKey;
@@ -1999,6 +2038,7 @@ function render(){
   else if (overlayAllowed && state.modal && state.modal.kind === "addPet") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = addPetModal(); }
   else if (overlayAllowed && state.modal && state.modal.kind === "payment") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = paymentModal(); }
   else if (overlayAllowed && state.modal && state.modal.kind === "notifications") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = notificationsModal(); }
+  else if (overlayAllowed && state.modal && state.modal.kind === "sos") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = sosModal(); }
   else if (overlayAllowed && state.bookingSuccess) { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = successModal(); }
   else { modalRoot.style.pointerEvents = "none"; modalRoot.innerHTML = ""; }
 
@@ -2214,6 +2254,8 @@ function render(){
   });
   const notificationsOpen = document.querySelector("[data-notifications-open]");
   if (notificationsOpen) notificationsOpen.addEventListener("click", () => setState({ modal: { kind: "notifications" } }));
+  const sosOpen = app.querySelector("[data-sos-open]");
+  if (sosOpen) sosOpen.addEventListener("click", () => setState({ modal: { kind: "sos" } }));
   document.querySelectorAll("[data-user]").forEach(el => el.addEventListener("click", () => setState({ currentUser: el.dataset.user })));
   const logoutBtn = document.querySelector("[data-logout]");
   if (logoutBtn) logoutBtn.addEventListener("click", () => setState({ loggedIn: false, screen: "home", modal: null, bookingSuccess: null }));
