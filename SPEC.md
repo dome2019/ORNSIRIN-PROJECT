@@ -1,4 +1,4 @@
-Status: APPROVED_FOR_IMPLEMENTATION
+Status: DRAFT
 
 # ORNSIRIN PROJECT — Workflow Baseline and Draft Implementation Specification
 
@@ -11,14 +11,14 @@ Status: APPROVED_FOR_IMPLEMENTATION
 | Implementation and Verification Lead | Codex |
 | Repository | `/Users/dome/Desktop/ORNSIRIN PROJECT` |
 | Baseline branch | `main` tracking `origin/main` |
-| Baseline HEAD | `22f413c` — INC-F committed by Product Owner (ก่อนหน้า: `818249b`) |
+| Baseline HEAD | `418ef45` — batch INC-A+E+B committed + pushed โดย Product Owner (implementation `2a8bd34`, report `418ef45` · ก่อนหน้า: `22f413c`) |
 | Baseline audit date | 2026-07-18 (Asia/Bangkok) |
 | Phase 1 architecture audit date | 2026-07-18 (Asia/Bangkok, late evening) |
-| Specification version | 0.4 |
+| Specification version | 0.5 |
 | Blocking Questions | NONE |
-| Implementation authorization | INC-F: COMPLETED (`22f413c`) · **batch INC-A+E+B: GRANTED — อนุมัติ v0.4 เมื่อ 2026-07-19** |
+| Implementation authorization | **NONE — ไม่มี scope ที่อนุมัติค้างอยู่** · INC-F: COMPLETED (`22f413c`) · batch INC-A+E+B: COMPLETED + ตรวจรับแล้ว (audit PASS §5.8, commits `2a8bd34`/`418ef45`, DEC-010) |
 
-> Approval Gate: **อนุมัติแล้ว (v0.4, 2026-07-19)** — ขอบเขตที่อนุมัติคือ **batch INC-A + INC-E + INC-B ตาม §5.4–§5.7 เท่านั้น** ทำเป็นหนึ่งรอบ implementation · baseline = `22f413c` (working tree ของ `index.html` สะอาด ณ เวลาอนุมัติ; มีเพียง `SPEC.md`/`TODO.md` ที่แก้เป็นเอกสาร) · Codex ต้องทำ Mandatory Preflight ตาม `AGENTS.md` ก่อนเริ่ม · งานนอก §5.4–§5.7 ไม่ได้รับอนุญาต · Claude ไม่แก้ implementation
+> Approval Gate: **ปิดแล้ว — ไม่มี scope ที่อนุมัติค้างอยู่ (v0.5, 2026-07-19)** · batch INC-A+E+B จบสมบูรณ์: audit PASS (§5.8), Product Owner ตรวจรับ + commit/push แล้ว (`2a8bd34`, `418ef45`, DEC-010) · Codex ห้ามแก้ implementation จนกว่าจะมี increment ใหม่ที่ผ่านการอนุมัติเป็น `APPROVED_FOR_IMPLEMENTATION` พร้อม Approval Record · เมนู increment ที่เหลือ: §5.2
 
 ## 1. Objective
 
@@ -180,7 +180,7 @@ Hardcoded data + user form input + timer output
 - กำหนด Approval Gate, roles, Acceptance Criteria และ Verification Plan สำหรับ workflow
 - รวบรวม Blocking Questions สำหรับผู้ใช้
 
-### 5.2 Candidate implementation increments (Phase 1 menu — ยังไม่มีข้อใดถูกอนุมัติ)
+### 5.2 Candidate implementation increments (Phase 1 menu)
 
 ทุกรายการด้านล่างสืบทอดจาก backlog ใน `TODO.md`, Audit Findings หรือคำขอของผู้ใช้ก่อนหน้า ไม่มีการขยาย scope ใหม่โดย Claude · ผู้ใช้เลือกได้ **ครั้งละหนึ่ง increment** (ตอบใน BQ-002) แล้ว Claude จะขยาย increment ที่เลือกเป็น full Scope / Acceptance Criteria / Verification Plan ก่อนขออนุมัติจริง
 
@@ -197,9 +197,9 @@ Hardcoded data + user form input + timer output
 | INC-H | หน้าสถิติฝั่งผู้ประกอบการ | TODO P2 | L | screen ใหม่ทั้งหน้า (พิจารณาไฟล์แยกได้ตาม TODO note) |
 | INC-I | Accessibility bounded audit + labels/focus fixes | AUD-008 | S-M | login form, modal focus behavior — ต้อง audit ก่อนกำหนด AC |
 
-สถานะการเลือก (อัปเดต 2026-07-19): **INC-0 = เสร็จ** (ผู้ใช้ commit `2bbb500`) · **INC-F = เสร็จ + ตรวจรับแล้ว** (audit PASS §5.3.1, commit `22f413c`) · **INC-A + INC-E + INC-B = ถูกเลือกเป็น batch ถัดไป** (DEC-009, สเปกเต็ม §5.4–§5.6)
+สถานะการเลือก (อัปเดตหลังปิด batch 2026-07-19): **INC-0 = เสร็จ** (commit `2bbb500`) · **INC-F = เสร็จ + ตรวจรับแล้ว** (§5.3.1, commit `22f413c`) · **INC-A + INC-E + INC-B = เสร็จ + ตรวจรับแล้ว** (audit PASS §5.8, commits `2a8bd34`/`418ef45`, DEC-010) · **ยังเปิดให้เลือก:** INC-C (escape user input), INC-D (storage recovery), INC-G (โหมดผู้สูงอายุ), INC-H (สถิติผู้ประกอบการ), INC-I (accessibility) — เมื่อเลือกแล้ว Claude จะเขียนสเปกเต็มใน §5.x ก่อนขออนุมัติ
 
-ข้อจำกัดการจัดลำดับ: **INC-0 ต้องเสร็จก่อน increment ใดที่แก้ `index.html`** เพราะงานค้างปัจจุบันทับซ้อน `successModal()` และ `render()` — หากข้าม INC-0 แล้วแก้บริเวณเดียวกัน จะแยกเจ้าของ diff ไม่ได้และ rollback ยาก (เข้าเงื่อนไขหยุดงานของ Codex ตาม `AGENTS.md` §6)
+ข้อจำกัดการจัดลำดับ (ปิดแล้ว — INC-0 เสร็จตั้งแต่ `2bbb500` และถูกปฏิบัติครบใน INC-F/batch): เดิมกำหนดว่า **INC-0 ต้องเสร็จก่อน increment ใดที่แก้ `index.html`** เพราะงานค้างปัจจุบันทับซ้อน `successModal()` และ `render()` — หากข้าม INC-0 แล้วแก้บริเวณเดียวกัน จะแยกเจ้าของ diff ไม่ได้และ rollback ยาก (เข้าเงื่อนไขหยุดงานของ Codex ตาม `AGENTS.md` §6)
 
 ### 5.3 INC-F specification — หน้าผลตรวจแล็บ (พร้อมขออนุมัติ)
 
@@ -329,6 +329,42 @@ Hardcoded data + user form input + timer output
 - ลำดับแนะนำภายในรอบ: INC-B ก่อน (โครง gate) → INC-A → INC-E (พึ่งเงื่อนไข loggedIn)
 - Rollback: revert batch diff เดียว — ไม่กระทบ commit `22f413c` และก่อนหน้า
 
+### 5.8 Batch INC-A+E+B Post-implementation Audit result (2026-07-19)
+
+**ผล: PASS — 13/13 Acceptance Criteria ผ่านจากการตรวจอิสระของ Claude** (diff review ทุก hunk + runtime ทดสอบเองครบทุก AC ไม่พึ่งรายงาน Codex อย่างเดียว) · Product Owner ตรวจรับแล้ว (DEC-010)
+
+| หัวข้อ | ผลตรวจ |
+|---|---|
+| Diff review | อ่านครบทุก hunk: `1859c36..7403c7a`, 124+/18−, `index.html` ไฟล์เดียว — ทุก hunk อยู่ในบริเวณที่ §5.4–§5.6 กำหนด ไม่มี hidden scope |
+| Runtime AC | 13/13 PASS ผ่านสำเนา byte-identical (ลบหลังตรวจ; hash `index.html` ก่อน/หลัง audit = `1c09a93d…` ไม่เปลี่ยน — Claude ไม่ได้แตะ implementation) |
+| Console / offline | 0 error · 0 network request เมื่อเปิดจาก file:// (การโหลดสำเร็จยืนยัน syntax ในตัว — เครื่อง audit ไม่มี node ให้รัน `node --check` ซ้ำ) |
+| งานเก่า | ไม่มี hunk แตะ `labResultsScreen()` (INC-F), `successModal()`/celebration, payment flow · `git diff --check` exit 0 |
+| กลไกใหม่ | queue object `{position, wait}` ถูกแทนที่แบบ lossless · keydown listener ลงทะเบียนครั้งเดียวนอก `render()` ไม่สะสมซ้ำ · ไอคอน Bell/Lock/PawPrint มีจริงในบันเดิล lucide ที่ฝัง · แถบบนวัด overflow = 0px |
+| Completion Report | `COMPLETION_REPORT.md` ครบ 10 หัวข้อตาม `AGENTS.md` §7 — Codex ส่งในรูปไฟล์ใน repo ตามที่ขอ (ปิด PIA-002) |
+
+การตรวจรับ: Product Owner commit `2a8bd34` (implementation) + `418ef45` (report), push ขึ้น `origin/main` และยืนยัน "approve" ในแชท 2026-07-19
+
+**Finding ใหม่จากรอบนี้:**
+
+#### PIA-003 — Cosmetic deviation ใน `userBar()` ไม่ถูกรายงานใน Completion Report
+
+- Severity: LOW · State: CONFIRMED · Confidence: High
+- Evidence: diff hunk `userBar()` — โลโก้ 20→18px, "ORNSIRIN" 10.5→9.5px, avatar สมาชิก 22→20px, padding ปุ่มออกลดลง — แต่ `COMPLETION_REPORT.md` §6 ระบุ "Implementation deviations: None"
+- Observed: การบีบ layout เพื่อให้กระดิ่งลงพอดีเป็นการตัดสินใจสมเหตุสมผล ผลลัพธ์ดี (วัด overflow = 0px, ดู screenshot ระหว่าง audit) แต่ไม่ถูก disclose
+- Expected: การปรับ visual ต่อบริเวณเดิมควรถูกระบุใน Deviations แม้ทำเพื่อรองรับ scope ที่อนุมัติ
+- Impact: จำกัดอยู่ที่ความครบของ audit trail — ไม่กระทบพฤติกรรม
+- Recommendation: รอบถัดไป Codex ต้องระบุ cosmetic adjustment ทุกจุดใน Completion Report §6
+- Scope relation: Process improvement — ไม่ต้องแก้โค้ด
+
+#### PIA-004 — Queue state คงอยู่ข้าม logout (expected behavior)
+
+- Severity: LOW (observation) · State: CONFIRMED · Confidence: High
+- Evidence: handler logout ล้างเฉพาะ `modal`/`bookingSuccess` — `state.queue`/`queuePaid` คงอยู่ แต่ถูกซ่อนสนิทตอน logged-out (แบนเนอร์/คีย์ลัด/timer/กระดิ่ง gate ด้วย `loggedIn` ทั้งหมด — ตรวจ runtime แล้ว) และกลับมาเมื่อล็อกอินใหม่
+- Observed: queue object ไม่มีข้อมูลส่วนบุคคล (`{position, wait}`) — ไม่ใช่ privacy leak
+- Impact: เป็นข้อดีต่อสคริปต์เดโม — สาธิต logout/privacy gate ได้โดยไม่เสียคิว
+- Recommendation: คงพฤติกรรมนี้ไว้ บันทึกเป็น expected behavior
+- Scope relation: No action
+
 ## 6. Non-goals
 
 Phase 0 ไม่รวม:
@@ -344,16 +380,18 @@ Phase 0 ไม่รวม:
 
 ## 7. Affected Components and Files
 
-| File | Phase 0 action | Notes |
-|---|---|---|
-| `CLAUDE.md` | Create | Planning/Audit workflow |
-| `AGENTS.md` | Create | Implementation/Verification gate |
-| `SPEC.md` | Create | DRAFT baseline, findings and questions |
-| `index.html` | No change permitted | Contains protected pre-existing uncommitted work |
-| `README.md` | Read only | Current product description |
-| `TODO.md` | Read only | Candidate backlog, not authorization |
+สถานะปัจจุบัน (หลังปิด batch, 2026-07-19 — ตาราง Phase 0 เดิมถูกแทนที่เพราะหมดสภาพ):
 
-Future affected components/files: BLOCKED pending approved Scope
+| File | สถานะ | Notes |
+|---|---|---|
+| `index.html` | แก้ได้เฉพาะใน increment ที่อนุมัติ | ล่าสุด: batch INC-A+E+B (`2a8bd34`) · ไม่มี scope ค้าง |
+| `SPEC.md` | Claude ปรับปรุงตามรอบ planning/audit | v0.5 = ปิดรอบ batch |
+| `CLAUDE.md` / `AGENTS.md` | คงที่ | เอกสาร governance — แก้เมื่อผู้ใช้ขอเท่านั้น |
+| `TODO.md` | อัปเดตติ๊กงานเสร็จตามรอบ audit | backlog ไม่ใช่ authorization |
+| `README.md` | Read only | มี doc drift เล็กน้อย (ฟีเจอร์ใหม่ยังไม่ถูกกล่าวถึง) — รอผู้ใช้สั่ง |
+| `COMPLETION_REPORT.md` | Codex เขียนต่อรอบ implementation | เพิ่มครั้งแรกในรอบ batch (`418ef45`) ตาม PIA-002 |
+
+Increment ถัดไป: Affected files ต้องระบุในสเปก §5.x ของ increment นั้นก่อนขออนุมัติ
 
 ## 8. Interfaces, API, Data or Schema Changes
 
@@ -455,14 +493,18 @@ These are verification candidates, not authorized fixes
 
 | ID | Severity | State | Finding |
 |---|---|---|---|
-| AUD-001 | MEDIUM | CONFIRMED | Personal/health-like demo content is available before login |
+| AUD-001 | MEDIUM | **RESOLVED** (INC-B, `2a8bd34`) | Personal/health-like demo content is available before login — ปิดโดย privacy gate (§5.8) |
 | AUD-002 | MEDIUM | CONFIRMED | User-controlled pet data reaches `innerHTML` without escaping |
 | AUD-003 | MEDIUM | CONFIRMED | Monolithic file and absence of automated tests raise regression cost |
-| AUD-004 | MEDIUM | CONFIRMED | Presenter cannot control/re-enter the timer-driven queue as requested in backlog |
-| AUD-005 | MEDIUM | CONFIRMED | Significant uncommitted app work exists before workflow setup |
+| AUD-004 | MEDIUM | **RESOLVED** (INC-A, `2a8bd34`) | Presenter cannot control/re-enter the timer-driven queue — ปิดโดยแบนเนอร์+คีย์ลัด (§5.8) |
+| AUD-005 | MEDIUM | **RESOLVED** (INC-0, `2bbb500`) | Significant uncommitted app work exists before workflow setup — ผู้ใช้ commit เป็น baseline แล้ว |
 | AUD-006 | MEDIUM | CONFIRMED LIMITATION | Authentication, payment and VDO are simulation-only |
 | AUD-007 | LOW | CONFIRMED | Persistence failures are silently ignored |
 | AUD-008 | LOW | CONFIRMED / NEEDS_VERIFICATION | Login labels are placeholder-only; modal focus behavior still needs manual audit |
+| PIA-001 | LOW | OPEN (candidate) | หน้า lab-results ไม่มีแท็บ active ของตัวเองใน bottom nav (§5.3.1) — polish เล็ก รอผู้ใช้เลือก |
+| PIA-002 | LOW | **RESOLVED** (`418ef45`) | ขอให้ Codex ส่ง Completion Report เป็นไฟล์ใน repo — ทำแล้วในรอบ batch |
+| PIA-003 | LOW | CONFIRMED (process) | Cosmetic deviation ใน `userBar()` ไม่ถูกรายงานใน Completion Report (§5.8) |
+| PIA-004 | LOW | CONFIRMED (observation) | Queue state คงอยู่ข้าม logout โดยซ่อนสนิท — expected behavior (§5.8) |
 
 No CRITICAL finding was confirmed in Phase 0. Severity is calibrated for a controlled offline presentation prototype; several findings would become HIGH/CRITICAL if real health or payment data were introduced
 
@@ -477,6 +519,7 @@ No CRITICAL finding was confirmed in Phase 0. Severity is calibrated for a contr
 - Recommendation: Product Owner must decide whether login is decorative or a real gate; implement conditional rendering only if selected
 - Trade-off: gating adds state/flow cases and may slow the presentation script
 - Scope relation: Candidate; not in Phase 0
+- **Resolution (2026-07-19):** ปิดโดย INC-B (`loginGateScreen()` + generic home + overlay/timer gating) — commit `2a8bd34`, verified §5.8 (AC-B-01…04)
 
 ### AUD-002 — Unescaped user input reaches HTML rendering
 
@@ -513,6 +556,7 @@ No CRITICAL finding was confirmed in Phase 0. Severity is calibrated for a contr
 - Recommendation: make this the next narrow increment if live presentation reliability is the priority
 - Trade-off: presenter-only controls can confuse normal users unless hidden/clearly scoped
 - Scope relation: Candidate; not approved
+- **Resolution (2026-07-19):** ปิดโดย INC-A (แบนเนอร์กลับเข้าคิว + คีย์ลัดลูกศรเฉพาะหน้าคิว ไม่มี UI บอก) — commit `2a8bd34`, verified §5.8 (AC-A-01…05)
 
 ### AUD-005 — Protected uncommitted application work
 
@@ -642,9 +686,9 @@ Run from `/Users/dome/Desktop/ORNSIRIN PROJECT`:
 | `shasum -a 256 index.html` | ตรง baseline (`f471e803…a00b976`) |
 | แก้ไขเฉพาะ `SPEC.md` | ไม่มีไฟล์อื่นเปลี่ยน ไม่มี commit/push/dependency |
 
-### 15.2 Future implementation verification
+### 15.2 Implementation verification per increment
 
-BLOCKED. Claude must replace this subsection with commands, target browsers/viewports, primary flows, edge cases and expected results for the selected increment before approval
+Verification plan เป็นส่วนหนึ่งของสเปกแต่ละ increment (ดู §5.3 และ §5.4–§5.7 เป็นแบบ) และผลตรวจถูกบันทึกเป็น audit log ต่อรอบ: §5.3.1 (INC-F), §5.8 (batch INC-A+E+B) · increment ถัดไปต้องมี verification plan ของตัวเองใน §5.x ก่อนขออนุมัติ · default target (ตาม BQ-004 ที่ resolved): Chrome ล่าสุดบน macOS, เปิด file:// offline, viewport ปกติ + โปรเจกเตอร์ 1366×768
 
 ## 16. Acceptance Criteria
 
@@ -660,7 +704,12 @@ BLOCKED. Claude must replace this subsection with commands, target browsers/view
 - AC-P0-08: no dependency is installed and no implementation begins
 - AC-P0-09: final report includes documents changed, Git before/after, preserved work, structure, Blocking Questions and next step for Claude
 
-### Future application increment
+### Application increments — executed
+
+- INC-F: AC-F-01…07 — PASS ทั้งหมด (log ใน §5.3.1)
+- Batch INC-A+E+B: AC-A-01…05, AC-E-01…04, AC-B-01…04 — PASS 13/13 (log ใน §5.8)
+
+### Next application increment
 
 NOT DEFINED; therefore not verifiable and not authorized
 
@@ -680,12 +729,11 @@ Assumptions must not be converted into implementation requirements without Produ
 
 - BQ-001 — RESOLVED: ผู้ใช้รับงาน celebration เป็น baseline; INC-0 verification executed PASS (§14.2); เหลือขั้นผู้ใช้ commit เองก่อน INC-F เริ่ม (DEC-006)
 - BQ-002 — RESOLVED: ผู้ใช้เลือก INC-F หน้าผลตรวจแล็บ (DEC-007); BQ-005 หมดสภาพ blocking โดยปริยายเพราะการเลือกเกิดขึ้นแล้ว
+- BQ-004 — RESOLVED (2026-07-19): default verification target (Chrome ล่าสุดบน macOS, file:// offline, viewport ปกติ + 1366×768) ถูกยอมรับผ่านการอนุมัติ v0.3 และใช้ต่อเนื่องในรอบ batch v0.4 โดยไม่มีข้อทักท้วง
 
 ### Blocking Questions
 
-ไม่มีสำหรับ scope INC-F — เงื่อนไขคงเหลือเป็นการยืนยันตอนอนุมัติ:
-
-- BQ-004 (ลดระดับเป็น confirm-on-approval) — Verification ของ INC-F ใช้ default: Chrome ล่าสุดบน macOS, เปิดแบบ file:// offline, ตรวจทั้ง viewport ปกติและ 1366×768 (ตาม ASM-004) — การอนุมัติ INC-F ถือเป็นการยอมรับ default นี้ เว้นแต่ผู้ใช้ระบุอื่น
+**ไม่มี** — ทุกรอบที่อนุมัติไปแล้ว (INC-F, batch INC-A+E+B) ปิดครบและตรวจรับแล้ว
 
 ### Non-blocking / strategic
 
@@ -697,7 +745,7 @@ Assumptions must not be converted into implementation requirements without Produ
 - OQ-001 — Is adding a dependency-free automated smoke check desirable, or should verification remain manual to preserve the zero-tooling repository?
 - OQ-002 — Should accessibility become an explicit acceptance target in the next increment?
 - OQ-003 — Should `.claude/settings.local.json` permissions be reviewed/cleaned by the user separately, given that the file is local and ignored?
-- OQ-004 — เอกสาร workflow ทั้งสาม (`CLAUDE.md`, `AGENTS.md`, `SPEC.md`) ยังเป็น untracked — ผู้ใช้ต้องการ commit เอกสารเหล่านี้เอง (แนะนำ เพื่อกันการสูญหายและให้ audit trail ตรวจย้อนได้) หรือจะสั่งให้ commit ในรอบใดรอบหนึ่ง?
+- OQ-004 — RESOLVED (2026-07-19): ผู้ใช้ commit เอกสาร workflow เองแล้ว (`51d30d9` และ commit เอกสารรอบถัดมา) — audit trail อยู่ใน git ครบ
 
 ## 19. Decisions
 
@@ -712,6 +760,7 @@ Assumptions must not be converted into implementation requirements without Produ
 | DEC-007 | 2026-07-18 | เลือก INC-F (หน้าผลตรวจแล็บ) เป็น implementation increment ถัดไป (BQ-002) | Product Owner |
 | DEC-008 | 2026-07-19 | INC-F audit = PASS; Product Owner ตรวจรับโดย commit `22f413c` + push | Product Owner |
 | DEC-009 | 2026-07-19 | เลือก batch ถัดไป: INC-A + INC-E + INC-B ทำในหนึ่งรอบ implementation (ยกเว้นกติกา "ครั้งละหนึ่ง increment" โดยเจ้าของโปรเจกต์เอง) | Product Owner |
+| DEC-010 | 2026-07-19 | Batch INC-A+E+B audit = PASS (13/13 AC); Product Owner ตรวจรับด้วย commit `2a8bd34` + `418ef45` + push และยืนยัน "approve" ในแชท | Product Owner |
 
 ## 20. Approval Record
 
@@ -725,3 +774,4 @@ Assumptions must not be converted into implementation requirements without Produ
 | 0.4 | APPROVED_FOR_IMPLEMENTATION | Batch INC-A + INC-E + INC-B ตาม §5.4–§5.7 ทั้งหมด (หนึ่งรอบ implementation, ลำดับแนะนำ B→A→E, verification 13 AC + มาตรฐานเดิม) | Product Owner (ผู้ใช้) — อนุมัติเป็นลายลักษณ์อักษรในแชท ("อนุมัติ v0.4") | 2026-07-19 (Asia/Bangkok) | เงื่อนไข: (1) baseline `22f413c`, `index.html` สะอาด ณ เวลาอนุมัติ; (2) `SPEC.md`/`TODO.md` มี doc diff ค้าง — ผู้ใช้ commit เองตามสะดวก ไม่ block งาน Codex; (3) Claude ห้ามแก้ implementation — Codex เท่านั้น |
 
 Only the Product Owner may authorize changing the first line to `Status: APPROVED_FOR_IMPLEMENTATION`. Approval must reference the exact version/scope and resolve all Blocking Questions that affect that scope
+| 0.5 | DRAFT | None — batch INC-A+E+B ปิดรอบแล้ว (audit PASS §5.8, ตรวจรับ DEC-010) | Pending Product Owner | — | ไม่มี scope ค้าง · เมนู increment ที่เหลือใน §5.2 (INC-C/D/G/H/I) รอผู้ใช้เลือก · stale sections (§7, §15.2, §16, §18) ถูก normalize ในรุ่นนี้ |
