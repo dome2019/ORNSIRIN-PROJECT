@@ -14,11 +14,11 @@ Status: APPROVED_FOR_IMPLEMENTATION
 | Baseline HEAD | `a948687` — batch INC-D+J+K committed + pushed โดย Product Owner · ก่อนหน้า: `88a6ccc` (approve v0.8), `ca68ddb` |
 | Baseline audit date | 2026-07-18 (Asia/Bangkok) |
 | Phase 1 architecture audit date | 2026-07-18 (Asia/Bangkok, late evening) |
-| Specification version | 0.9 |
+| Specification version | 0.10 |
 | Blocking Questions | NONE |
-| Implementation authorization | **GRANTED — batch INC-L + INC-M (§5.19–§5.21) อนุมัติ v0.9 เมื่อ 2026-07-19** · รอบก่อนหน้า: INC-D+J+K (`a948687`), INC-C+G+PIA-001 (`ca68ddb`), INC-A+E+B (`2a8bd34`), INC-F (`22f413c`) — COMPLETED ทั้งหมด |
+| Implementation authorization | **GRANTED — INC-N hardening mini-pack (§5.23) อนุมัติ v0.10 เมื่อ 2026-07-19** · รอบก่อนหน้า: INC-L+M COMPLETED (audit PASS_WITH_RESIDUAL §5.22, DEC-017 — ยังไม่ commit ณ เวลาเขียน), INC-D+J+K (`a948687`), INC-C+G+PIA-001 (`ca68ddb`) |
 
-> Approval Gate: **อนุมัติแล้ว (v0.9, 2026-07-19)** — ขอบเขตที่อนุมัติคือ **batch INC-L (design pack 30 ข้อ) + INC-M (SOS เรียกรถพยาบาลจำลอง) ตาม §5.19–§5.21 เท่านั้น** · ลำดับแนะนำ L→M ใน Codex รอบเดียว — ถ้า Codex ประเมินว่าใหญ่เกินให้แจ้งขอแบ่ง L ก่อน M ตาม AGENTS.md §6 ได้ · baseline application blob = `a948687` (`index.html` สะอาด, SHA-1 `41323998…`) — doc diff ของ README/SPEC/TODO ที่ค้างไม่ block · Mandatory Preflight ก่อนเริ่ม · งานนอก §5.19–§5.21 ไม่อนุญาต · ห้ามแตะจุดแข็ง 33 ข้อ/บริเวณ protected เดิม · INC-M ต้องจำลอง 100% ไม่มี tel:/network (ASM-002) · Completion Report: inventory L รายข้อ + cosmetic deviation ครบ + hash ระบุ SHA-1 · Claude ไม่แก้ implementation
+> Approval Gate: **อนุมัติแล้ว (v0.10, 2026-07-19)** — ขอบเขต: **INC-N hardening mini-pack ตาม §5.23 เท่านั้น** (3 fix: PIA-009 กัน SOS overlay ค้าง, fitPhone กัน zoom:0, PIA-011 token สีตกค้าง 1 จุด) · **baseline application state = `index.html` SHA-1 `36fcb910…` (v0.9 INC-L+M applied)** · **สำคัญ — v0.9 ยังไม่ commit ณ เวลาเขียน (HEAD `a948687`):** แนะนำให้ Product Owner commit v0.9 ก่อนรัน Codex (`INC-L+M: design polish + SOS ambulance dispatch`) เพื่อให้ diff ของ INC-N แยกออกสะอาด · หาก Codex รันก่อน commit ต้องถือ diff v0.9 ใน `index.html` เป็น pre-existing uncommitted work และ preserve ตาม `AGENTS.md` §7 แล้วแยก ~5 บรรทัดของ INC-N ใน Completion Report · Mandatory Preflight ก่อนเริ่ม · งานนอก §5.23 ไม่อนุญาต · ห้ามแตะพฤติกรรม SOS ที่เหลือ/บริเวณ protected · Claude ไม่แก้ implementation
 >
 > **หมายเหตุ hash (PIA-007):** ค่า hash ของ `index.html` ที่บันทึกในเอกสารนี้เป็น **SHA-1** (จากคำสั่ง `shasum` ค่าเริ่มต้น) — เช่น baseline `a948687` = SHA-1 `41323998…`, ก่อนหน้า `ca68ddb` = SHA-1 `62d25830…` (SHA-256 = `0faf0c33…`) · รอบ v0.8 Codex ใช้ SHA-256 จึงรายงานว่า "ไม่ตรง" — เป็นคนละอัลกอริทึม ไม่ใช่ drift
 
@@ -675,6 +675,67 @@ Hardcoded data + user form input + timer output
 - Verification: AC 12 ข้อ (L-01…06, M-01…06) + มาตรฐานเดิม (syntax, console 0, offline, `git status` ไฟล์เดียว, ไม่แตะบริเวณ protected: celebration/INC-F/escaping/queue controls/notifications/privacy gate/INC-D/J/K) · **Completion Report ต้องมี inventory รายข้อ L 1–30: ทำ/ข้าม + เหตุผล** + cosmetic deviation ทุกจุด + hash ระบุ SHA-1
 - Rollback: revert diff เดียว — ไม่กระทบ `a948687` และก่อนหน้า
 
+### 5.22 INC-L+M Post-implementation Audit result (2026-07-19)
+
+**ผล: PASS_WITH_RESIDUAL — 12/12 Acceptance Criteria** · ยืนยันสองชั้น: Claude ทดสอบ runtime เอง (SOS 3 stage, timer hygiene, ETA→arrival, F5, ค่าต้องห้าม=0, 1366×768+elder ไม่ล้น, console 0) + ผู้ตรวจอิสระ 4 ราย (inventory L 30 ข้อ / เจาะ SOS timer / regression+facts / refuter ขับ browser จริง) — verdict 3×PASS_WITH_RESIDUAL + 1×PASS
+
+| หัวข้อ | ผลตรวจ |
+|---|---|
+| INC-L 30 ข้อ | ครบทุกข้อ · ค่าต้องห้าม #8A9080/#7A8271/#C0503F/text-gray-400/text-black = 0 · token --ink-soft/--danger เพิ่มแล้ว · contrast 8 คู่ที่แก้ ≥4.5:1 (คำนวณเอง) |
+| INC-M | แตะครั้งเดียวไม่ dispatch (3 ปุ่มยืนยัน) · tracker ETA 8→arrival + ข้อมูลรถ mock + ✓บัตรสุขภาพ + ✓ผู้ดูแล + ป้ายจำลองถาวร · timer สะอาด (ไม่ leak/stack/negative, self-stop, F5 กลับ tracker) · โทรกลับ = v0.8 เดิม · ไม่มี tel:/network ใหม่ (`tel:` ใน lucide เป็น substring เดิม) |
+| Regression | esc/persist/hydrate/clearPersisted/celebration/count-up + data INC-J/K byte-identical · healthCardModal/labResultsScreen เปลี่ยนเฉพาะ L7/L8/L27 ที่อนุมัติ · diff 406+/192−, hash `36fcb910` ตรงรายงาน |
+| Docs | Completion Report ถูกต้องตามข้อเท็จจริง (diff stat, fingerprints, doc-diff plausibility) |
+
+การตรวจรับ: Product Owner สั่ง "แก้ไขเลย" (2026-07-19) = ยอมรับ v0.9 + สั่งทำ INC-N ต่อ (DEC-017) · **การ commit v0.9 ยังค้าง ณ เวลาเขียน** — แนะนำ commit ก่อนรัน Codex INC-N
+
+**Findings (LOW ทั้งหมด — ไม่บล็อกตรวจรับ, ถูกจัดเข้า INC-N ที่แก้ได้):**
+
+#### PIA-009 — SOS overlay ค้างถ้ามีบัตรแต่ไม่มีผู้ดูแล (latent)
+- Severity: LOW (ปัจจุบันแตะไม่ถึง) → HIGH หากเพิ่ม persona ที่มีบัตรแต่ไม่มีผู้ดูแล · State: CONFIRMED · Confidence: High
+- Evidence: `sosModal()` (index.html:2117) `if (!profile || !caregiver) return "";` แต่ render gate (2337) เช็คแค่ `emergencyProfileFor()` → ถ้าคืน "" modalRoot ได้ `pointerEvents:"auto"` + innerHTML ว่าง = overlay ล่องหนล็อกทั้งจอ + ค้างข้าม F5 (persist)
+- ปัจจุบัน: u3 เท่านั้นที่มี profile และมี caregiver ครบ จึงไม่เกิด — แต่เป็นกับดักถ้าเพิ่มข้อมูล
+- Recommendation: แก้ที่ INC-N (§5.23 N-1)
+
+#### PIA-010 — cosmetic/behavior deviation ไม่ถูก disclose ครบ (process)
+- Severity: LOW · State: CONFIRMED · Confidence: High
+- Evidence: (ก) ข้อความการ์ด SOS "แตะเพื่อเรียกทีมดูแล"→"แตะเพื่อขอความช่วยเหลือ" (ถูกต้องตาม flow ใหม่แต่ไม่อยู่ใน L1-30/§6) · (ข) L24 ขยายให้เปลี่ยนวันเมื่อ slot เต็มด้วย (disclose ใน §2 แต่ §6 เขียน deviation=None)
+- Observed: พฤติกรรมถูกต้อง/ดีขึ้น — เป็นช่องว่างการรายงาน
+- Recommendation: บันทึกไว้เท่านั้น ไม่ต้องแก้โค้ด · รอบหน้า Codex ต้อง disclose ให้ครบ
+
+#### PIA-011 — token สีตกค้าง 1 จุด (debt)
+- Severity: LOW · State: CONFIRMED · Confidence: High
+- Evidence: `#5B6350` literal (index.html:1720, แท็บ lifestyle inactive) ยังไม่ใช้ `var(--ink-soft)` (ค่าเท่ากัน) · L4 กำหนดแค่กำจัด #8A9080/#7A8271 (=0 แล้ว)
+- Recommendation: แก้ที่ INC-N (§5.23 N-3) — cosmetic ไม่กระทบสายตา
+
+#### PIA-012 — fitPhone เขียน zoom:0 (pre-existing, ไม่ใช่ v0.9)
+- Severity: LOW · State: CONFIRMED · Confidence: Medium
+- Evidence: `fitPhone()` (index.html:2785-2786) `if (scale < 1) phone.style.zoom = scale;` — ถ้า `window.innerHeight` อ่านได้ 0 ชั่วขณะ zoom=0 (Chrome fallback เป็น 1 อยู่แล้ว จึงกระทบแค่ cosmetic) · โค้ดเดิม ไม่ได้แตะในรอบ v0.9
+- Recommendation: แก้ที่ INC-N (§5.23 N-2) — clamp `scale > 0`
+
+### 5.23 INC-N specification — Hardening mini-pack (แก้ finding จาก audit v0.9)
+
+**Objective:** ปิด finding ที่แก้ได้จาก audit INC-L+M — งานเล็กมาก (~3-5 บรรทัด) ไม่เปลี่ยนพฤติกรรมที่ผู้ใช้เห็นในกรณีปกติ
+
+**รายการ (3 fix):**
+
+**N-1 (PIA-009) — กัน SOS overlay ค้าง:** ให้ `sosModal()` **ไม่คืน `""` เมื่อมี `emergencyProfileFor()`** — เปลี่ยนเงื่อนไข guard จาก `if (!profile || !caregiver) return "";` เป็น `if (!profile) return "";` แล้วทำให้ทุกบรรทัดที่พึ่ง `caregiver` แสดงแบบมีเงื่อนไข (`caregiver ? ... : ""`) เหมือนสไตล์ v0.8 · ครอบทั้ง 3 stage (confirm/callback/dispatch) — stage ใดที่อ้าง caregiver ต้อง null-safe · (ทางเลือกเทียบเท่า: เพิ่ม `&& caregiverFor()` ที่ render gate 2337 + timer gate 2341 + key gate 2767 — แต่ **แนะนำวิธีแรก** เพราะกันได้แม้ข้อมูลเปลี่ยน และไม่ทำให้ SOS หายทั้งปุ่ม)
+- ยึด: esc() ทุก field เดิม · u3 ปัจจุบันแสดงผลเหมือนเดิมทุกประการ (มี caregiver อยู่แล้ว)
+
+**N-2 (PIA-012) — fitPhone กัน zoom:0:** เปลี่ยน `if (scale < 1)` (index.html:2786) เป็น `if (scale > 0 && scale < 1)` — กันกรณี `innerHeight` เป็น 0 ชั่วขณะ
+
+**N-3 (PIA-011) — token สีตกค้าง:** เปลี่ยน `#5B6350` (index.html:1720, สีตัวอักษรแท็บ lifestyle ที่ไม่ active) เป็น `var(--ink-soft)` · ค่าเท่ากัน ผลลัพธ์เหมือนเดิม
+
+**Non-goals:** ไม่แตะ flow/copy/พฤติกรรม SOS อื่น (PIA-010 ปล่อยตามเดิม) · ไม่ refactor · ไม่เปลี่ยน state/schema
+
+**Acceptance Criteria:**
+- AC-N-01: จำลองผู้ใช้ที่มี `emergencyProfileFor()` แต่ `caregiverFor()` เป็น null (เช่นแก้ข้อมูลชั่วคราวตอนทดสอบ) → เปิด SOS ทุก stage แสดงผลได้ ไม่คืน overlay ว่าง ไม่ล็อกจอ · บรรทัดผู้ดูแลหายไปเฉย ๆ อย่างปลอดภัย
+- AC-N-02: u3 ปกติ (มี caregiver) — SOS ทั้ง 3 stage เหมือน v0.9 เป๊ะ (confirm 3 ปุ่ม, callback, dispatch tracker + "แจ้งผู้ดูแล (สมหญิง)")
+- AC-N-03: fitPhone — ที่ viewport ปกติ/1366×768 ย่อเฟรมเหมือนเดิม; ไม่มีทางตั้ง `zoom:0` (ตรวจว่า guard ครอบ)
+- AC-N-04: ไม่เหลือ `#5B6350` literal นอก `:root` (เหลือแค่บรรทัดนิยาม token) · แท็บ lifestyle แสดงเหมือนเดิม
+- AC-N-05: Guard — console 0 error, offline เดิม, ไม่มี horizontal overflow, ไม่แตะบริเวณ protected/พฤติกรรม SOS อื่น · diff เล็ก (~5 บรรทัด)
+
+**Round terms:** Codex รอบเดียว · baseline application state = `index.html` SHA-1 `36fcb910…` (v0.9 applied) · **แนะนำ commit v0.9 ก่อน** เพื่อ diff สะอาด — ถ้าไม่ ให้ preserve v0.9 diff เป็น pre-existing work (AGENTS.md §7) และแยก ~5 บรรทัด INC-N ใน Completion Report · Rollback: revert เฉพาะ ~5 บรรทัด
+
 ## 6. Non-goals
 
 Phase 0 ไม่รวม:
@@ -1077,6 +1138,7 @@ Assumptions must not be converted into implementation requirements without Produ
 | DEC-014 | 2026-07-19 | เลือกรอบถัดไป (แนวสุขภาพ): INC-D (storage recovery) + INC-J (บัตรสุขภาพฉุกเฉิน) + INC-K (ผู้ดูแล/แจ้งลูกหลาน) — Codex batch เดียว, สเปก §5.14–§5.17 | Product Owner |
 | DEC-015 | 2026-07-19 | Batch INC-D+J+K audit = PASS (13/13 AC); Product Owner ตรวจรับด้วย commit `a948687` + push และยืนยัน "เรียบร้อย" ในแชท | Product Owner |
 | DEC-016 | 2026-07-19 | เลือก + อนุมัติรอบ design: INC-L (design polish pack จาก audit 4 มุมมอง) + INC-M (SOS เรียกรถพยาบาล — จำลอง 100%, ออกแบบ 2 จังหวะกันแตะพลาด) — สเปก §5.19–§5.21 | Product Owner |
+| DEC-017 | 2026-07-19 | INC-L+M audit = PASS_WITH_RESIDUAL (12/12 AC, findings LOW ทั้งหมด); Product Owner สั่ง "แก้ไขเลย" = ยอมรับ v0.9 + อนุมัติ INC-N hardening mini-pack (§5.23) ให้แก้ finding ที่แก้ได้ (PIA-009/011/012) | Product Owner |
 
 ## 20. Approval Record
 
@@ -1099,3 +1161,5 @@ Only the Product Owner may authorize changing the first line to `Status: APPROVE
 | 0.9 | DRAFT | None — batch INC-D+J+K ปิดรอบแล้ว (audit PASS §5.18, ตรวจรับ DEC-015) | Pending Product Owner | — | ไม่มี scope ค้าง · AUD-007 ปิดแล้ว (เหลือเปิด: AUD-003 monolith/no-test, AUD-006 simulation-only, AUD-008 accessibility) · เมนู increment ที่เหลือ §5.2: INC-H, INC-I |
 | 0.9 | DRAFT | None (INC-L design pack + INC-M SOS ambulance §5.19–§5.21 awaiting approval) | Pending Product Owner | — | design audit 4 มุมมอง (49 findings/33 strengths) แปลงเป็นสเปกแล้ว; ไม่มี blocking question — รออนุมัติ v0.9 |
 | 0.9 | APPROVED_FOR_IMPLEMENTATION | Batch INC-L + INC-M ตาม §5.19–§5.21 ทั้งหมด (Codex รอบเดียว ลำดับ L→M, verification 12 AC + inventory L รายข้อ) | Product Owner (ผู้ใช้) — อนุมัติเป็นลายลักษณ์อักษรในแชท ("อนุมัติ v0.9") | 2026-07-19 (Asia/Bangkok) | เงื่อนไข: (1) baseline `a948687` (SHA-1 `41323998…`), `index.html` สะอาด; (2) doc diff README/SPEC/TODO ค้าง — ผู้ใช้ commit เอง ไม่ block; (3) Codex ขอแบ่งรอบ L→M ได้ถ้าประเมินว่าเสี่ยง; (4) INC-M จำลอง 100% ห้าม tel:/network; (5) ห้ามแตะจุดแข็ง/บริเวณ protected; (6) Claude ห้ามแก้ implementation |
+| 0.9→ปิด | COMPLETED | INC-L+M เสร็จ — audit PASS_WITH_RESIDUAL (§5.22, 12/12 AC, findings LOW); Product Owner ยอมรับด้วยคำสั่ง "แก้ไขเลย" (DEC-017) | Product Owner (ผู้ใช้) | 2026-07-19 | การ commit v0.9 ยังค้าง ณ เวลาปิด — แนะนำ commit `INC-L+M: design polish + SOS ambulance dispatch` |
+| 0.10 | APPROVED_FOR_IMPLEMENTATION | INC-N hardening mini-pack ตาม §5.23 ทั้งหมด (3 fix ~5 บรรทัด: PIA-009 SOS overlay guard, PIA-012 fitPhone zoom:0, PIA-011 token) — verification 5 AC | Product Owner (ผู้ใช้) — สั่ง "แก้ไขเลย" ในแชท | 2026-07-19 (Asia/Bangkok) | เงื่อนไข: (1) baseline application state = `index.html` SHA-1 `36fcb910…` (v0.9 applied); (2) แนะนำ commit v0.9 ก่อนรัน Codex — ถ้าไม่ ให้ preserve v0.9 diff เป็น pre-existing work และแยก INC-N ใน Completion Report; (3) ไม่แตะพฤติกรรม SOS อื่น/protected; (4) Claude ห้ามแก้ implementation |
