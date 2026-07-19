@@ -443,6 +443,31 @@ const users = [
     placeShort: "คอนโดนิมมาน เรสซิเดนซ์", placeFull: "คอนโดนิมมาน เรสซิเดนซ์ ถ.นิมมานเหมินท์ เชียงใหม่" },
 ];
 
+/* ข้อมูลสุขภาพฉุกเฉินและผู้ดูแลเป็นข้อมูลจำลองสำหรับการนำเสนอเท่านั้น */
+const emergencyProfileByUser = {
+  u3: {
+    bloodType: "O",
+    allergies: ["เพนิซิลลิน"],
+    conditions: ["ความดันโลหิตสูง", "เบาหวานชนิดที่ 2"],
+    emergencyContact: { userId: "u1", relation: "บุตรสาว", phone: "000-000-0000" },
+  },
+};
+const caregiverByUser = {
+  u3: { userId: "u1", relation: "บุตรสาว" },
+};
+function emergencyProfileFor(userId = state.currentUser){ return emergencyProfileByUser[userId] || null; }
+function linkedUser(link){ return link ? users.find(u => u.id === link.userId) || null : null; }
+function emergencyContactFor(profile){
+  const link = profile && profile.emergencyContact;
+  const user = linkedUser(link);
+  return link && user ? { name: user.name, short: user.short, relation: link.relation, phone: link.phone } : null;
+}
+function caregiverFor(userId = state.currentUser){
+  const link = caregiverByUser[userId];
+  const user = linkedUser(link);
+  return link && user ? { name: user.name, short: user.short, relation: link.relation } : null;
+}
+
 /* ---- สิทธิ์ลูกบ้าน Ornsirin ---- */
 const RESIDENT_LIFESTYLE_DISCOUNT = 0.15;  // ลด 15% ทุกบริการไลฟ์สไตล์
 const MEDS_DELIVERY_FEE = 40;              // ค่าส่งยาปกติ — ลูกบ้านส่งฟรี
@@ -649,14 +674,22 @@ const STATE_KEY = "ornsirin-demo-state-v1";
 function persistState(){
   try { sessionStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch (e) {}
 }
+function clearPersistedState(){
+  try { sessionStorage.removeItem(STATE_KEY); } catch (e) {}
+}
 function hydrateState(){
   try {
     const raw = sessionStorage.getItem(STATE_KEY);
     if (!raw) return;
-    Object.assign(state, JSON.parse(raw));
+    const saved = JSON.parse(raw);
+    if (!saved || typeof saved !== "object" || Array.isArray(saved) || Object.getPrototypeOf(saved) !== Object.prototype) {
+      clearPersistedState();
+      return;
+    }
+    Object.assign(state, saved);
     // กู้เลขรันรหัสการจอง ไม่ให้ ref ซ้ำหลัง refresh
     bookingSeq = (state.bookings || []).reduce((mx, b) => Math.max(mx, parseInt((b.ref || "").split("-")[1], 10) || 0), 0);
-  } catch (e) {}
+  } catch (e) { clearPersistedState(); }
 }
 
 function setState(patch){ Object.assign(state, patch); persistState(); render(); }
@@ -880,6 +913,8 @@ function userBar(){
 /* ---------------- home ---------------- */
 function homeScreen(){
   const user = users.find(u => u.id === state.currentUser) || users[0];
+  const emergencyProfile = emergencyProfileFor();
+  const caregiver = caregiverFor();
   const actions = [
     { id:"consult-specialty", title:"ปรึกษาหมอ", sub:"VDO call คิวด่วน", icon:"stethoscope", bg:"var(--primary)", fg:"#fff" },
     { id:"lab", title:"เจาะเลือดถึงบ้าน", sub:"ไม่ต้องไป รพ.", icon:"droplet", bg:"var(--slate)", fg:"#fff" },
@@ -928,13 +963,29 @@ function homeScreen(){
       </div>
     </div>
 
-    ${state.currentUser === "u3" ? `
-    <div class="px-5 mt-4">
+    ${emergencyProfile ? `
+    <div class="px-5 mt-4 space-y-2.5">
       <button data-sos-open class="w-full rounded-2xl p-4 flex items-center gap-3 text-left" style="background:#F7E3DE;border:1px solid #D99A89;color:#8F3528">
         <div class="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style="background:#B0543F;color:#fff">${icon("phone-call",20)}</div>
         <p class="flex-1 font-medium" style="font-size:13.5px;line-height:1.5">SOS แจ้งเหตุฉุกเฉิน · แตะเพื่อเรียกทีมดูแล</p>
         ${icon("chevron-right",17,"shrink-0")}
       </button>
+      <button data-health-card-open class="w-full rounded-2xl p-3.5 flex items-center gap-3 text-left" style="background:var(--surface);border:1px solid #D8C7AE;color:var(--ink)">
+        <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:#F3E9DB;color:var(--clay)">${icon("heart-pulse",18)}</div>
+        <div class="flex-1 min-w-0">
+          <p class="font-medium" style="font-size:12.5px">บัตรสุขภาพฉุกเฉิน</p>
+          <p class="mt-0.5" style="font-size:10.5px;color:var(--muted)">กรุ๊ปเลือด · แพ้ยา · โรคประจำตัว</p>
+        </div>
+        ${icon("chevron-right",16,"shrink-0")}
+      </button>
+      ${caregiver ? `
+      <div class="rounded-2xl p-3.5 flex items-center gap-3" style="background:#EFF3EA;border:1px solid #C9D6BD">
+        <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:var(--primary);color:#fff">${icon("shield-check",18)}</div>
+        <div class="min-w-0">
+          <p class="font-medium" style="font-size:12px">ผู้ดูแล: ${esc(caregiver.name)} (${esc(caregiver.relation)})</p>
+          <p class="mt-0.5" style="font-size:10.5px;color:#6D7766">ได้รับแจ้งอัตโนมัติเมื่อกด SOS</p>
+        </div>
+      </div>` : ""}
     </div>` : ""}
 
     <div class="px-5 mt-5 grid grid-cols-2 gap-3">
@@ -1904,14 +1955,82 @@ function paymentModal(){
   </div>`;
 }
 
+/* ---------------- emergency health card (synthetic demo data) ---------------- */
+function healthCardModal(){
+  const profile = emergencyProfileFor();
+  const contact = emergencyContactFor(profile);
+  if (!profile || !contact) return "";
+  return `
+  <div class="absolute inset-0 z-50 flex items-center justify-center p-5" style="background:rgba(43,51,40,0.6);pointer-events:auto">
+    <div class="dialog-body rounded-3xl p-5 w-full text-left" style="background:var(--bg);max-height:88%;overflow-y:auto">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style="background:#F3E9DB;color:var(--clay)">${icon("heart-pulse",20)}</div>
+          <div>
+            <h2 class="serif-th font-semibold" style="font-size:17px">บัตรสุขภาพฉุกเฉิน</h2>
+            <p style="font-size:10.5px;color:var(--muted)" class="mt-0.5">ข้อมูลจำลองสำหรับทีมดูแล</p>
+          </div>
+        </div>
+        <button data-modal-close class="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style="background:var(--surface);border:1px solid var(--line)">${icon("x",16)}</button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2.5 mt-5">
+        <div class="rounded-2xl p-3.5" style="background:var(--surface);border:1px solid var(--line)">
+          <p style="font-size:10.5px;color:var(--muted)">กรุ๊ปเลือด</p>
+          <p class="serif-th font-semibold mt-1" style="font-size:22px;color:#8F3528">${esc(profile.bloodType)}</p>
+        </div>
+        <div class="rounded-2xl p-3.5" style="background:#F9EFDF;border:1px solid #E8CFA4">
+          <p style="font-size:10.5px;color:#8A6A3F">แพ้ยา</p>
+          <p class="font-medium mt-1" style="font-size:12.5px;color:#6F4F2B;line-height:1.5">${profile.allergies.map(esc).join(" · ")}</p>
+        </div>
+      </div>
+
+      <div class="rounded-2xl p-3.5 mt-2.5" style="background:var(--surface);border:1px solid var(--line)">
+        <p style="font-size:10.5px;color:var(--muted)">โรคประจำตัว</p>
+        <p class="font-medium mt-1" style="font-size:12.5px;line-height:1.6">${profile.conditions.map(esc).join(" · ")}</p>
+      </div>
+
+      <div class="rounded-2xl p-3.5 mt-2.5" style="background:#EFF3EA;border:1px solid #C9D6BD">
+        <p style="font-size:10.5px;color:#6D7766">ผู้ติดต่อฉุกเฉิน</p>
+        <p class="font-medium mt-1" style="font-size:12.5px">${esc(contact.name)} (${esc(contact.relation)})</p>
+        <p style="font-size:11.5px;color:#6D7766" class="mt-0.5">${esc(contact.phone)} · เบอร์จำลอง</p>
+      </div>
+
+      <button data-modal-close class="w-full rounded-full py-3 font-medium mt-4" style="background:var(--primary);color:#fff;font-size:13px">ปิด</button>
+    </div>
+  </div>`;
+}
+
 /* ---------------- elder SOS confirmation (simulation only) ---------------- */
 function sosModal(){
+  const profile = emergencyProfileFor();
+  const caregiver = caregiverFor();
   return `
   <div class="absolute inset-0 z-50 flex items-center justify-center p-6" style="background:rgba(43,51,40,0.6);pointer-events:auto">
-    <div class="dialog-body rounded-3xl p-6 text-center w-full" style="background:var(--bg)">
+    <div class="dialog-body rounded-3xl p-6 text-center w-full" style="background:var(--bg);max-height:88%;overflow-y:auto">
       <div class="w-14 h-14 rounded-full mx-auto flex items-center justify-center" style="background:#F7E3DE;color:#B0543F">${icon("phone-call",25)}</div>
       <h2 class="serif-th mt-4" style="font-size:17px;color:#8F3528">รับแจ้งเหตุฉุกเฉินแล้ว</h2>
       <p style="font-size:12.5px;color:#5B6350" class="mt-2 leading-relaxed">ทีมดูแลอรสิรินรับเรื่องแล้ว กำลังโทรกลับภายใน 1 นาที (จำลอง)</p>
+      ${profile ? `
+      <div class="rounded-2xl p-3.5 mt-4 text-left" style="background:#FFF8F2;border:1px solid #E8C6B8">
+        <p class="font-medium" style="font-size:11.5px;color:#8F3528">สรุปบัตรสุขภาพฉุกเฉิน</p>
+        <div class="grid grid-cols-2 gap-2 mt-2.5">
+          <div>
+            <p style="font-size:9.5px;color:#8A6A62">กรุ๊ปเลือด</p>
+            <p class="font-medium" style="font-size:12px">${esc(profile.bloodType)}</p>
+          </div>
+          <div>
+            <p style="font-size:9.5px;color:#8A6A62">แพ้ยา</p>
+            <p class="font-medium" style="font-size:12px">${profile.allergies.map(esc).join(" · ")}</p>
+          </div>
+        </div>
+        <div class="mt-2">
+          <p style="font-size:9.5px;color:#8A6A62">โรคประจำตัว</p>
+          <p class="font-medium" style="font-size:11.5px;line-height:1.5">${profile.conditions.map(esc).join(" · ")}</p>
+        </div>
+        <p class="mt-2.5" style="font-size:10.5px;color:var(--primary)">✓ ข้อมูลนี้ถูกส่งให้ทีมดูแลแล้ว</p>
+      </div>` : ""}
+      ${caregiver ? `<p class="rounded-xl px-3 py-2.5 mt-2.5" style="background:#EFF3EA;color:var(--primary);font-size:11px">✓ แจ้งผู้ดูแล (${esc(caregiver.short)}) แล้ว · จำลอง</p>` : ""}
       <button data-modal-close class="w-full rounded-full py-3 font-medium mt-5" style="background:var(--primary);color:#fff;font-size:13px">ปิด</button>
     </div>
   </div>`;
@@ -2038,6 +2157,7 @@ function render(){
   else if (overlayAllowed && state.modal && state.modal.kind === "addPet") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = addPetModal(); }
   else if (overlayAllowed && state.modal && state.modal.kind === "payment") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = paymentModal(); }
   else if (overlayAllowed && state.modal && state.modal.kind === "notifications") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = notificationsModal(); }
+  else if (overlayAllowed && state.modal && state.modal.kind === "healthCard" && emergencyProfileFor()) { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = healthCardModal(); }
   else if (overlayAllowed && state.modal && state.modal.kind === "sos") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = sosModal(); }
   else if (overlayAllowed && state.bookingSuccess) { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = successModal(); }
   else { modalRoot.style.pointerEvents = "none"; modalRoot.innerHTML = ""; }
@@ -2254,6 +2374,8 @@ function render(){
   });
   const notificationsOpen = document.querySelector("[data-notifications-open]");
   if (notificationsOpen) notificationsOpen.addEventListener("click", () => setState({ modal: { kind: "notifications" } }));
+  const healthCardOpen = app.querySelector("[data-health-card-open]");
+  if (healthCardOpen) healthCardOpen.addEventListener("click", () => setState({ modal: { kind: "healthCard" } }));
   const sosOpen = app.querySelector("[data-sos-open]");
   if (sosOpen) sosOpen.addEventListener("click", () => setState({ modal: { kind: "sos" } }));
   document.querySelectorAll("[data-user]").forEach(el => el.addEventListener("click", () => setState({ currentUser: el.dataset.user })));
