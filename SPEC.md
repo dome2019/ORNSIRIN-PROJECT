@@ -1,4 +1,4 @@
-Status: DRAFT
+Status: APPROVED_FOR_IMPLEMENTATION
 
 # ORNSIRIN PROJECT — Workflow Baseline and Draft Implementation Specification
 
@@ -11,14 +11,14 @@ Status: DRAFT
 | Implementation and Verification Lead | Codex |
 | Repository | `/Users/dome/Desktop/ORNSIRIN PROJECT` |
 | Baseline branch | `main` tracking `origin/main` |
-| Baseline HEAD | `418ef45` — batch INC-A+E+B committed + pushed โดย Product Owner (implementation `2a8bd34`, report `418ef45` · ก่อนหน้า: `22f413c`) |
+| Baseline HEAD | `e2a50ec` — SPEC v0.5 ปิดรอบ batch (doc-only) · application blob ล่าสุดจาก `2a8bd34` (batch INC-A+E+B) · ก่อนหน้า: `418ef45`, `22f413c` |
 | Baseline audit date | 2026-07-18 (Asia/Bangkok) |
 | Phase 1 architecture audit date | 2026-07-18 (Asia/Bangkok, late evening) |
-| Specification version | 0.5 |
+| Specification version | 0.6 |
 | Blocking Questions | NONE |
-| Implementation authorization | **NONE — ไม่มี scope ที่อนุมัติค้างอยู่** · INC-F: COMPLETED (`22f413c`) · batch INC-A+E+B: COMPLETED + ตรวจรับแล้ว (audit PASS §5.8, commits `2a8bd34`/`418ef45`, DEC-010) |
+| Implementation authorization | **GRANTED — batch INC-C+G+PIA-001 (§5.9–§5.12) อนุมัติ v0.6 เมื่อ 2026-07-19** · README = งานเอกสารของ Claude หลัง audit PASS · รอบก่อนหน้า: INC-F (`22f413c`), batch INC-A+E+B (`2a8bd34`/`418ef45`) COMPLETED |
 
-> Approval Gate: **ปิดแล้ว — ไม่มี scope ที่อนุมัติค้างอยู่ (v0.5, 2026-07-19)** · batch INC-A+E+B จบสมบูรณ์: audit PASS (§5.8), Product Owner ตรวจรับ + commit/push แล้ว (`2a8bd34`, `418ef45`, DEC-010) · Codex ห้ามแก้ implementation จนกว่าจะมี increment ใหม่ที่ผ่านการอนุมัติเป็น `APPROVED_FOR_IMPLEMENTATION` พร้อม Approval Record · เมนู increment ที่เหลือ: §5.2
+> Approval Gate: **อนุมัติแล้ว (v0.6, 2026-07-19)** — ขอบเขตที่อนุมัติคือ **batch INC-C + INC-G + PIA-001 ตาม §5.9–§5.12 เท่านั้น** (Codex ทำหนึ่งรอบ ลำดับแนะนำ C→G→PIA-001) + **อัปเดต README โดย Claude หลัง audit PASS และผู้ใช้ตรวจรับ** · baseline = `e2a50ec` (`index.html` สะอาด, blob ตรง `2a8bd34`) · Codex ต้องทำ Mandatory Preflight ตาม `AGENTS.md` ก่อนเริ่ม · งานนอก §5.9–§5.12 ไม่ได้รับอนุญาต · Completion Report ต้องระบุ cosmetic deviation ทุกจุด · Claude ไม่แก้ implementation
 
 ## 1. Objective
 
@@ -197,7 +197,7 @@ Hardcoded data + user form input + timer output
 | INC-H | หน้าสถิติฝั่งผู้ประกอบการ | TODO P2 | L | screen ใหม่ทั้งหน้า (พิจารณาไฟล์แยกได้ตาม TODO note) |
 | INC-I | Accessibility bounded audit + labels/focus fixes | AUD-008 | S-M | login form, modal focus behavior — ต้อง audit ก่อนกำหนด AC |
 
-สถานะการเลือก (อัปเดตหลังปิด batch 2026-07-19): **INC-0 = เสร็จ** (commit `2bbb500`) · **INC-F = เสร็จ + ตรวจรับแล้ว** (§5.3.1, commit `22f413c`) · **INC-A + INC-E + INC-B = เสร็จ + ตรวจรับแล้ว** (audit PASS §5.8, commits `2a8bd34`/`418ef45`, DEC-010) · **ยังเปิดให้เลือก:** INC-C (escape user input), INC-D (storage recovery), INC-G (โหมดผู้สูงอายุ), INC-H (สถิติผู้ประกอบการ), INC-I (accessibility) — เมื่อเลือกแล้ว Claude จะเขียนสเปกเต็มใน §5.x ก่อนขออนุมัติ
+สถานะการเลือก (อัปเดตหลังปิด batch 2026-07-19): **INC-0 = เสร็จ** (commit `2bbb500`) · **INC-F = เสร็จ + ตรวจรับแล้ว** (§5.3.1, commit `22f413c`) · **INC-A + INC-E + INC-B = เสร็จ + ตรวจรับแล้ว** (audit PASS §5.8, commits `2a8bd34`/`418ef45`, DEC-010) · **ยังเปิดให้เลือก:** INC-C (escape user input), INC-D (storage recovery), INC-G (โหมดผู้สูงอายุ), INC-H (สถิติผู้ประกอบการ), INC-I (accessibility) — เมื่อเลือกแล้ว Claude จะเขียนสเปกเต็มใน §5.x ก่อนขออนุมัติ · **อัปเดตรอบสอง 2026-07-19:** ผู้ใช้เลือก **INC-C + INC-G + PIA-001 + อัปเดต README** เป็นรอบถัดไป (DEC-011, สเปกเต็ม §5.9–§5.12 — รออนุมัติ v0.6)
 
 ข้อจำกัดการจัดลำดับ (ปิดแล้ว — INC-0 เสร็จตั้งแต่ `2bbb500` และถูกปฏิบัติครบใน INC-F/batch): เดิมกำหนดว่า **INC-0 ต้องเสร็จก่อน increment ใดที่แก้ `index.html`** เพราะงานค้างปัจจุบันทับซ้อน `successModal()` และ `render()` — หากข้าม INC-0 แล้วแก้บริเวณเดียวกัน จะแยกเจ้าของ diff ไม่ได้และ rollback ยาก (เข้าเงื่อนไขหยุดงานของ Codex ตาม `AGENTS.md` §6)
 
@@ -364,6 +364,70 @@ Hardcoded data + user form input + timer output
 - Impact: เป็นข้อดีต่อสคริปต์เดโม — สาธิต logout/privacy gate ได้โดยไม่เสียคิว
 - Recommendation: คงพฤติกรรมนี้ไว้ บันทึกเป็น expected behavior
 - Scope relation: No action
+
+### 5.9 INC-C specification — Escape ข้อความจากผู้ใช้ก่อนเข้า `innerHTML` (ปิด AUD-002)
+
+**Objective:** เดโมสดพิมพ์อะไรก็ไม่ทำหน้าแตก — ปิดช่อง markup injection จากข้อความที่ผู้ใช้พิมพ์ ก่อนเข้า template ทุกจุด
+
+**Design บังคับ:** เก็บ **raw** ใน state/sessionStorage เหมือนเดิม — escape **ณ จุด render เท่านั้น** (ห้าม escape ตอนเก็บ กัน double-escape สะสมข้าม refresh) · helper เดียว `esc(s)` แทนที่ `&` ก่อนแล้วตาม `<` `>` `"` `'` — ครอบทั้ง text content และ attribute value
+
+**Sink inventory ขั้นต่ำ** (Codex ต้อง sweep เพิ่มให้ครบระหว่าง implement และรายงาน inventory สุดท้ายใน Completion Report):
+
+| แหล่ง user input | จุด render ที่พบ (line โดยประมาณ ณ `e2a50ec`) |
+|---|---|
+| `state.symptom` (พิมพ์อาการ) | textarea ใน `consultForm()` (~1091) และทุกจุดที่ข้อความอาการแสดงซ้ำ |
+| `pet.name` / `pet.breed` / `pet.age` (ฟอร์มเพิ่ม/แก้ไขสัตว์เลี้ยง) | การ์ดโปรไฟล์ (~1576–1577) · ชิปวัคซีน (~1587) · **ฟอร์มแก้ไข `value="${…}"` — attribute context** (~1827–1838) · dialog ลบโปรไฟล์ (~2316) · booking details (~2347) · pet picker ใน `detailModal()` |
+
+ข้อมูล mock คงที่ (users, doctors, services, ราคา) **ไม่ escape** — ไม่ใช่ user input
+
+**Non-goals:** ไม่เปลี่ยน schema/state · ไม่เพิ่ม validation/จำกัดอักขระ · ไม่แตะ flow อื่น
+
+**Acceptance Criteria:**
+- AC-C-01: มี escape helper เดียว ใช้ซ้ำทุก sink ของ user input — ไม่มี double-escape
+- AC-C-02: ตั้งชื่อสัตว์ `<img src=x onerror="window.__xss=1">` → ชื่อแสดงเป็นข้อความตรงตัวทุกจุด (การ์ด, ชิปวัคซีน, ฟอร์มแก้ไข, picker ตอนจอง, รายละเอียดนัด, dialog ลบ) และ `window.__xss` ไม่ถูกตั้งค่า
+- AC-C-03: พันธุ์/อายุที่มี `"` → ไม่หลุดออกนอก attribute (ค่าเต็มอยู่ใน input เดียว ไม่เกิด attribute ใหม่)
+- AC-C-04: พิมพ์อาการ `</textarea><b>x</b>` → textarea แสดงข้อความตรงตัว ไม่มี element ใหม่เกิด และ refresh แล้วข้อความเดิมยังครบถูกต้อง
+- AC-C-05: ข้อความ mock เดิม spot-check หน้า home/meds/lifestyle/lab-results แสดงเหมือนก่อนแก้ทุกจุด — ไม่มี `&amp;` หลุดให้เห็น
+
+### 5.10 INC-G specification — โหมดผู้สูงอายุของคุณยายบุญมี
+
+**Objective:** สลับเป็นคุณยายบุญมี (u3) แล้วอ่านง่ายขึ้นทันที + การ์ด SOS — จุดขายสำหรับผู้ฟังกลุ่มหมู่บ้านผู้เกษียณ (TODO P2 ตัวรองสุดท้าย)
+
+**User-visible outcome:**
+1. ล็อกอิน + `currentUser === "u3"` → โหมดผู้สูงอายุ**อัตโนมัติ** (ไม่มีปุ่ม toggle): เนื้อหาขยาย ~15% ทั้งหน้าจอหลักและ sheet/dialog · สลับกลับ u1/u2/u4 → ขนาดปกติทันที
+2. การ์ด **SOS เฉพาะ u3** บนหน้าแรก ตำแหน่งเด่น (แนะนำ: ใต้ hero เหนือปุ่มบริการ) โทนแดง/clay ไอคอนโทรศัพท์ ตัวหนังสือใหญ่ "SOS แจ้งเหตุฉุกเฉิน · แตะเพื่อเรียกทีมดูแล"
+3. แตะ SOS → dialog จำลอง (modal kind ใหม่ `sos` — ใช้ dialog/backdrop animation ชุดเดิม และ**ต้องเคารพ `overlayAllowed`/`loggedIn` gating เหมือน modal อื่น**): "ทีมดูแลอรสิรินรับเรื่องแล้ว กำลังโทรกลับภายใน 1 นาที (จำลอง)" + ปุ่มปิด — ไม่มีทางตัน ไม่โทรจริง
+
+**ข้อควรระวังทางเทคนิค (สำคัญ):** font-size ในแอปเป็น **inline style แทบทั้งหมด** — CSS class ธรรมดา override ไม่ได้ · แนวทางแนะนำ: `zoom` (หรือกลไกเทียบเท่า) บนคอนเทนเนอร์ `#app` + `#modal-root` ผ่านคลาสเดียว (เช่น `elder-mode`) — compose กับ `fitPhone()` zoom บน `#phone` ได้เพราะคนละ element · Codex เลือกกลไกอื่นได้ถ้าผ่าน AC ครบ
+
+**Non-goals:** ไม่มีปุ่มเปิด/ปิดแยก (ผูกกับ persona) · ไม่เปลี่ยน copy/ราคา/สิทธิ์/ข้อมูล u3 · ไม่ redesign รายหน้า · ไม่มีการโทรหรือส่งข้อมูลจริง
+
+**Acceptance Criteria:**
+- AC-G-01: สลับเป็น u3 → เนื้อหาขยายเห็นชัด (~1.1–1.2×) ทุกหน้า; สลับกลับ → ขนาดเดิมเป๊ะ
+- AC-G-02: การ์ด SOS แสดงเฉพาะ u3 ที่ล็อกอินแล้วบนหน้าแรก — ไม่แสดงก่อนล็อกอิน/สมาชิกอื่น/หน้าอื่น
+- AC-G-03: แตะ SOS → dialog จำลองพร้อมปุ่มปิด ปิดแล้วกลับหน้าเดิมโดยสถานะอื่นไม่กระทบ (queue/bookings/pets เดิมครบ)
+- AC-G-04: elder mode ไม่ทำ layout แตก — ไม่มี horizontal overflow ในหน้า home/consult/lab/meds/lifestyle + sheet จอง และใช้กับจอ 1366×768 ได้ (`fitPhone()` ยังทำงาน)
+- AC-G-05: refresh ระหว่างเป็น u3 → โหมดคงอยู่ · logout → หน้า generic ขนาดปกติ · ฟีเจอร์เดิมของ u3 (ผลแล็บ, กระดิ่ง, แบนเนอร์คิว, สัตว์เลี้ยง 2 ตัว) ทำงานปกติในโหมดนี้
+
+### 5.11 PIA-001 fix — bottom nav active บนหน้า lab-results
+
+**Objective:** หน้า "ผลตรวจของฉัน" ให้แท็บ "เจาะเลือด" ติด active (ปัจจุบันไม่มีแท็บใด active)
+
+**Evidence:** `bottomNav()` — `const isActive = (id) => id === state.screen || (id === "consult-specialty" && state.screen === "consult-form");` — ไม่มี mapping ของ `"lab-results"`
+
+**แนวทาง:** เพิ่มเงื่อนไขเดียว `|| (id === "lab" && state.screen === "lab-results")`
+
+**Acceptance Criteria:**
+- AC-P1-01: อยู่หน้า lab-results → แท็บ "เจาะเลือด" active (สี/พื้นหลังเหมือนตอนอยู่หน้า lab) และแท็บอื่นไม่ active
+- AC-P1-02: ทุกหน้าอื่น highlight เหมือนเดิมเป๊ะ (home, consult-specialty, consult-form→ปรึกษาหมอ, lab, meds, lifestyle)
+
+### 5.12 Round execution terms (INC-C + INC-G + PIA-001 + README)
+
+- **งานโค้ด 3 รายการ = หนึ่งรอบ Codex** · diff เดียว ไฟล์เดียว (`index.html`) · ลำดับแนะนำ: INC-C ก่อน (แตะหลาย template — ทำตอน tree สะอาด) → INC-G → PIA-001
+- **งานเอกสาร README = Claude** ทำหลัง audit ของ batch นี้ PASS และผู้ใช้ตรวจรับ (เขียนครั้งเดียวรวม INC-G) — เนื้อหาครอบคลุม: หน้าผลแล็บ (INC-F), กระดิ่งแจ้งเตือน (INC-E), privacy gate ก่อนล็อกอิน (INC-B), ตัวควบคุมคิวผู้พรีเซนต์ (INC-A — เพิ่มคีย์ลัดในหมวดเคล็ดลับเดโม), โหมดผู้สูงอายุ + SOS (INC-G), ปรับตาราง persona (คุณยายบุญมี = โหมดผู้สูงอายุ)
+- Precondition: `index.html` working tree สะอาด ณ เวลาอนุมัติ (baseline `e2a50ec` — ผู้ใช้ commit v0.5 แล้ว) — doc diff ของ `SPEC.md` v0.6 ที่ค้างไม่ block
+- Verification รวม: AC 12 ข้อ (C-01…05, G-01…05, P1-01…02) + มาตรฐานเดิม (syntax check, console 0 error, offline ไม่มี external ref ใหม่, `git status` ไฟล์เดียว, ไม่แตะบริเวณ INC-F/celebration/batch INC-A+E+B) + **Completion Report ต้องระบุ cosmetic deviation ทุกจุด** (บทเรียนจาก PIA-003)
+- Rollback: revert diff เดียว — ไม่กระทบ `e2a50ec` และก่อนหน้า
 
 ## 6. Non-goals
 
@@ -761,6 +825,7 @@ Assumptions must not be converted into implementation requirements without Produ
 | DEC-008 | 2026-07-19 | INC-F audit = PASS; Product Owner ตรวจรับโดย commit `22f413c` + push | Product Owner |
 | DEC-009 | 2026-07-19 | เลือก batch ถัดไป: INC-A + INC-E + INC-B ทำในหนึ่งรอบ implementation (ยกเว้นกติกา "ครั้งละหนึ่ง increment" โดยเจ้าของโปรเจกต์เอง) | Product Owner |
 | DEC-010 | 2026-07-19 | Batch INC-A+E+B audit = PASS (13/13 AC); Product Owner ตรวจรับด้วย commit `2a8bd34` + `418ef45` + push และยืนยัน "approve" ในแชท | Product Owner |
+| DEC-011 | 2026-07-19 | เลือกรอบถัดไป: INC-C + INC-G + PIA-001 (Codex batch เดียว) + อัปเดต README (Claude, งานเอกสาร หลัง audit PASS) — สเปก §5.9–§5.12 | Product Owner |
 
 ## 20. Approval Record
 
@@ -775,3 +840,5 @@ Assumptions must not be converted into implementation requirements without Produ
 
 Only the Product Owner may authorize changing the first line to `Status: APPROVED_FOR_IMPLEMENTATION`. Approval must reference the exact version/scope and resolve all Blocking Questions that affect that scope
 | 0.5 | DRAFT | None — batch INC-A+E+B ปิดรอบแล้ว (audit PASS §5.8, ตรวจรับ DEC-010) | Pending Product Owner | — | ไม่มี scope ค้าง · เมนู increment ที่เหลือใน §5.2 (INC-C/D/G/H/I) รอผู้ใช้เลือก · stale sections (§7, §15.2, §16, §18) ถูก normalize ในรุ่นนี้ |
+| 0.6 | DRAFT | None (batch INC-C+G+PIA-001 + README §5.9–§5.12 awaiting approval) | Pending Product Owner | — | รอบ INC-A+E+B ปิดแล้ว; สเปกรอบใหม่ครบ 12 AC; ไม่มี blocking question — รออนุมัติอย่างเป็นทางการ |
+| 0.6 | APPROVED_FOR_IMPLEMENTATION | Batch INC-C + INC-G + PIA-001 ตาม §5.9–§5.12 ทั้งหมด (หนึ่งรอบ Codex, ลำดับแนะนำ C→G→PIA-001, verification 12 AC + มาตรฐานเดิม) + อัปเดต README เป็นงานเอกสารของ Claude หลัง audit PASS | Product Owner (ผู้ใช้) — อนุมัติเป็นลายลักษณ์อักษรในแชท ("อนุมัติ v0.6") | 2026-07-19 (Asia/Bangkok) | เงื่อนไข: (1) baseline `e2a50ec`, `index.html` สะอาด ณ เวลาอนุมัติ; (2) doc diff ของ `SPEC.md` v0.6 ค้างอยู่ — ผู้ใช้ commit เองตามสะดวก ไม่ block; (3) Completion Report ต้องระบุ cosmetic deviation ทุกจุด (กติกาใหม่จาก PIA-003); (4) Claude ห้ามแก้ implementation — Codex เท่านั้น |
