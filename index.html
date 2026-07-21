@@ -1717,7 +1717,7 @@ function lifestyleScreen(){
     <div class="px-5">
       <div class="flex gap-1.5 mb-5 rounded-full p-1 overflow-x-auto tab-scroll" style="background:#EDE9DA">
         ${tabs.map(t => `
-        <button data-tab="${t.id}" class="rounded-full py-2 px-3.5 font-medium shrink-0" style="background:${state.lifestyleTab === t.id ? "var(--primary)" : "transparent"};color:${state.lifestyleTab === t.id ? "#fff" : "#5B6350"};font-size:12px;white-space:nowrap">${t.label}</button>
+        <button data-tab="${t.id}" class="rounded-full py-2 px-3.5 font-medium shrink-0" style="background:${state.lifestyleTab === t.id ? "var(--primary)" : "transparent"};color:${state.lifestyleTab === t.id ? "#fff" : "var(--ink-soft)"};font-size:12px;white-space:nowrap">${t.label}</button>
         `).join("")}
       </div>
 
@@ -2114,7 +2114,7 @@ function sosModal(){
   const profile = emergencyProfileFor();
   const caregiver = caregiverFor();
   const m = state.modal || { kind:"sos", stage:"confirm" };
-  if (!profile || !caregiver) return "";
+  if (!profile) return "";
 
   if (m.stage === "confirm" && m.callback) return `
   <div class="absolute inset-0 z-50 flex items-center justify-center p-6" style="background:rgba(43,51,40,0.6);pointer-events:auto">
@@ -2140,7 +2140,7 @@ function sosModal(){
         </div>
         <p class="mt-2.5" style="font-size:10.5px;color:var(--primary)">✓ ข้อมูลนี้ถูกส่งให้ทีมดูแลแล้ว</p>
       </div>
-      <p class="rounded-xl px-3 py-2.5 mt-2.5" style="background:#EFF3EA;color:var(--primary);font-size:11px">✓ แจ้งผู้ดูแล (${esc(caregiver.short)}) แล้ว · จำลอง</p>
+      ${caregiver ? `<p class="rounded-xl px-3 py-2.5 mt-2.5" style="background:#EFF3EA;color:var(--primary);font-size:11px">✓ แจ้งผู้ดูแล (${esc(caregiver.short)}) แล้ว · จำลอง</p>` : ""}
       <button data-modal-close class="w-full rounded-full py-3.5 font-medium mt-5" style="background:var(--primary);color:#fff;font-size:13px">ปิด</button>
     </div>
   </div>`;
@@ -2172,7 +2172,7 @@ function sosModal(){
         </div>
         <div class="rounded-2xl p-3.5 mt-2.5 text-left space-y-2" style="background:#EFF3EA;border:1px solid #C9D6BD">
           <p style="font-size:11px;color:var(--primary);line-height:1.55">✓ ส่งบัตรสุขภาพฉุกเฉิน (กรุ๊ปเลือด ${esc(profile.bloodType)} · แพ้ยา ${profile.allergies.map(esc).join(" · ")} · ${profile.conditions.map(esc).join(" · ")}) ให้ทีมรถแล้ว</p>
-          <p style="font-size:11px;color:var(--primary);line-height:1.55">✓ แจ้งผู้ดูแล (${esc(caregiver.short)} · ${esc(caregiver.relation)}) แล้ว</p>
+          ${caregiver ? `<p style="font-size:11px;color:var(--primary);line-height:1.55">✓ แจ้งผู้ดูแล (${esc(caregiver.short)} · ${esc(caregiver.relation)}) แล้ว</p>` : ""}
         </div>
         <p class="rounded-xl px-3 py-2.5 mt-2.5" style="background:#FFF8F2;border:1px solid #E8C6B8;color:#8F3528;font-size:10.5px;font-weight:600">การจำลองสำหรับเดโม — ไม่มีการเรียกรถจริง</p>
         <button data-sos-cancel class="w-full rounded-full py-3.5 font-medium mt-4" style="background:var(--surface);color:var(--danger);border:1.5px solid var(--danger);font-size:13px">ยกเลิกการเรียก (จำลอง)</button>
@@ -2783,7 +2783,7 @@ function fitPhone(){
   phone.style.zoom = "";                       // วัดขนาดจริงก่อนทุกครั้ง กันคำนวณซ้อนค่าเดิม
   const needed = phone.offsetHeight + 48;      // เฟรม + padding บน-ล่างของหน้า
   const scale = Math.min(1, window.innerHeight / needed);
-  if (scale < 1) phone.style.zoom = scale;
+  if (scale > 0 && scale < 1) phone.style.zoom = scale;
 }
 window.addEventListener("resize", fitPhone);
 fitPhone();
