@@ -1,4 +1,4 @@
-Status: DRAFT
+Status: APPROVED_FOR_IMPLEMENTATION
 
 # ORNSIRIN PROJECT — Workflow Baseline and Draft Implementation Specification
 
@@ -16,9 +16,9 @@ Status: DRAFT
 | Phase 1 architecture audit date | 2026-07-18 (Asia/Bangkok, late evening) |
 | Specification version | 0.12 |
 | Blocking Questions | NONE |
-| Implementation authorization | **NONE — ไม่มี scope ที่อนุมัติค้างอยู่** · INC-O: COMPLETED + ตรวจรับแล้ว (audit PASS_WITH_RESIDUAL §5.26, commit `6f1e5d3`, DEC-021) · v0.12 = planning (§5.2 เมนู) · รอบก่อนหน้า: INC-N/INC-L+M (`3a41dfc`), INC-D+J+K (`a948687`) |
+| Implementation authorization | **GRANTED — INC-P สมุดสุขภาพ + กราฟค่าสุขภาพ (§5.27, Option A MVP) อนุมัติ v0.12 เมื่อ 2026-07-24** · รอบก่อนหน้า: INC-O (`6f1e5d3`), INC-N/INC-L+M (`3a41dfc`) — COMPLETED |
 
-> Approval Gate: **ปิดแล้ว — ไม่มี scope ที่อนุมัติค้างอยู่ (v0.12, 2026-07-24)** · INC-O จบสมบูรณ์: audit PASS_WITH_RESIDUAL (§5.26, 12/12 AC, ยืนยันด้วยผู้ตรวจอิสระ 4 ราย), Product Owner ตรวจรับ + commit/push แล้ว (`6f1e5d3`, DEC-021) · Codex ห้ามแก้ implementation จนกว่าจะมี increment ใหม่ที่ผ่านการอนุมัติ · v0.12 อยู่ในขั้น planning — เมนู increment ที่เหลือ + ต่อยอด: §5.2
+> Approval Gate: **อนุมัติแล้ว (v0.12, 2026-07-24)** — ขอบเขต: **INC-P ตาม §5.27 เท่านั้น** (สมุดสุขภาพ read-only + กราฟค่าสุขภาพ 3 ตัว inline-SVG + ลิงก์ผลแล็บ/ยา/บัตรสุขภาพ + การ์ดเข้าหน้าแรก + empty state) · baseline `6f1e5d3` (SHA-1 `6d225e06`, working tree สะอาด) · Mandatory Preflight ก่อนเริ่ม · **additive เท่านั้น** — ห้ามแตะ protected (timer/payment/tracker/celebration/escaping/privacy gate/INC-J/K/storage) · SVG invariants §5.27 บังคับ (viewBox+width:100% ไม่มี px, สีใน style attr, ไม่ crispEdges, static/reduced-motion-safe, ตัวเลขเป็น HTML) · read-only ไม่มี persisted key ใหม่ · จำลอง 100% (ASM-002) · **ประวัติย้อนหลังลูกค้า = deferred** (ผู้ใช้สั่งยังไม่ทำ, DEC-023) · Completion Report: inventory + cosmetic + hash SHA-1 · Claude ไม่แก้ implementation
 >
 > **หมายเหตุ hash (PIA-007):** ค่า hash ของ `index.html` ที่บันทึกในเอกสารนี้เป็น **SHA-1** (จากคำสั่ง `shasum` ค่าเริ่มต้น) — เช่น baseline `a948687` = SHA-1 `41323998…`, ก่อนหน้า `ca68ddb` = SHA-1 `62d25830…` (SHA-256 = `0faf0c33…`) · รอบ v0.8 Codex ใช้ SHA-256 จึงรายงานว่า "ไม่ตรง" — เป็นคนละอัลกอริทึม ไม่ใช่ drift
 
@@ -853,6 +853,52 @@ INC-N (hardening mini-pack §5.23) ถูก implement โดย Codex และ
 
 **ข้อสังเกต (pre-existing, ไม่ใช่ INC-O):** `state.bookings` เป็น array รวม ไม่ filter รายคนบนหน้าแรก — นัดของ u1 โผล่ให้ u3 เห็น (แต่ track ไม่ได้) · เป็นของเดิมก่อน INC-O (AUD-006, login เป็น presentation control) · INC-O gate ตัว tracker ถูกต้องแล้ว
 
+### 5.27 INC-P specification — สมุดสุขภาพ (Health Record Hub) + กราฟค่าสุขภาพ (Option A MVP, read-only)
+
+**Objective:** เพิ่มหน้า **"สมุดสุขภาพ"** หน้าเดียวที่รวมข้อมูลสุขภาพของสมาชิก (บัตรสุขภาพ INC-J + ผลตรวจ INC-F + ยา) ไว้ที่เดียว **พร้อมกราฟแนวโน้มค่าสุขภาพ 3 ตัว** (ความดัน / น้ำตาลในเลือด / น้ำหนัก) วาดด้วย inline SVG เอง (ออฟไลน์ ไม่มีไลบรารีกราฟ) — เปลี่ยนภาพเป็น **health companion** · **อ่านอย่างเดียว, ข้อมูลจำลอง 100%** (ASM-002)
+
+**ที่มา:** grounded design 4 มุมมอง 2026-07-24 (data-map / chart-tech / hub-UX / risk-scope) · ผู้ใช้เลือกทิศ health companion (DEC-022) · Option A MVP (เสี่ยงต่ำ, additive เกือบล้วน)
+
+**ขอบเขต (Option A MVP):** หน้า `health-record` อ่านอย่างเดียว + กราฟ sparkline 3 ตัว + ลิงก์ไปฟีเจอร์เดิม (ผลแล็บ/ยา/บัตรสุขภาพ) + การ์ดเข้าจากหน้าแรก + empty state · **ไม่มีฟอร์ม "บันทึกค่าใหม่"** (defer)
+
+**Data ใหม่ (synthetic `vitalsByUser` วางข้าง `labResultsByUser` ~1686):**
+- shape `vitalsByUser[uid] = { bp:[{daysAgo,sys,dia}], sugar:[{daysAgo,value}], weight:[{daysAgo,value}] }` + band `{lo,hi}` numeric ต่อ vital
+- **u3 = พระเอก** (ความดันสูง+เบาหวาน ตาม emergencyProfile): BP ~158/96 → ก้ำกึ่ง (มีจุดควรติดตาม), น้ำตาลสูง→ก้ำกึ่ง, น้ำหนักคงที่ · สอดคล้อง lab เดิม (FBS 96, LDL 142 follow)
+- u1 = ส่วนใหญ่ปกติ, น้ำตาลล่าสุด ~118 ล้อ lab FBS 118 · u2/u4 = ไม่มี → empty state · reuse `labResultDate()` ทำแกน x · มี disclaimer จำลอง
+
+**SVG sparkline helper (invariants บังคับ):**
+1. inline SVG ใน template string แบบ `QR_SVG` (~738) inject ผ่าน render เดิม
+2. **`viewBox` + `style="width:100%;height:auto;display:block"` — ห้าม fixed px** (รอด elder zoom 1.15 + fitPhone)
+3. **สีใส่ `style` attribute เท่านั้น** — ห้าม presentation attr (`stroke="var(--x)"` fail เงียบ)
+4. **ห้าม `crispEdges`** (เส้นทแยงหยัก) · สี: เส้น `--primary`, จุดนอกช่วง `--clay`, band/แกน `--line`/`--slate`
+5. guard คณิต: `Number()` coerce · `span=(dMax-dMin)||1` · จุดเดียว/ค่าเท่ากัน → วางกลาง (กัน NaN)
+6. **ตัวเลข/วันที่/label เป็น HTML sibling นอก SVG** (ไม่ใช้ `<text>` — กัน font ไทยเพี้ยน + esc + elder scale)
+7. **STATIC ไม่มี draw animation** (กัน motion regression) — ถ้า animate ต้อง scope `.screen-enter` + เพิ่ม reduced-motion block + fallback `stroke-dashoffset:0`
+8. accessibility: `role="img"` + `aria-label` (esc) + **caption ไทยมองเห็น** (ค่าล่าสุด + ทิศทาง + จำนวนจุดควรติดตาม)
+
+**โครงหน้า (reuse ของเดิม):** (1) screenHero "สมุดสุขภาพ" icon heart-pulse เขียว · (2) การ์ดตัวตน (มี emergencyProfile) กรุ๊ปเลือด/แพ้ยา/โรคประจำตัว + disclaimer · (3) กราฟ 3 การ์ด: ความดัน(mmHg sys/dia)/น้ำตาล(mg/dL)/น้ำหนัก(กก.) — sparkline + ค่าล่าสุด + ชิปสถานะ + delta ▲/▼ (unicode muted) + วันที่ · (4) สรุปผลแล็บ + ปุ่ม "ดูผลตรวจทั้งหมด" `data-nav="lab-results"` · (5) สรุปยา + ปุ่ม "ดูยาต่อเนื่อง" `data-nav="meds"` · (6) CTA "ปรึกษาหมอต่อ" เมื่อมี ≥1 ควรติดตาม · (7) empty state (u2/u4)
+
+**Thresholds/chips (reuse ปกติ/ควรติดตาม):** BP ควรติดตาม sys≥140 หรือ dia≥90 · FBS ควรติดตาม ≥126 (ก้ำกึ่ง 100–125) · น้ำหนัก = label กลาง (คงที่/ลดลง/เพิ่มขึ้น)
+
+**Entry:** การ์ด full-width "สมุดสุขภาพ" หน้าแรก `data-nav="health-record"` (auto-wired, 0 JS ใหม่) — **ไม่แตะ bottom nav / ไม่ขยาย grid บริการ** · ไม่วางใน block เฉพาะ u3
+
+**Wiring (แก้น้อยมาก):** `DEPTH['health-record']=1` (บังคับ กัน slide ผิดทิศ) · render switch +1 else-if · การ์ดเข้า 1 อัน · back default กลับ home (ไม่ต้องแก้)
+
+**Non-goals:** ไม่มีฟอร์มบันทึกค่า (persistence — defer) · ไม่มี interactive tooltip (Option B) · ไม่มี persisted key ใหม่ · ไม่เพิ่ม nav tab · ไม่แตะ timer/payment/tracker/celebration/privacy gate · PIA-013 แยกต่างหาก · ไม่เกี่ยว INC-H
+
+**Acceptance Criteria:**
+- AC-P-01: การ์ด "สมุดสุขภาพ" หน้าแรก (ทุกผู้ใช้ล็อกอิน) → แตะไปหน้า `health-record` · ก่อนล็อกอินเข้าไม่ได้ (privacy gate เดิม)
+- AC-P-02: กราฟ 3 ตัว เป็น inline SVG · สีเส้น/จุด resolve var() ได้ (ไม่ดำ/หาย) · จุดนอกช่วง `--clay`
+- AC-P-03: แต่ละกราฟมีค่าล่าสุด + ชิปสถานะ + วันที่ + caption ไทย · role="img" + aria-label
+- AC-P-04: u3 ข้อมูลครบสอดคล้อง (มีจุดควรติดตาม, ตรง lab/โรคประจำตัว) · u1 ส่วนใหญ่ปกติ · **u2/u4 empty state** ไม่มีกราฟเปล่า/NaN
+- AC-P-05: สรุปแล็บ+ยา+ลิงก์ทำงาน · การ์ดตัวตน u3 โชว์บัตรสุขภาพย่อ · CTA ปรึกษาหมอต่อเมื่อมีค่าควรติดตาม
+- AC-P-06: SVG width:100%+viewBox ไม่มี fixed px · **ไม่มี horizontal overflow** ปกติ/1366×768/**elder (u3)** · เลื่อนครบ
+- AC-P-07: กราฟ static หรือ draw-in ต้อง scope `.screen-enter` + ปิดใต้ reduced-motion (fallback เต็มเส้น) · re-render สลับสมาชิกไม่ replay ผี
+- AC-P-08: `esc()` ทุก dynamic string · guard คณิต (ไม่ NaN) · มี disclaimer จำลอง · ไม่มี network/external ref ใหม่
+- AC-P-09: Guard — DEPTH ถูก (slide/back ถูก) · console 0 · ไม่แตะ protected (timer/payment/tracker/celebration/escaping/privacy gate/INC-J/K/storage) · ไม่มี persisted key ใหม่
+
+**Round terms:** ขนาด **S–M** (additive: const + ฟังก์ชันหน้า + SVG helper + 3 บรรทัด wiring) · baseline `6f1e5d3` (SHA-1 `6d225e06`) · Verification: AC 9 + มาตรฐานเดิม · Completion Report: inventory + cosmetic + hash SHA-1 · Rollback: revert diff เดียว
+
 ## 6. Non-goals
 
 Phase 0 ไม่รวม:
@@ -1260,6 +1306,8 @@ Assumptions must not be converted into implementation requirements without Produ
 | DEC-019 | 2026-07-19 | คำขอ real-time tracking + SOP workflow แบบแกร็บ → Claude สำรวจโค้ด grounded design; Product Owner เลือก **Option B** (เจาะเลือด + ส่งยา) เป็น INC-O (§5.25) | Product Owner |
 | DEC-020 | 2026-07-19 | ขยาย INC-O (จากภาพอ้างอิง "สถานะการบริการ"): + บริการไลฟ์สไตล์ (แม่บ้าน/นวด/ice bath/กายภาพ/petcare) + หน้าสถานะแบบเสร็จ (timeline "สำเร็จ" + เวลา) + รูปแบบเงิน **มัดจำ ~30% + จ่ายส่วนที่เหลือหน้างาน** (home-visit; meds จ่ายเต็ม) — payment เข้า scope INC-O · ขนาดขยับเป็น L (Codex แบ่ง O-1/O-2 ได้) | Product Owner |
 | DEC-021 | 2026-07-24 | INC-O audit = PASS_WITH_RESIDUAL (12/12 AC, findings LOW: PIA-013/014/015); Product Owner ตรวจรับด้วย commit `6f1e5d3` + push และสั่ง "ปิด v0.11" — เริ่ม planning v0.12 | Product Owner |
+| DEC-022 | 2026-07-24 | v0.12 ทิศทาง: Product Owner เลือก **สมุดสุขภาพ + กราฟค่าสุขภาพ** (health companion) → Claude grounded design → INC-P Option A MVP (§5.27) รออนุมัติ | Product Owner |
+| DEC-023 | 2026-07-24 | INC-P (§5.27) อนุมัติ v0.12 · คำขอเสริม "ประวัติย้อนหลังการใช้บริการต่อลูกค้า" = **DEFERRED** (Product Owner สั่ง "ยังไม่ต้องทำ") — เก็บเป็น candidate รอบหน้า (user self-history ใน hub / operator view คู่ INC-H) | Product Owner |
 
 ## 20. Approval Record
 
@@ -1287,3 +1335,5 @@ Only the Product Owner may authorize changing the first line to `Status: APPROVE
 | 0.11 | DRAFT | None (INC-O SOP live tracker + หน้าสถานะการบริการ §5.25 awaiting approval) | Pending Product Owner | — | INC-N landed + ปิด (§5.24, DEC-018); INC-O ขยายตามภาพ + มัดจำ/จ่ายหน้างาน (DEC-020, 12 AC, ขนาด L); ไม่มี blocking question — รออนุมัติ v0.11 |
 | 0.11 | APPROVED_FOR_IMPLEMENTATION | INC-O ตาม §5.25 ทั้งหมด (SOP live tracker + หน้าสถานะการบริการ, 3 กลุ่มบริการ, timeline "สำเร็จ" + เวลา, มัดจำ/จ่ายหน้างาน) — verification 12 AC + re-verify payment | Product Owner (ผู้ใช้) — อนุมัติเป็นลายลักษณ์อักษรในแชท ("อนุมัติ v0.11") | 2026-07-19 (Asia/Bangkok) | เงื่อนไข: (1) baseline `3a41dfc` (SHA-1 `3974d870`), working tree สะอาด; (2) ขนาด L — Codex ขอแบ่ง O-1→O-2 ได้ (AGENTS.md §6); (3) payment เข้า scope (re-verify) — protected อื่นห้ามแตะ; (4) จำลอง 100% ห้าม map/tel:/network; (5) design invariants §5.25 (direct-DOM timer, key by ref, กัน empty-overlay lock, modalKey คงที่) บังคับ; (6) Claude ห้ามแก้ implementation |
 | 0.12 | DRAFT | None — INC-O ปิดรอบแล้ว (audit PASS_WITH_RESIDUAL §5.26, ตรวจรับ DEC-021) · v0.12 planning | Pending Product Owner | — | ไม่มี scope ค้าง · เมนู/ต่อยอดใน §5.2 · PIA-013 (meds label) polish เล็กรอเลือก |
+| 0.12 | DRAFT | None (INC-P สมุดสุขภาพ + กราฟ §5.27 awaiting approval) | Pending Product Owner | — | grounded design เสร็จ (Option A MVP read-only, 9 AC); ไม่มี blocking question — รออนุมัติ v0.12 |
+| 0.12 | APPROVED_FOR_IMPLEMENTATION | INC-P สมุดสุขภาพ + กราฟค่าสุขภาพ ตาม §5.27 (Option A MVP, read-only, 9 AC) | Product Owner (ผู้ใช้) — อนุมัติเป็นลายลักษณ์อักษรในแชท ("อนุมัติ v0.12") | 2026-07-24 (Asia/Bangkok) | เงื่อนไข: (1) baseline `6f1e5d3` (SHA-1 `6d225e06`); (2) additive — ห้ามแตะ protected; (3) SVG invariants §5.27 บังคับ; (4) read-only ไม่มี persisted key; (5) จำลอง 100%; (6) ประวัติลูกค้า deferred (DEC-023); (7) Claude ห้ามแก้ implementation |
