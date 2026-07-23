@@ -408,7 +408,7 @@ lucide.createIcons({icons});\``);if(typeof c>"u")throw new Error("`createIcons()
     .celebrate .check-draw,.celebrate .success-ring,.celebrate .confetti-bit{ animation:none; }
     button:not([disabled]){ transition:none; }
     button:not([disabled]):active{ transform:none; }
-    #queue-fill,#sos-progress{ transition:none !important; }
+    #queue-fill,#sos-progress,#tracker-progress,.tracker-progress{ transition:none !important; }
   }
 </style>
 </head>
@@ -515,8 +515,8 @@ const state = {
   pickedOtc: [],
   queue: null,          // { position, wait } — ขยับเองด้วย timer ระหว่างอยู่หน้าคิว
   queuePaid: false,     // จ่ายเงินยืนยันคิวแล้วหรือยัง — รีเซ็ตเมื่อส่งคำขอปรึกษาใหม่
-  bookings: [],         // นัดที่จ่ายเงินยืนยันแล้ว { icon, title, sub, amount } — โชว์บนหน้าแรก
-  modal: null,          // { kind:'detail'|'payment', category, itemId, location, staffId, amount, success }
+  bookings: [],         // นัดที่ยืนยันแล้ว + finance/track keyed by ref — โชว์บนหน้าแรก
+  modal: null,          // { kind:'detail'|'payment'|'tracker', ... }
   bookingSuccess: null, // { title, detail, amount }
 };
 
@@ -646,6 +646,12 @@ function staffFor(type){
       { id: "A", name: "สพ.ญ. พิม", role: "สัตวแพทย์ / ช่างตัดขน", avail: true },
       { id: "B", name: "พี่ตูน", role: "พนักงานดูแลสัตว์เลี้ยง", avail: true },
       { id: "C", name: "พี่เอ๋", role: "พนักงานดูแลสัตว์เลี้ยง", avail: false },
+    ],
+    nurse: [
+      { id: "A", name: "พว. ศิริพร", role: "พยาบาลวิชาชีพ · ทีมเจาะเลือดถึงบ้าน", avail: true },
+    ],
+    rider: [
+      { id: "B", name: "คุณต้น", role: "ไรเดอร์จัดส่งยา · Ornsirin Health Link", avail: true },
     ],
     // ทีมแพทย์เปลี่ยนตามแผนกที่ผู้ใช้เลือกไว้ — เลือกจิตแพทย์ต้องเจอจิตแพทย์ ไม่ใช่แพทย์ทั่วไป
     doctor: doctorsBySpecialty[state.specialty] || doctorsBySpecialty.gp,
@@ -783,6 +789,159 @@ let prevScreen = null, prevModalKey = null, prevLifestyleTab = "maid", prevProgr
 /* รหัสการจองรันนิ่ง — โชว์ใน sheet รายละเอียดนัดหมาย */
 let bookingSeq = 0;
 function nextBookingRef(){ bookingSeq += 1; return `OSR-${String(bookingSeq).padStart(4, "0")}`; }
+
+/* ---- สถานะบริการจำลอง: ผูก progress กับ ref ของ booking ไม่ผูกกับตำแหน่งใน array ---- */
+const TRACK_START_ETA = 8;
+const HOME_TRACK_TIMES = ["08:30", "08:45", "09:10", "09:15", "10:15"];
+const MEDS_TRACK_TIMES = ["09:00", "09:20", "09:30", "10:05"];
+const LIFESTYLE_ACTIVE_LABELS = {
+  maid: "กำลังทำความสะอาด",
+  massage: "กำลังให้บริการนวด",
+  icebath: "กำลังดูแลเซสชัน Ice bath",
+  physio: "กำลังทำกายภาพบำบัด",
+  petcare: "กำลังดูแลสัตว์เลี้ยง",
+};
+function bookingForRef(ref){
+  return (state.bookings || []).find(b => b && b.ref === ref) || null;
+}
+function bookingTotal(b){
+  const n = Number(b && b.total);
+  return Number.isFinite(n) ? n : Math.max(0, Number(b && b.amount) || 0);
+}
+function bookingDeposit(b){
+  const n = Number(b && b.deposit);
+  return Number.isFinite(n) ? n : bookingTotal(b);
+}
+function bookingRemaining(b){
+  const n = Number(b && b.remaining);
+  return Number.isFinite(n) ? n : 0;
+}
+function bookingOutstanding(b){
+  return b && !b.remainingPaid ? bookingRemaining(b) : 0;
+}
+function trackConfigFor(b){
+  if (!b) return null;
+  if (b.kind === "meds") {
+    return {
+      travelStep: 2,
+      times: MEDS_TRACK_TIMES,
+      steps: [
+        "เภสัชกรกำลังจัดยา",
+        "ไรเดอร์รับพัสดุแล้ว",
+        "กำลังจัดส่งถึงคุณ",
+        "ส่งถึงแล้ว",
+      ],
+      descriptions: [
+        "เภสัชกรกำลังตรวจสอบและจัดเตรียมรายการยา",
+        "พัสดุผ่านการตรวจและส่งมอบให้ไรเดอร์",
+        "ไรเดอร์กำลังนำยาไปยังที่อยู่จัดส่ง",
+        "ส่งมอบพัสดุให้ผู้รับเรียบร้อย",
+      ],
+    };
+  }
+  if (b.kind !== "lab" && b.kind !== "lifestyle") return null;
+  const destination = b.location === "center" ? "พื้นที่ส่วนกลาง" : "บ้านของคุณ";
+  const active = b.kind === "lab" ? "กำลังเจาะเลือด" : (LIFESTYLE_ACTIVE_LABELS[b.category] || "กำลังให้บริการ");
+  return {
+    travelStep: 1,
+    times: HOME_TRACK_TIMES,
+    steps: [
+      b.kind === "lab" ? "พยาบาลรับงานแล้ว" : "ผู้ให้บริการรับงานแล้ว",
+      `กำลังเดินทางไปยัง${destination}`,
+      `ถึง${destination}แล้ว`,
+      active,
+      "บริการเสร็จสิ้น",
+    ],
+    descriptions: [
+      b.kind === "lab" ? "พยาบาลยืนยันรายละเอียดและเวลานัดหมายแล้ว" : "ทีมบริการยืนยันรายละเอียดและเวลานัดหมายแล้ว",
+      `กำลังมุ่งหน้าไปยัง${destination}ตามเวลานัด`,
+      `ผู้ให้บริการพร้อมเริ่มงานที่${destination}`,
+      b.kind === "lab" ? "ดำเนินการตามรายการตรวจที่เลือกไว้" : "ดำเนินงานตามรายละเอียดบริการที่จองไว้",
+      "บันทึกการบริการและสรุปยอดเรียบร้อย",
+    ],
+  };
+}
+function canTrackBooking(b){
+  const cfg = trackConfigFor(b);
+  return !!(state.loggedIn && b && b.ref && b.userId === state.currentUser && cfg
+    && b.track && Number.isFinite(Number(b.track.step)) && Number.isFinite(Number(b.track.eta)));
+}
+function providerForBooking(b){
+  if (!b || !b.providerType || !b.providerId) return null;
+  return staffFor(b.providerType).find(s => s.id === b.providerId) || null;
+}
+function trackStep(b){
+  const cfg = trackConfigFor(b);
+  if (!cfg) return 0;
+  return Math.max(0, Math.min(cfg.steps.length - 1, Math.floor(Number(b.track && b.track.step) || 0)));
+}
+function trackEta(b){
+  const raw = Number(b && b.track && b.track.eta);
+  return Number.isFinite(raw) ? Math.max(0, Math.min(TRACK_START_ETA, Math.floor(raw))) : TRACK_START_ETA;
+}
+function trackProgress(b){
+  const cfg = trackConfigFor(b);
+  if (!cfg) return 0;
+  const step = trackStep(b);
+  if (step === cfg.travelStep) {
+    return Math.round(((cfg.travelStep + (TRACK_START_ETA - trackEta(b)) / TRACK_START_ETA) / (cfg.steps.length - 1)) * 100);
+  }
+  return Math.round((step / (cfg.steps.length - 1)) * 100);
+}
+
+let trackTimer = null;
+function updateTrackerDom(b){
+  if (!b) return;
+  const eta = trackEta(b);
+  const etaEl = document.getElementById("tracker-eta");
+  const progress = document.getElementById("tracker-progress");
+  if (etaEl) etaEl.textContent = eta === 0 ? "ถึงแล้ว" : `${eta} นาที`;
+  if (progress) progress.style.width = `${Math.round(((TRACK_START_ETA - eta) / TRACK_START_ETA) * 100)}%`;
+}
+function setTrackEta(ref, nextEta){
+  const b = bookingForRef(ref);
+  const cfg = trackConfigFor(b);
+  if (!canTrackBooking(b) || !cfg || trackStep(b) !== cfg.travelStep) return;
+  b.track.eta = Math.max(0, Math.min(TRACK_START_ETA, Math.floor(nextEta)));
+  persistState();
+  updateTrackerDom(b);
+  if (b.track.eta === 0) stopTrackTimer();
+}
+function startTrackTimer(){
+  const ref = state.modal && state.modal.kind === "tracker" ? state.modal.ref : null;
+  const b = bookingForRef(ref);
+  const cfg = trackConfigFor(b);
+  if (!canTrackBooking(b) || !cfg || trackStep(b) !== cfg.travelStep) { stopTrackTimer(); return; }
+  const eta = trackEta(b);
+  if (b.track.eta !== eta) { b.track.eta = eta; persistState(); }
+  updateTrackerDom(b);
+  if (eta === 0 || trackTimer) return;
+  trackTimer = setInterval(() => {
+    const current = bookingForRef(ref);
+    const currentCfg = trackConfigFor(current);
+    if (!canTrackBooking(current) || !state.modal || state.modal.kind !== "tracker" || state.modal.ref !== ref
+      || !currentCfg || trackStep(current) !== currentCfg.travelStep) {
+      stopTrackTimer();
+      return;
+    }
+    setTrackEta(ref, trackEta(current) - 1);
+  }, 5000);
+}
+function stopTrackTimer(){
+  if (trackTimer) { clearInterval(trackTimer); trackTimer = null; }
+}
+function advanceTracker(ref){
+  const b = bookingForRef(ref);
+  const cfg = trackConfigFor(b);
+  if (!canTrackBooking(b) || !cfg) return;
+  const step = trackStep(b);
+  if (step >= cfg.steps.length - 1) { stopTrackTimer(); return; }
+  const nextStep = step + 1;
+  const bookings = state.bookings.map(item => item.ref === ref
+    ? { ...item, track: { step: nextStep, eta: nextStep === cfg.travelStep ? TRACK_START_ETA : trackEta(item) } }
+    : item);
+  setState({ bookings });
+}
 
 /* ---- VDO call จำลอง: เชื่อมต่อ ~2 วิ แล้วตัวนับเวลาเดินจริง ---- */
 function fmtCallTime(s){ return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; }
@@ -1112,19 +1271,38 @@ function homeScreen(){
       <p class="serif-th font-semibold mb-2" style="font-size:15px">นัดหมายที่กำลังจะถึง</p>
       ${state.bookings.length ? `
       <div class="space-y-2.5">
-        ${state.bookings.map((b, i) => `
-        <button data-booking="${i}" class="w-full text-left rounded-2xl p-4 flex items-center gap-3" style="background:var(--surface);border:1px solid var(--line)">
-          <div class="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style="background:#EDE9DA">${icon(b.icon, 18)}</div>
-          <div class="flex-1 min-w-0">
-            <p style="font-size:13px" class="font-medium">${b.title}</p>
-            <p style="font-size:11px;color:var(--ink-soft)" class="mt-0.5">${b.sub}</p>
-          </div>
-          <div class="text-right shrink-0">
-            <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5" style="background:#E4EBDD;color:var(--primary);font-size:9.5px">${icon("check", 10)} ยืนยันแล้ว</span>
-            <p class="serif-th mt-1" style="font-size:12.5px;color:var(--clay)">฿${b.amount.toLocaleString()}</p>
-          </div>
-          ${icon("chevron-right", 16, "shrink-0")}
-        </button>`).join("")}
+        ${state.bookings.map((b, i) => {
+          const tracked = canTrackBooking(b);
+          const cfg = trackConfigFor(b);
+          const step = tracked ? trackStep(b) : 0;
+          const status = tracked && cfg ? cfg.steps[step] : "ยืนยันแล้ว";
+          const progress = tracked ? trackProgress(b) : 0;
+          return `
+        <div class="rounded-2xl overflow-hidden" style="background:var(--surface);border:1px solid var(--line)">
+          <button data-booking="${i}" class="w-full text-left p-4 flex items-center gap-3">
+            <div class="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style="background:#EDE9DA">${icon(b.icon, 18)}</div>
+            <div class="flex-1 min-w-0">
+              <p style="font-size:13px" class="font-medium">${esc(b.title)}</p>
+              <p style="font-size:11px;color:var(--ink-soft)" class="mt-0.5">${esc(b.sub)}</p>
+            </div>
+            <div class="text-right shrink-0">
+              <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5" style="background:#E4EBDD;color:var(--primary);font-size:9.5px">${icon(tracked ? "navigation" : "check", 10)} ${esc(status)}</span>
+              <p class="serif-th mt-1" style="font-size:12.5px;color:var(--clay)">฿${bookingTotal(b).toLocaleString()}</p>
+            </div>
+            ${icon("chevron-right", 16, "shrink-0")}
+          </button>
+          ${tracked ? `
+          <button data-tracker-ref="${esc(b.ref)}" class="w-full px-4 py-2.5 text-left" style="background:#EFF3EA;border-top:1px solid #D6E0CD">
+            <span class="flex items-center justify-between gap-2">
+              <span class="font-medium" style="font-size:11px;color:var(--primary)">ดูสถานะการบริการ</span>
+              <span style="font-size:10px;color:var(--ink-soft)">${progress}% ${icon("chevron-right", 12)}</span>
+            </span>
+            <span class="block rounded-full overflow-hidden mt-1.5" style="height:4px;background:#D8E1D0">
+              <span class="tracker-progress block h-full rounded-full" style="width:${progress}%;background:var(--primary);transition:width .35s ease"></span>
+            </span>
+          </button>` : ""}
+        </div>`;
+        }).join("")}
       </div>` : ""}
       ${state.bookings.some(b => b.kind === "lab") ? "" : `
       <button data-nav="lab" class="w-full text-left rounded-2xl p-4 flex items-center gap-3 ${state.bookings.length ? "mt-2.5" : ""}"
@@ -1434,6 +1612,8 @@ function labTotal(){
 
 function labScreen(){
   const total = labTotal();
+  const deposit = Math.round(total * 0.3);
+  const remaining = total - deposit;
   const canBook = total > 0 && state.labDate && state.labTime;
   return `
   <div class="pb-28">
@@ -1482,13 +1662,21 @@ function labScreen(){
           <span style="font-size:11.5px;color:var(--ink-soft)">฿${(total ? LAB_HOME_FEE : 0).toLocaleString()}</span>`}
         </div>
         <div class="flex items-center justify-between pt-2.5" style="border-top:1px solid var(--line)">
-          <span style="font-size:12.5px" class="font-medium">ยอดชำระ</span>
-          <span class="serif-th" style="font-size:17px;color:var(--clay)">฿${total.toLocaleString()}</span>
+          <span style="font-size:11.5px;color:var(--ink-soft)">ราคารวม</span>
+          <span style="font-size:11.5px;color:var(--ink-soft)">฿${total.toLocaleString()}</span>
+        </div>
+        <div class="flex items-center justify-between mt-1.5">
+          <span style="font-size:12.5px" class="font-medium">มัดจำ 30% วันนี้</span>
+          <span class="serif-th" style="font-size:17px;color:var(--clay)">฿${deposit.toLocaleString()}</span>
+        </div>
+        <div class="flex items-center justify-between mt-1">
+          <span style="font-size:10.5px;color:var(--ink-soft)">ชำระหน้างานหลังบริการเสร็จ</span>
+          <span style="font-size:10.5px;color:var(--ink-soft)">฿${remaining.toLocaleString()}</span>
         </div>
       </div>
 
       <button id="lab-confirm" ${canBook ? "" : "disabled"} class="w-full rounded-full py-3.5 font-medium"
-        style="background:${canBook ? "var(--slate)" : "#DCD5C2"};color:${canBook ? "#fff" : "var(--muted)"};font-size:14px">ยืนยันนัดหมาย</button>
+        style="background:${canBook ? "var(--slate)" : "#DCD5C2"};color:${canBook ? "#fff" : "var(--muted)"};font-size:14px">ยืนยันนัดหมาย · ชำระมัดจำ ฿${deposit.toLocaleString()}</button>
       ${canBook ? "" : `<p style="font-size:10.5px;color:var(--muted)" class="text-center mt-2">เลือกรายการตรวจ พร้อมวันและเวลาที่สะดวก</p>`}
     </div>
   </div>`;
@@ -1834,6 +2022,8 @@ function detailModal(){
   const gross = priceBase + surcharge;
   const discount = isResident() ? Math.round(gross * RESIDENT_LIFESTYLE_DISCOUNT) : 0;   // สิทธิ์ลูกบ้าน 15%
   const total = gross - discount;
+  const deposit = Math.round(total * 0.3);
+  const remaining = total - deposit;
   const unit = priceUnitFor(m.category, item);
 
   return `
@@ -1912,17 +2102,22 @@ function detailModal(){
           <span style="font-size:11px;color:var(--primary)" class="font-medium">ส่วนลดลูกบ้าน Ornsirin 15%</span>
           <span style="font-size:11px;color:var(--primary)" class="font-medium">−฿${discount.toLocaleString()}</span>
         </div>
-        <div class="flex items-center justify-between pt-2.5" style="border-top:1px solid var(--line)">
-          <span style="font-size:12.5px" class="font-medium">ยอดชำระ</span>
-          <span class="serif-th" style="font-size:17px;color:var(--clay)">฿${total.toLocaleString()} ${unit ? `<small style="font-family:'Noto Sans Thai',sans-serif;font-size:10px">${unit}</small>` : ""}</span>
-        </div>` : `
-        <div class="flex items-center justify-between">
-          <span style="font-size:12.5px" class="font-medium">ยอดชำระ</span>
-          <span class="serif-th" style="font-size:17px;color:var(--clay)">฿${total.toLocaleString()} ${unit ? `<small style="font-family:'Noto Sans Thai',sans-serif;font-size:10px">${unit}</small>` : ""}</span>
-        </div>`}
+        ` : ""}
+        <div class="flex items-center justify-between ${discount ? "pt-2.5" : ""}" style="${discount ? "border-top:1px solid var(--line)" : ""}">
+          <span style="font-size:11.5px;color:var(--ink-soft)">ราคารวม</span>
+          <span style="font-size:11.5px;color:var(--ink-soft)">฿${total.toLocaleString()} ${unit ? `<small>${unit}</small>` : ""}</span>
+        </div>
+        <div class="flex items-center justify-between mt-1.5">
+          <span style="font-size:12.5px" class="font-medium">มัดจำ 30% วันนี้</span>
+          <span class="serif-th" style="font-size:17px;color:var(--clay)">฿${deposit.toLocaleString()}</span>
+        </div>
+        <div class="flex items-center justify-between mt-1">
+          <span style="font-size:10.5px;color:var(--ink-soft)">ชำระหน้างานเมื่อบริการเสร็จ</span>
+          <span style="font-size:10.5px;color:var(--ink-soft)">฿${remaining.toLocaleString()}</span>
+        </div>
       </div>
 
-      <button data-modal-pay ${m.staffId && m.time ? "" : "disabled"} class="w-full rounded-full py-3.5 font-medium" style="background:${m.staffId && m.time ? "var(--clay)" : "#DCD5C2"};color:${m.staffId && m.time ? "#fff" : "var(--muted)"};font-size:14px">ถัดไป · ชำระเงิน</button>
+      <button data-modal-pay ${m.staffId && m.time ? "" : "disabled"} class="w-full rounded-full py-3.5 font-medium" style="background:${m.staffId && m.time ? "var(--clay)" : "#DCD5C2"};color:${m.staffId && m.time ? "#fff" : "var(--muted)"};font-size:14px">ถัดไป · ชำระมัดจำ ฿${deposit.toLocaleString()}</button>
       ${m.staffId && m.time ? "" : `<p style="font-size:10px;color:var(--muted)" class="text-center mt-2">เลือกผู้ให้บริการและเวลานัด เพื่อไปขั้นตอนชำระเงิน</p>`}
     </div>
   </div>`;
@@ -1932,21 +2127,27 @@ function detailModal(){
 function bookingDetailModal(){
   const b = state.bookings[state.modal.bookingIndex];
   if (!b) return "";
+  const total = bookingTotal(b);
+  const deposit = bookingDeposit(b);
+  const remaining = bookingRemaining(b);
+  const outstanding = bookingOutstanding(b);
+  const paid = deposit + (b.remainingPaid ? remaining : 0);
+  const tracked = canTrackBooking(b);
   return `
   <div class="absolute inset-0 z-40 flex flex-col justify-end" style="background:rgba(43,51,40,0.55);pointer-events:auto">
     <div class="sheet-body rounded-t-3xl p-5" style="background:var(--bg);max-height:88%;overflow-y:auto">
       <div class="flex items-center gap-3 mb-1">
         <div class="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style="background:#EDE9DA">${icon(b.icon, 18)}</div>
         <div class="flex-1 min-w-0">
-          <h2 class="serif-th font-semibold" style="font-size:17px">${b.title}</h2>
-          <p style="font-size:10.5px;color:var(--ink-soft)" class="mt-0.5">รหัสการจอง ${b.ref || "-"}</p>
+          <h2 class="serif-th font-semibold" style="font-size:17px">${esc(b.title)}</h2>
+          <p style="font-size:10.5px;color:var(--ink-soft)" class="mt-0.5">รหัสการจอง ${esc(b.ref || "-")}</p>
         </div>
         <button data-modal-close class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:var(--surface);border:1px solid var(--line)" aria-label="ปิด">${icon("x",16)}</button>
       </div>
 
       <div class="flex gap-1.5 mt-3 mb-4">
         <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1" style="background:#E4EBDD;color:var(--primary);font-size:10.5px">${icon("check",11)} ยืนยันแล้ว</span>
-        <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1" style="background:#F3E9DB;color:var(--clay);font-size:10.5px">${icon("qr-code",11)} ชำระเงินแล้ว</span>
+        <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1" style="background:#F3E9DB;color:var(--clay);font-size:10.5px">${icon("qr-code",11)} ${outstanding ? "ชำระมัดจำแล้ว" : "ชำระครบแล้ว"}</span>
       </div>
 
       <div class="rounded-2xl p-4 space-y-3" style="background:var(--surface);border:1px solid var(--line)">
@@ -1960,8 +2161,8 @@ function bookingDetailModal(){
               <div class="flex items-start gap-2 min-w-0">
                 <span class="rounded-full shrink-0" style="width:6px;height:6px;margin-top:6px;background:var(--primary)"></span>
                 <div class="min-w-0">
-                  <p style="font-size:12.5px" class="font-medium">${it.name}</p>
-                  ${it.note ? `<p style="font-size:10.5px;color:var(--ink-soft)" class="mt-0.5">${it.note}</p>` : ""}
+                  <p style="font-size:12.5px" class="font-medium">${esc(it.name)}</p>
+                  ${it.note ? `<p style="font-size:10.5px;color:var(--ink-soft)" class="mt-0.5">${esc(it.note)}</p>` : ""}
                 </div>
               </div>
               ${it.price != null ? `<span style="font-size:11.5px;color:var(--ink-soft)" class="shrink-0">฿${it.price.toLocaleString()}</span>` : ""}
@@ -1971,16 +2172,113 @@ function bookingDetailModal(){
         </div>`).join("")}
       </div>
 
-      <div class="rounded-2xl p-4 mt-3 flex items-center justify-between" style="background:var(--surface);border:1px solid var(--line)">
-        <div>
-          <p style="font-size:12.5px" class="font-medium">ชำระแล้ว · พร้อมเพย์</p>
-          <p style="font-size:10.5px;color:var(--ink-soft)">Ornsirin Health Link</p>
-        </div>
-        <span class="serif-th" style="font-size:17px;color:var(--clay)">฿${b.amount.toLocaleString()}</span>
+      <div class="rounded-2xl p-4 mt-3 space-y-1.5" style="background:var(--surface);border:1px solid var(--line)">
+        <div class="flex items-center justify-between"><span style="font-size:11px;color:var(--ink-soft)">ราคารวม</span><span style="font-size:11px">฿${total.toLocaleString()}</span></div>
+        <div class="flex items-center justify-between"><span style="font-size:11px;color:var(--ink-soft)">มัดจำ</span><span style="font-size:11px">฿${deposit.toLocaleString()}</span></div>
+        <div class="flex items-center justify-between"><span style="font-size:11px;color:var(--ink-soft)">คงเหลือหน้างาน</span><span style="font-size:11px;color:${outstanding ? "var(--clay)" : "var(--primary)"}">${outstanding ? `฿${outstanding.toLocaleString()}` : "ชำระแล้ว"}</span></div>
+        <div class="flex items-center justify-between pt-2" style="border-top:1px solid var(--line)"><span style="font-size:12.5px" class="font-medium">ชำระแล้ว · พร้อมเพย์</span><span class="serif-th" style="font-size:17px;color:var(--clay)">฿${paid.toLocaleString()}</span></div>
       </div>
 
-      <button data-modal-close class="w-full rounded-full py-3.5 font-medium mt-4" style="background:var(--primary);color:#fff;font-size:14px">เรียบร้อย</button>
+      ${tracked ? `<button data-tracker-ref="${esc(b.ref)}" class="w-full rounded-full py-3.5 font-medium mt-4 flex items-center justify-center gap-1.5" style="background:var(--primary);color:#fff;font-size:14px">${icon("navigation",15)} ดูสถานะการบริการ</button>` : ""}
+      <button data-modal-close class="w-full rounded-full py-3.5 font-medium ${tracked ? "mt-1.5" : "mt-4"}" style="background:${tracked ? "var(--surface)" : "var(--primary)"};color:${tracked ? "var(--ink)" : "#fff"};border:${tracked ? "1px solid var(--line)" : "0"};font-size:14px">เรียบร้อย</button>
       <button data-booking-cancel class="w-full rounded-full py-2.5 font-medium mt-1.5" style="background:transparent;color:#B0543F;font-size:12px">ยกเลิกนัดหมายนี้</button>
+    </div>
+  </div>`;
+}
+
+/* ---------------- live service tracker (fully simulated) ---------------- */
+function trackerModal(){
+  const ref = state.modal && state.modal.ref;
+  const b = bookingForRef(ref);
+  const cfg = trackConfigFor(b);
+  if (!canTrackBooking(b) || !cfg) {
+    return `
+    <div class="absolute inset-0 z-40 flex flex-col justify-end" style="background:rgba(43,51,40,0.55);pointer-events:auto">
+      <div class="sheet-body rounded-t-3xl p-5 text-center" style="background:var(--bg)">
+        <button data-modal-close class="w-10 h-10 rounded-full flex items-center justify-center ml-auto" style="background:var(--surface);border:1px solid var(--line)" aria-label="ปิด">${icon("x",16)}</button>
+        <p class="serif-th font-semibold mt-2" style="font-size:17px">ไม่พบสถานะบริการนี้</p>
+        <p class="mt-1" style="font-size:11px;color:var(--ink-soft)">ปิดหน้าต่างแล้วเปิดจากรายการนัดหมายอีกครั้ง</p>
+      </div>
+    </div>`;
+  }
+  const step = trackStep(b);
+  const terminal = step === cfg.steps.length - 1;
+  const provider = providerForBooking(b);
+  const showProvider = b.kind !== "meds" || step >= 1;
+  const travelActive = step === cfg.travelStep;
+  const eta = trackEta(b);
+  const total = bookingTotal(b);
+  const deposit = bookingDeposit(b);
+  const remaining = bookingRemaining(b);
+  const outstanding = bookingOutstanding(b);
+  const paid = deposit + (b.remainingPaid ? remaining : 0);
+  return `
+  <div class="absolute inset-0 z-40 flex flex-col justify-end" style="background:rgba(43,51,40,0.55);pointer-events:auto">
+    <div class="sheet-body rounded-t-3xl p-5" style="background:var(--bg);max-height:92%;overflow-y:auto">
+      <div class="flex items-start gap-3">
+        <div class="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style="background:#E7EDDF;color:var(--primary)">${icon(b.kind === "meds" ? "package-check" : "navigation",19)}</div>
+        <div class="flex-1 min-w-0">
+          <p style="font-size:10px;color:var(--primary)" class="font-medium">สถานะการบริการ · ${esc(b.ref)}</p>
+          <h2 class="serif-th font-semibold mt-0.5" style="font-size:17px">${esc(cfg.steps[step])}</h2>
+          <p style="font-size:10.5px;color:var(--ink-soft)" class="mt-0.5">${esc(b.title)}</p>
+        </div>
+        <button data-modal-close class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:var(--surface);border:1px solid var(--line)" aria-label="ปิด">${icon("x",16)}</button>
+      </div>
+
+      <div class="rounded-xl px-3 py-2 mt-3 flex items-center gap-2" style="background:#FFF4DD;border:1px solid #E8D3A4;color:#70572B">
+        ${icon("flask-conical",13,"shrink-0")}
+        <p style="font-size:10px;line-height:1.45">ข้อมูลจำลองเพื่อการสาธิตเท่านั้น · ไม่มี GPS แผนที่ หรือการติดต่อภายนอก</p>
+      </div>
+
+      ${showProvider && provider ? `
+      <div class="rounded-2xl p-3.5 mt-3 flex items-center gap-3" style="background:var(--surface);border:1px solid var(--line)">
+        <div class="w-11 h-11 rounded-full flex items-center justify-center shrink-0 font-medium" style="${staffAvatar(provider.id)}font-size:14px">${esc(provider.id)}</div>
+        <div class="min-w-0">
+          <p class="font-medium" style="font-size:12.5px">${esc(provider.name)}</p>
+          <p class="mt-0.5" style="font-size:10.5px;color:var(--ink-soft)">${esc(provider.role)}</p>
+        </div>
+      </div>` : ""}
+
+      ${travelActive ? `
+      <div class="rounded-2xl p-4 mt-3" style="background:#EFF3EA;border:1px solid #C9D6BD">
+        <div class="flex items-end justify-between gap-3">
+          <div><p style="font-size:10.5px;color:#6D7766">เวลาถึงโดยประมาณ</p><p id="tracker-eta" class="serif-th font-semibold" style="font-size:22px;color:var(--primary)">${eta === 0 ? "ถึงแล้ว" : `${eta} นาที`}</p></div>
+          <span style="font-size:10px;color:#6D7766">อัปเดตเมื่อเปิดหน้านี้</span>
+        </div>
+        <div class="rounded-full overflow-hidden mt-2.5" style="height:7px;background:#D8E1D0">
+          <div id="tracker-progress" class="h-full rounded-full" style="width:${Math.round(((TRACK_START_ETA - eta) / TRACK_START_ETA) * 100)}%;background:var(--primary);transition:width .5s ease"></div>
+        </div>
+      </div>` : ""}
+
+      <div class="rounded-2xl p-4 mt-3" style="background:var(--surface);border:1px solid var(--line)">
+        <p class="serif-th font-semibold mb-3" style="font-size:14px">ไทม์ไลน์การบริการ</p>
+        <div class="space-y-3">
+          ${cfg.steps.map((label, i) => {
+            const done = terminal ? i <= step : i < step;
+            const current = !terminal && i === step;
+            return `
+            <div class="flex items-start gap-3" style="opacity:${done || current ? 1 : 0.45}">
+              <span class="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style="background:${done ? "var(--primary)" : current ? "var(--clay)" : "#E8E5DB"};color:${done || current ? "#fff" : "var(--muted)"}">${done ? icon("check",13) : `<span style="font-size:10px">${i + 1}</span>`}</span>
+              <div class="flex-1 min-w-0">
+                <p class="${done || current ? "font-medium" : ""}" style="font-size:12px">${esc(label)}</p>
+                <p class="mt-0.5" style="font-size:10px;color:var(--ink-soft);line-height:1.45">${esc(cfg.descriptions[i])}</p>
+                <p class="mt-0.5" style="font-size:10px;color:${done ? "var(--primary)" : current ? "var(--clay)" : "var(--muted)"}">${done ? `สำเร็จ · ${cfg.times[i]} น.` : current ? `กำลังดำเนินการ · ${cfg.times[i]} น.` : `ประมาณ ${cfg.times[i]} น.`}</p>
+              </div>
+            </div>`;
+          }).join("")}
+        </div>
+      </div>
+
+      <div class="rounded-2xl p-4 mt-3 space-y-1.5" style="background:var(--surface);border:1px solid var(--line)">
+        <div class="flex justify-between"><span style="font-size:11px;color:var(--ink-soft)">ยอดรวมทั้งสิ้น</span><span style="font-size:11px">฿${total.toLocaleString()}</span></div>
+        <div class="flex justify-between"><span style="font-size:11px;color:var(--ink-soft)">ยอดที่ชำระแล้ว${outstanding ? " (มัดจำ 30%)" : " (เต็มจำนวน)"}</span><span style="font-size:11px">฿${paid.toLocaleString()}</span></div>
+        ${remaining ? `<div class="flex justify-between"><span style="font-size:11px;color:var(--ink-soft)">ยอดคงเหลือชำระหน้างาน</span><span style="font-size:11px;color:${outstanding ? "var(--clay)" : "var(--primary)"}">${outstanding ? `฿${outstanding.toLocaleString()}` : "ชำระครบแล้ว ✓"}</span></div>` : `<div class="flex justify-between"><span style="font-size:11px;color:var(--ink-soft)">สถานะการชำระเงิน</span><span style="font-size:11px;color:var(--primary)">ชำระครบแล้ว ✓</span></div>`}
+      </div>
+
+      ${terminal && outstanding ? `<button data-track-pay="${esc(b.ref)}" class="w-full rounded-full py-3.5 font-medium mt-4" style="background:var(--clay);color:#fff;font-size:14px">ชำระยอดคงเหลือ ฿${outstanding.toLocaleString()}</button>` : ""}
+      ${terminal && b.kind === "lab" ? `<button data-tracker-results data-nav="lab-results" class="w-full rounded-full py-3.5 font-medium mt-2" style="background:var(--slate);color:#fff;font-size:14px">ดูผลตรวจของฉัน</button>` : ""}
+      ${!terminal ? `<button data-tracker-next="${esc(b.ref)}" class="w-full rounded-full py-3.5 font-medium mt-4" style="background:var(--primary);color:#fff;font-size:14px">จำลองขั้นถัดไป ${icon("arrow-right",15)}</button>` : ""}
+      <button data-modal-close class="w-full rounded-full py-3 font-medium mt-2" style="background:var(--surface);border:1px solid var(--line);color:var(--ink);font-size:13px">${terminal ? "เสร็จสิ้น" : "ปิดไว้ก่อน"}</button>
     </div>
   </div>`;
 }
@@ -2051,7 +2349,7 @@ function paymentModal(){
           <div class="flex items-center justify-between gap-3">
             <div class="flex items-center gap-2 min-w-0">
               <span class="rounded-full shrink-0" style="width:5px;height:5px;background:var(--primary)"></span>
-              <p style="font-size:11.5px" class="min-w-0">${it.name}</p>
+              <p style="font-size:11.5px" class="min-w-0">${esc(it.name)}</p>
             </div>
             <span style="font-size:11px;color:var(--ink-soft)" class="shrink-0">฿${(it.price || 0).toLocaleString()}</span>
           </div>`).join("")}
@@ -2321,8 +2619,11 @@ function render(){
   const modalRoot = document.getElementById("modal-root");
   modalRoot.classList.toggle("elder-mode", elderMode);
   const overlayAllowed = state.loggedIn;
-  const modalKey = overlayAllowed ? (state.modal
-    ? (state.modal.kind === "sos" ? `sos:${state.modal.stage || "confirm"}:${state.modal.callback ? "callback" : "default"}` : state.modal.kind)
+  const activeTracker = state.modal && state.modal.kind === "tracker" ? bookingForRef(state.modal.ref) : null;
+  const trackerAllowed = !!(activeTracker && canTrackBooking(activeTracker));
+  const modalKey = overlayAllowed && (!state.modal || state.modal.kind !== "tracker" || trackerAllowed) ? (state.modal
+    ? (state.modal.kind === "sos" ? `sos:${state.modal.stage || "confirm"}:${state.modal.callback ? "callback" : "default"}`
+      : state.modal.kind === "tracker" ? `tracker:${state.modal.ref}` : state.modal.kind)
     : (state.bookingSuccess ? "success" : null)) : null;
   const sameOverlay = modalKey !== null && modalKey === prevModalKey;
   const prevSheetEl = sameOverlay ? modalRoot.querySelector(".sheet-body") : null;
@@ -2330,6 +2631,7 @@ function render(){
 
   if (overlayAllowed && state.modal && state.modal.kind === "detail") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = detailModal(); }
   else if (overlayAllowed && state.modal && state.modal.kind === "bookingDetail") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = bookingDetailModal(); }
+  else if (overlayAllowed && state.modal && state.modal.kind === "tracker" && trackerAllowed) { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = trackerModal(); }
   else if (overlayAllowed && state.modal && state.modal.kind === "addPet") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = addPetModal(); }
   else if (overlayAllowed && state.modal && state.modal.kind === "payment") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = paymentModal(); }
   else if (overlayAllowed && state.modal && state.modal.kind === "notifications") { modalRoot.style.pointerEvents = "auto"; modalRoot.innerHTML = notificationsModal(); }
@@ -2340,6 +2642,8 @@ function render(){
 
   if (overlayAllowed && emergencyProfileFor() && state.modal && state.modal.kind === "sos" && state.modal.stage === "dispatch") startSosTimer();
   else stopSosTimer();
+  if (overlayAllowed && trackerAllowed && state.modal && state.modal.kind === "tracker") startTrackTimer();
+  else stopTrackTimer();
 
   if (sameOverlay) {
     // overlay เดิม (เช่น แตะเลือกพนักงานใน sheet) — คืนตำแหน่ง scroll และห้ามเล่นอนิเมชันซ้ำ
@@ -2448,18 +2752,30 @@ function render(){
 
   const labConfirm = app.querySelector("#lab-confirm:not([disabled])");
   if (labConfirm) labConfirm.addEventListener("click", () => {
-    setState({ modal: { kind: "payment", amount: labTotal(),
+    const total = labTotal();
+    const deposit = Math.round(total * 0.3);
+    const remaining = total - deposit;
+    setState({ modal: { kind: "payment", amount: deposit,
+      lineItems: [{ name: "มัดจำบริการเจาะเลือดถึงบ้าน 30%", price: deposit }],
       success: {
         title: "นัดหมายเรียบร้อย",
-        detail: `พยาบาลจะไปเจาะเลือดถึงบ้านคุณ ${formatLabSlot()} · แจ้งผลผ่านแอปภายใน 1-2 วัน`,
-        amount: labTotal(),
+        detail: `ชำระมัดจำแล้ว ฿${deposit.toLocaleString()} · พยาบาลจะไปเจาะเลือดถึงบ้านคุณ ${formatLabSlot()}`,
+        amount: deposit,
       },
       booking: {
-        kind: "lab",   // ใช้ตัดสินว่าการ์ดแนะนำเจาะเลือดบนหน้าแรกควรหายหรือยัง
+        kind: "lab",
+        userId: state.currentUser,
+        location: "home",
+        providerType: "nurse",
+        providerId: "A",
         icon: "droplet",
         title: `เจาะเลือดถึงบ้าน · ${state.pickedTests.length} รายการ`,
         sub: `${formatLabSlot()} · ที่${placeShort()}`,
-        amount: labTotal(),
+        amount: deposit,
+        total,
+        deposit,
+        remaining,
+        remainingPaid: false,
         details: [
           { label: "รายการตรวจ", items: [
             ...state.pickedTests.map(n => { const t = tests.find(x => x.name === n); return { name: n, price: t ? t.price : 0 }; }),
@@ -2495,10 +2811,19 @@ function render(){
         amount: total,
       },
       booking: {
+        kind: "meds",
+        userId: state.currentUser,
+        location: "home",
+        providerType: "rider",
+        providerId: "B",
         icon: "pill",
         title: `จัดส่งยาถึงบ้าน · ${count} รายการ`,
         sub: `ถึงภายใน 24 ชั่วโมง · ที่${placeShort()}`,
         amount: total,
+        total,
+        deposit: total,
+        remaining: 0,
+        remainingPaid: true,
         details: [
           { label: "รายการยา", items: [
             ...current.map(x => ({ name: x.name, note: x.freq, price: x.price })),
@@ -2573,7 +2898,10 @@ function render(){
   if (healthCardOpen) healthCardOpen.addEventListener("click", () => setState({ modal: { kind: "healthCard" } }));
   const sosOpen = app.querySelector("[data-sos-open]");
   if (sosOpen) sosOpen.addEventListener("click", () => setState({ modal: { kind: "sos", stage: "confirm" } }));
-  document.querySelectorAll("[data-user]").forEach(el => el.addEventListener("click", () => setState({ currentUser: el.dataset.user })));
+  document.querySelectorAll("[data-user]").forEach(el => el.addEventListener("click", () => {
+    const closeTracking = state.modal && (state.modal.kind === "tracker" || state.modal.returnTrackerRef);
+    setState({ currentUser: el.dataset.user, ...(closeTracking ? { modal: null } : {}) });
+  }));
   const logoutBtn = document.querySelector("[data-logout]");
   if (logoutBtn) logoutBtn.addEventListener("click", () => setState({ loggedIn: false, screen: "home", modal: null, bookingSuccess: null }));
 
@@ -2586,6 +2914,9 @@ function render(){
   // เปิดรายละเอียดนัดหมายที่ยืนยันแล้ว (จากการ์ดบนหน้าแรก)
   app.querySelectorAll("[data-booking]").forEach(el => el.addEventListener("click", () => {
     setState({ modal: { kind: "bookingDetail", bookingIndex: +el.dataset.booking } });
+  }));
+  app.querySelectorAll("[data-tracker-ref]").forEach(el => el.addEventListener("click", () => {
+    setState({ modal: { kind: "tracker", ref: el.dataset.trackerRef } });
   }));
 
   // open item detail
@@ -2602,11 +2933,42 @@ function render(){
   // modal interactions
   modalRoot.querySelectorAll("[data-modal-close]").forEach(el => el.addEventListener("click", () => {
     const m = state.modal;
-    if (m && m.kind === "payment" && m.category && m.itemId) {
+    if (m && m.kind === "payment" && m.returnTrackerRef) {
+      setState({ modal: { kind: "tracker", ref: m.returnTrackerRef } });
+    } else if (m && m.kind === "payment" && m.category && m.itemId) {
       const { amount, success, booking, lineItems, queuePay, ...detailState } = m;
       setState({ modal: { ...detailState, kind: "detail" } });
     } else setState({ modal: null });
   }));
+  modalRoot.querySelectorAll("[data-tracker-ref]").forEach(el => el.addEventListener("click", () => {
+    setState({ modal: { kind: "tracker", ref: el.dataset.trackerRef } });
+  }));
+  modalRoot.querySelectorAll("[data-tracker-next]").forEach(el => el.addEventListener("click", () => {
+    advanceTracker(el.dataset.trackerNext);
+  }));
+  const trackerResults = modalRoot.querySelector("[data-tracker-results]");
+  if (trackerResults) trackerResults.addEventListener("click", () => setState({ screen: "lab-results", modal: null }));
+  const trackPay = modalRoot.querySelector("[data-track-pay]");
+  if (trackPay) trackPay.addEventListener("click", () => {
+    const ref = trackPay.dataset.trackPay;
+    const b = bookingForRef(ref);
+    const cfg = trackConfigFor(b);
+    const amount = bookingOutstanding(b);
+    if (!canTrackBooking(b) || !cfg || !amount || trackStep(b) !== cfg.steps.length - 1) return;
+    setState({ modal: {
+      kind: "payment",
+      amount,
+      remainingPaymentRef: ref,
+      returnTrackerRef: ref,
+      lineItems: [{ name: `ยอดคงเหลือ ${b.title}`, price: amount }],
+      success: {
+        title: "ชำระยอดคงเหลือเรียบร้อย",
+        detail: `ชำระครบ ฿${bookingTotal(b).toLocaleString()} · ขอบคุณที่ใช้บริการ Ornsirin Health Link`,
+        amount,
+        returnTrackerRef: ref,
+      },
+    } });
+  });
   const sosDispatch = modalRoot.querySelector("[data-sos-dispatch]");
   if (sosDispatch) sosDispatch.addEventListener("click", () => setState({ modal: { kind: "sos", stage: "dispatch", eta: SOS_START_ETA } }));
   const sosCallback = modalRoot.querySelector("[data-sos-callback]");
@@ -2699,21 +3061,34 @@ function render(){
     const gross = priceBase + surcharge;
     const discount = isResident() ? Math.round(gross * RESIDENT_LIFESTYLE_DISCOUNT) : 0;
     const total = gross - discount;
+    const deposit = Math.round(total * 0.3);
+    const remaining = total - deposit;
     const staff = staffFor(cfg.staffType).find(s => s.id === m.staffId);
     const locText = m.location === "home" ? " ที่บ้านของคุณ" : m.location === "center" ? " ที่พื้นที่ส่วนกลาง" : "";
     const catIcons = { maid: "sparkles", massage: "sparkle", icebath: "snowflake", physio: "activity", petcare: "paw-print" };
     const dayWord = m.day === "today" ? "วันนี้" : "พรุ่งนี้";
-    setState({ modal: { ...m, kind: "payment", amount: total,
+    setState({ modal: { ...m, kind: "payment", amount: deposit,
+      lineItems: [{ name: `มัดจำ ${cfg.title(cfg.item)} 30%`, price: deposit }],
       success: {
         title: "จองบริการสำเร็จ",
-        detail: `${staff ? staff.name : "ผู้ให้บริการ"} จะให้บริการคุณ${locText} ${dayWord} เวลา ${m.time} น.`,
-        amount: total,
+        detail: `ชำระมัดจำแล้ว ฿${deposit.toLocaleString()} · ${staff ? staff.name : "ผู้ให้บริการ"} จะให้บริการคุณ${locText} ${dayWord} เวลา ${m.time} น.`,
+        amount: deposit,
       },
       booking: {
+        kind: "lifestyle",
+        category: m.category,
+        userId: state.currentUser,
+        location: m.location || "home",
+        providerType: cfg.staffType,
+        providerId: m.staffId,
         icon: catIcons[m.category] || "sparkles",
         title: cfg.title(cfg.item),
         sub: `${staff ? staff.name : "ผู้ให้บริการ"} · ${dayWord} ${m.time} น.`,
-        amount: total,
+        amount: deposit,
+        total,
+        deposit,
+        remaining,
+        remainingPaid: false,
         details: [
           { label: "วันและเวลานัด", value: `${dayThaiLabel(m.day)} เวลา ${m.time} น.` },
           ...((() => { const pt = m.category === "petcare" ? userPets().find(x => x.id === m.petId) : null;
@@ -2729,6 +3104,7 @@ function render(){
   const payConfirm = modalRoot.querySelector("[data-payment-confirm]");
   if (payConfirm) payConfirm.addEventListener("click", () => {
     if (payConfirm.disabled) return;
+    const pendingPayment = state.modal;
     // จังหวะตรวจสอบยอด ~1.4 วิ ให้เหมือนเช็คกับ gateway จริง — แก้ DOM ตรง ๆ ไม่ผ่าน setState
     // เพราะระหว่างรอห้ามมี re-render มารื้อปุ่ม (timer คิวถูกหยุดไว้แล้วตอน overlay เปิด)
     payConfirm.disabled = true;
@@ -2736,9 +3112,19 @@ function render(){
     payConfirm.innerHTML = `<span class="spin"></span>&nbsp; กำลังตรวจสอบยอดชำระ...`;
     setTimeout(() => {
       const m = state.modal;
-      if (!m || m.kind !== "payment") return;   // ผู้ใช้ปิดหน้าจ่ายไประหว่างรอ — ยกเลิกเงียบ ๆ
+      if (!m || m !== pendingPayment || m.kind !== "payment") return;   // ปิด/สลับหน้าจ่ายระหว่างรอ — ยกเลิกเงียบ ๆ
       const patch = { modal: null, bookingSuccess: m.success };
-      if (m.booking) patch.bookings = [{ ...m.booking, ref: nextBookingRef() }, ...state.bookings];   // นัดใหม่ขึ้นบนสุดของหน้าแรก
+      if (m.remainingPaymentRef) {
+        const target = bookingForRef(m.remainingPaymentRef);
+        if (!target || target.userId !== state.currentUser || bookingOutstanding(target) <= 0) {
+          setState({ modal: target && canTrackBooking(target) ? { kind: "tracker", ref: target.ref } : null });
+          return;
+        }
+        patch.bookings = state.bookings.map(b => b.ref === target.ref ? { ...b, remainingPaid: true } : b);
+      } else if (m.booking) {
+        const confirmed = { ...m.booking, ref: nextBookingRef(), track: { step: 0, eta: TRACK_START_ETA } };
+        patch.bookings = [confirmed, ...state.bookings];   // นัดใหม่ขึ้นบนสุดของหน้าแรก
+      }
       if (m.queuePay) patch.queuePaid = true;
       setState(patch);
     }, 1400);
@@ -2749,11 +3135,15 @@ function render(){
     setState({
       modal: null,
       bookings: state.bookings.filter((_, i) => i !== idx),
-      bookingSuccess: { title: "ยกเลิกนัดหมายแล้ว", detail: "เราจะคืนเงินเต็มจำนวนไปยังช่องทางเดิมภายใน 3-5 วันทำการ", amount: 0 },
+      bookingSuccess: { title: "ยกเลิกนัดหมายแล้ว", detail: "เราจะคืนยอดที่ชำระแล้วไปยังช่องทางเดิมภายใน 3-5 วันทำการ", amount: 0 },
     });
   });
   const successClose = modalRoot.querySelector("[data-success-close]");
-  if (successClose) successClose.addEventListener("click", () => setState({ bookingSuccess: null }));
+  if (successClose) successClose.addEventListener("click", () => {
+    const ref = state.bookingSuccess && state.bookingSuccess.returnTrackerRef;
+    const b = bookingForRef(ref);
+    setState({ bookingSuccess: null, ...(ref && canTrackBooking(b) ? { modal: { kind: "tracker", ref } } : {}) });
+  });
 
   // กันแอปตายทั้งแอปถ้าไฟล์ lucide โหลดไม่สำเร็จ — UI ยังใช้ได้ แค่ไม่มีไอคอน
   if (typeof lucide !== "undefined") lucide.createIcons();
@@ -2764,6 +3154,14 @@ render();
 
 /* คีย์ลัดสำหรับผู้พรีเซนต์ — SOS tracker ใช้ขวาเร่ง ETA; หน้าคิวใช้ซ้าย/ขวาเมื่อไม่มี overlay */
 document.addEventListener("keydown", (e) => {
+  if (state.loggedIn && state.modal && state.modal.kind === "tracker" && e.key === "ArrowRight") {
+    const b = bookingForRef(state.modal.ref);
+    if (canTrackBooking(b)) {
+      e.preventDefault();
+      advanceTracker(b.ref);
+      return;
+    }
+  }
   if (state.loggedIn && emergencyProfileFor() && state.modal && state.modal.kind === "sos" && state.modal.stage === "dispatch" && e.key === "ArrowRight") {
     e.preventDefault();
     if (sosEtaValue() > 0) setSosEta(sosEtaValue() - 1);
