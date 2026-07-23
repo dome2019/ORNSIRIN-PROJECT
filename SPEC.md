@@ -1,4 +1,4 @@
-Status: APPROVED_FOR_IMPLEMENTATION
+Status: DRAFT
 
 # ORNSIRIN PROJECT — Workflow Baseline and Draft Implementation Specification
 
@@ -11,14 +11,14 @@ Status: APPROVED_FOR_IMPLEMENTATION
 | Implementation and Verification Lead | Codex |
 | Repository | `/Users/dome/Desktop/ORNSIRIN PROJECT` |
 | Baseline branch | `main` tracking `origin/main` |
-| Baseline HEAD | `3a41dfc` — INC-L+M + INC-N committed + pushed โดย Product Owner (deployed บน GitHub Pages) · SHA-1 `3974d870` · ก่อนหน้า: `a948687`, `ca68ddb` |
+| Baseline HEAD | `6f1e5d3` — INC-O committed + pushed โดย Product Owner · SHA-1 `6d225e06` · ก่อนหน้า: `11edac9` (approve v0.11), `3a41dfc` |
 | Baseline audit date | 2026-07-18 (Asia/Bangkok) |
 | Phase 1 architecture audit date | 2026-07-18 (Asia/Bangkok, late evening) |
-| Specification version | 0.11 |
+| Specification version | 0.12 |
 | Blocking Questions | NONE |
-| Implementation authorization | **GRANTED — INC-O (SOP live tracker + หน้าสถานะการบริการ + มัดจำ/จ่ายหน้างาน §5.25) อนุมัติ v0.11 เมื่อ 2026-07-19** · รอบก่อนหน้า: INC-N/INC-L+M (`3a41dfc`), INC-D+J+K (`a948687`) — COMPLETED |
+| Implementation authorization | **NONE — ไม่มี scope ที่อนุมัติค้างอยู่** · INC-O: COMPLETED + ตรวจรับแล้ว (audit PASS_WITH_RESIDUAL §5.26, commit `6f1e5d3`, DEC-021) · v0.12 = planning (§5.2 เมนู) · รอบก่อนหน้า: INC-N/INC-L+M (`3a41dfc`), INC-D+J+K (`a948687`) |
 
-> Approval Gate: **อนุมัติแล้ว (v0.11, 2026-07-19)** — ขอบเขต: **INC-O ตาม §5.25 ทั้งหมด** (SOP live tracker + หน้าสถานะการบริการ ครอบ เจาะเลือด/ส่งยา/ไลฟ์สไตล์ 5 บริการ + timeline "สำเร็จ" ตามภาพ + รูปแบบเงินมัดจำ/จ่ายหน้างาน) · **ขนาด L — Codex ขอแบ่ง O-1 (tracker+บริการ+หน้าสถานะ) → O-2 (มัดจำ/จ่ายหน้างาน) ได้ตาม AGENTS.md §6 ถ้าประเมินว่าเสี่ยง** · baseline `3a41dfc` (SHA-1 `3974d870`, working tree สะอาด) · Mandatory Preflight ก่อนเริ่ม · payment-confirm/paymentModal อยู่ใน scope รอบนี้ (ต้อง re-verify) — protected อื่น (celebration/queue/SOS/call timers, escaping, privacy gate, INC-J/K, storage recovery) ห้ามแตะ · จำลอง 100% ไม่มี map/tel:/network (ASM-002) · Completion Report: inventory + cosmetic deviation ครบ + hash SHA-1 · Claude ไม่แก้ implementation
+> Approval Gate: **ปิดแล้ว — ไม่มี scope ที่อนุมัติค้างอยู่ (v0.12, 2026-07-24)** · INC-O จบสมบูรณ์: audit PASS_WITH_RESIDUAL (§5.26, 12/12 AC, ยืนยันด้วยผู้ตรวจอิสระ 4 ราย), Product Owner ตรวจรับ + commit/push แล้ว (`6f1e5d3`, DEC-021) · Codex ห้ามแก้ implementation จนกว่าจะมี increment ใหม่ที่ผ่านการอนุมัติ · v0.12 อยู่ในขั้น planning — เมนู increment ที่เหลือ + ต่อยอด: §5.2
 >
 > **หมายเหตุ hash (PIA-007):** ค่า hash ของ `index.html` ที่บันทึกในเอกสารนี้เป็น **SHA-1** (จากคำสั่ง `shasum` ค่าเริ่มต้น) — เช่น baseline `a948687` = SHA-1 `41323998…`, ก่อนหน้า `ca68ddb` = SHA-1 `62d25830…` (SHA-256 = `0faf0c33…`) · รอบ v0.8 Codex ใช้ SHA-256 จึงรายงานว่า "ไม่ตรง" — เป็นคนละอัลกอริทึม ไม่ใช่ drift
 
@@ -818,6 +818,41 @@ INC-N (hardening mini-pack §5.23) ถูก implement โดย Codex และ
 
 **Round terms:** ขนาด **L** (ขยายจาก Option B: +3 บริการไลฟ์สไตล์ +completed timeline +deposit/payment model) — **Codex อาจแจ้งขอแบ่งเป็น O-1 (tracker+บริการ+หน้าสถานะ) → O-2 (มัดจำ/จ่ายหน้างาน) ตาม AGENTS.md §6** ถ้าประเมินว่าเสี่ยง · baseline `3a41dfc` (SHA-1 `3974d870`) · Verification: AC 12 ข้อ + มาตรฐานเดิม + re-verify payment · Completion Report: inventory + cosmetic + hash SHA-1 · Rollback: revert diff เดียว
 
+### 5.26 INC-O Post-implementation Audit result (2026-07-24)
+
+**ผล: PASS_WITH_RESIDUAL — 12/12 Acceptance Criteria** · ยืนยันสองชั้น: Claude ทดสอบ runtime เองครบวง (money flow มัดจำ→จ่ายหน้างาน, tracker, F5, gate, PIA-009, 1366×768, protected byte-identical) + ผู้ตรวจอิสระ 4 ราย (payment / timer-motion / scope-regression / refuter ขับ browser 7 การโจมตี) — verdict PASS_WITH_RESIDUAL + PASS×3
+
+| หัวข้อ | ผลตรวจ |
+|---|---|
+| เงินมัดจำ/จ่ายหน้างาน | แม่นยำทุกบาท — `deposit=round(total*0.3)`, `remaining=total-deposit`, บวกกัน=total (brute-force 0–300k ไม่มี drift) · จ่ายส่วนที่เหลือ mutate booking เดียวด้วย ref ไม่สร้างซ้ำ ไม่คิดเงินซ้ำ (idempotent guard) · meds จ่ายเต็ม · resident discount ใช้ครั้งเดียวก่อนแบ่ง · F5 คงถูกต้อง |
+| Tracker/SOP | lab/lifestyle 5 ขั้น, meds 4 ขั้น, ไลฟ์สไตล์ 5 บริการ label ครบ · หน้า "สถานะการบริการ" timeline "สำเร็จ"+เวลา ตรงภาพอ้างอิง |
+| Timer hygiene | single handle, direct-DOM+persist (ไม่ setState/tick), self-stop, ไม่ stack, ETA ไม่ติดลบ, modalKey คงที่ (ไม่ replay), timers mutually exclusive |
+| Gate/security | เจ้าของ (`userId===currentUser`) ไม่ใช่ u3-only · ไม่มี PIA-009 lock · esc() ครบ (XSS pet name ปลอดภัย) · จำลอง 100% ไม่มี map/tel:/network |
+| Regression | โค้ดโปรเทกต์ byte-identical (esc/persist/hydrate/queue+SOS/call timers/celebration/privacy gate/INC-J/K) · แตะเฉพาะ payment (ใน scope) + reduced-motion block (เพิ่ม id ใหม่) · diff 456+/58−, hash `6d225e06` ตรง |
+
+การตรวจรับ: Product Owner commit `6f1e5d3` + push และสั่ง "ปิด v0.11 ได้เลย" 2026-07-24
+
+**Findings (LOW ทั้งหมด — ไม่บล็อก):**
+
+#### PIA-013 — หน้ารายละเอียดนัดส่งยาโชว์แถว "มัดจำ" ทั้งที่จ่ายเต็ม (cosmetic)
+- Severity: LOW · State: CONFIRMED · Confidence: High
+- Evidence: `bookingDetailModal` ส่งยา (meds: deposit=total, remaining=0) ใช้ layout เดียวกับบริการมัดจำ → พิมพ์แถว "มัดจำ ฿[เต็มจำนวน]" · Codex เปิดเผยใน Completion Report §8
+- Impact: ป้ายกำกับแปลกเท่านั้น — badge/tracker/ยอดถูกหมด (paid=total, outstanding=0, "ชำระครบแล้ว ✓")
+- Recommendation: polish เล็ก — `kind==='meds'` (หรือ remaining===0) โชว์ "ชำระแล้ว" บรรทัดเดียว · เสนอพ่วง v0.12
+
+#### PIA-014 — payment timeout race fix เป็น hardening นอกข้อกำหนดมัดจำ (process, in-scope)
+- Severity: LOW · State: CONFIRMED · Confidence: High
+- Evidence: Codex ผูก callback ของ payment delay กับ payment object ที่ถูกต้อง (`m !== pendingPayment` guard) · แตะ payment-confirm
+- Observed: อยู่ใน scope (§5.25 เปิด payment เข้า INC-O, AC-O-11) · ตรวจแล้วไม่ regression (happy path จ่ายผ่านปกติ)
+- Recommendation: รับทราบ ไม่ต้องแก้
+
+#### PIA-015 — trackerModal มี fallback "ไม่พบสถานะบริการนี้" ที่เข้าไม่ถึง (dead code, harmless)
+- Severity: LOW · State: CONFIRMED · Confidence: High
+- Evidence: render เรียก `trackerModal()` เฉพาะเมื่อ `trackerAllowed` จริง; กรณี false ตกไป else ที่ตั้ง pointerEvents:none
+- Recommendation: ไม่ต้องแก้ (belt-and-suspenders กัน PIA-009)
+
+**ข้อสังเกต (pre-existing, ไม่ใช่ INC-O):** `state.bookings` เป็น array รวม ไม่ filter รายคนบนหน้าแรก — นัดของ u1 โผล่ให้ u3 เห็น (แต่ track ไม่ได้) · เป็นของเดิมก่อน INC-O (AUD-006, login เป็น presentation control) · INC-O gate ตัว tracker ถูกต้องแล้ว
+
 ## 6. Non-goals
 
 Phase 0 ไม่รวม:
@@ -1224,6 +1259,7 @@ Assumptions must not be converted into implementation requirements without Produ
 | DEC-018 | 2026-07-19 | INC-N landed ครบ 3 fix (verify static §5.24), commit รวมกับ INC-L+M ใน `3a41dfc` + deployed บน GitHub Pages — ปิด INC-N (debt เชิงกระบวนการ: ไม่แยก commit/ไม่ส่ง Completion Report แยก) | Product Owner / Claude |
 | DEC-019 | 2026-07-19 | คำขอ real-time tracking + SOP workflow แบบแกร็บ → Claude สำรวจโค้ด grounded design; Product Owner เลือก **Option B** (เจาะเลือด + ส่งยา) เป็น INC-O (§5.25) | Product Owner |
 | DEC-020 | 2026-07-19 | ขยาย INC-O (จากภาพอ้างอิง "สถานะการบริการ"): + บริการไลฟ์สไตล์ (แม่บ้าน/นวด/ice bath/กายภาพ/petcare) + หน้าสถานะแบบเสร็จ (timeline "สำเร็จ" + เวลา) + รูปแบบเงิน **มัดจำ ~30% + จ่ายส่วนที่เหลือหน้างาน** (home-visit; meds จ่ายเต็ม) — payment เข้า scope INC-O · ขนาดขยับเป็น L (Codex แบ่ง O-1/O-2 ได้) | Product Owner |
+| DEC-021 | 2026-07-24 | INC-O audit = PASS_WITH_RESIDUAL (12/12 AC, findings LOW: PIA-013/014/015); Product Owner ตรวจรับด้วย commit `6f1e5d3` + push และสั่ง "ปิด v0.11" — เริ่ม planning v0.12 | Product Owner |
 
 ## 20. Approval Record
 
@@ -1250,3 +1286,4 @@ Only the Product Owner may authorize changing the first line to `Status: APPROVE
 | 0.10 | APPROVED_FOR_IMPLEMENTATION | INC-N hardening mini-pack ตาม §5.23 ทั้งหมด (3 fix ~5 บรรทัด: PIA-009 SOS overlay guard, PIA-012 fitPhone zoom:0, PIA-011 token) — verification 5 AC | Product Owner (ผู้ใช้) — สั่ง "แก้ไขเลย" ในแชท | 2026-07-19 (Asia/Bangkok) | เงื่อนไข: (1) baseline application state = `index.html` SHA-1 `36fcb910…` (v0.9 applied); (2) แนะนำ commit v0.9 ก่อนรัน Codex — ถ้าไม่ ให้ preserve v0.9 diff เป็น pre-existing work และแยก INC-N ใน Completion Report; (3) ไม่แตะพฤติกรรม SOS อื่น/protected; (4) Claude ห้ามแก้ implementation |
 | 0.11 | DRAFT | None (INC-O SOP live tracker + หน้าสถานะการบริการ §5.25 awaiting approval) | Pending Product Owner | — | INC-N landed + ปิด (§5.24, DEC-018); INC-O ขยายตามภาพ + มัดจำ/จ่ายหน้างาน (DEC-020, 12 AC, ขนาด L); ไม่มี blocking question — รออนุมัติ v0.11 |
 | 0.11 | APPROVED_FOR_IMPLEMENTATION | INC-O ตาม §5.25 ทั้งหมด (SOP live tracker + หน้าสถานะการบริการ, 3 กลุ่มบริการ, timeline "สำเร็จ" + เวลา, มัดจำ/จ่ายหน้างาน) — verification 12 AC + re-verify payment | Product Owner (ผู้ใช้) — อนุมัติเป็นลายลักษณ์อักษรในแชท ("อนุมัติ v0.11") | 2026-07-19 (Asia/Bangkok) | เงื่อนไข: (1) baseline `3a41dfc` (SHA-1 `3974d870`), working tree สะอาด; (2) ขนาด L — Codex ขอแบ่ง O-1→O-2 ได้ (AGENTS.md §6); (3) payment เข้า scope (re-verify) — protected อื่นห้ามแตะ; (4) จำลอง 100% ห้าม map/tel:/network; (5) design invariants §5.25 (direct-DOM timer, key by ref, กัน empty-overlay lock, modalKey คงที่) บังคับ; (6) Claude ห้ามแก้ implementation |
+| 0.12 | DRAFT | None — INC-O ปิดรอบแล้ว (audit PASS_WITH_RESIDUAL §5.26, ตรวจรับ DEC-021) · v0.12 planning | Pending Product Owner | — | ไม่มี scope ค้าง · เมนู/ต่อยอดใน §5.2 · PIA-013 (meds label) polish เล็กรอเลือก |
