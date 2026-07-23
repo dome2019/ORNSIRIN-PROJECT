@@ -11,14 +11,14 @@ Status: APPROVED_FOR_IMPLEMENTATION
 | Implementation and Verification Lead | Codex |
 | Repository | `/Users/dome/Desktop/ORNSIRIN PROJECT` |
 | Baseline branch | `main` tracking `origin/main` |
-| Baseline HEAD | `a948687` — batch INC-D+J+K committed + pushed โดย Product Owner · ก่อนหน้า: `88a6ccc` (approve v0.8), `ca68ddb` |
+| Baseline HEAD | `3a41dfc` — INC-L+M + INC-N committed + pushed โดย Product Owner (deployed บน GitHub Pages) · SHA-1 `3974d870` · ก่อนหน้า: `a948687`, `ca68ddb` |
 | Baseline audit date | 2026-07-18 (Asia/Bangkok) |
 | Phase 1 architecture audit date | 2026-07-18 (Asia/Bangkok, late evening) |
-| Specification version | 0.10 |
+| Specification version | 0.11 |
 | Blocking Questions | NONE |
-| Implementation authorization | **GRANTED — INC-N hardening mini-pack (§5.23) อนุมัติ v0.10 เมื่อ 2026-07-19** · รอบก่อนหน้า: INC-L+M COMPLETED (audit PASS_WITH_RESIDUAL §5.22, DEC-017 — ยังไม่ commit ณ เวลาเขียน), INC-D+J+K (`a948687`), INC-C+G+PIA-001 (`ca68ddb`) |
+| Implementation authorization | **GRANTED — INC-O (SOP live tracker + หน้าสถานะการบริการ + มัดจำ/จ่ายหน้างาน §5.25) อนุมัติ v0.11 เมื่อ 2026-07-19** · รอบก่อนหน้า: INC-N/INC-L+M (`3a41dfc`), INC-D+J+K (`a948687`) — COMPLETED |
 
-> Approval Gate: **อนุมัติแล้ว (v0.10, 2026-07-19)** — ขอบเขต: **INC-N hardening mini-pack ตาม §5.23 เท่านั้น** (3 fix: PIA-009 กัน SOS overlay ค้าง, fitPhone กัน zoom:0, PIA-011 token สีตกค้าง 1 จุด) · **baseline application state = `index.html` SHA-1 `36fcb910…` (v0.9 INC-L+M applied)** · **สำคัญ — v0.9 ยังไม่ commit ณ เวลาเขียน (HEAD `a948687`):** แนะนำให้ Product Owner commit v0.9 ก่อนรัน Codex (`INC-L+M: design polish + SOS ambulance dispatch`) เพื่อให้ diff ของ INC-N แยกออกสะอาด · หาก Codex รันก่อน commit ต้องถือ diff v0.9 ใน `index.html` เป็น pre-existing uncommitted work และ preserve ตาม `AGENTS.md` §7 แล้วแยก ~5 บรรทัดของ INC-N ใน Completion Report · Mandatory Preflight ก่อนเริ่ม · งานนอก §5.23 ไม่อนุญาต · ห้ามแตะพฤติกรรม SOS ที่เหลือ/บริเวณ protected · Claude ไม่แก้ implementation
+> Approval Gate: **อนุมัติแล้ว (v0.11, 2026-07-19)** — ขอบเขต: **INC-O ตาม §5.25 ทั้งหมด** (SOP live tracker + หน้าสถานะการบริการ ครอบ เจาะเลือด/ส่งยา/ไลฟ์สไตล์ 5 บริการ + timeline "สำเร็จ" ตามภาพ + รูปแบบเงินมัดจำ/จ่ายหน้างาน) · **ขนาด L — Codex ขอแบ่ง O-1 (tracker+บริการ+หน้าสถานะ) → O-2 (มัดจำ/จ่ายหน้างาน) ได้ตาม AGENTS.md §6 ถ้าประเมินว่าเสี่ยง** · baseline `3a41dfc` (SHA-1 `3974d870`, working tree สะอาด) · Mandatory Preflight ก่อนเริ่ม · payment-confirm/paymentModal อยู่ใน scope รอบนี้ (ต้อง re-verify) — protected อื่น (celebration/queue/SOS/call timers, escaping, privacy gate, INC-J/K, storage recovery) ห้ามแตะ · จำลอง 100% ไม่มี map/tel:/network (ASM-002) · Completion Report: inventory + cosmetic deviation ครบ + hash SHA-1 · Claude ไม่แก้ implementation
 >
 > **หมายเหตุ hash (PIA-007):** ค่า hash ของ `index.html` ที่บันทึกในเอกสารนี้เป็น **SHA-1** (จากคำสั่ง `shasum` ค่าเริ่มต้น) — เช่น baseline `a948687` = SHA-1 `41323998…`, ก่อนหน้า `ca68ddb` = SHA-1 `62d25830…` (SHA-256 = `0faf0c33…`) · รอบ v0.8 Codex ใช้ SHA-256 จึงรายงานว่า "ไม่ตรง" — เป็นคนละอัลกอริทึม ไม่ใช่ drift
 
@@ -201,7 +201,7 @@ Hardcoded data + user form input + timer output
 | INC-J | บัตรสุขภาพฉุกเฉิน (กรุ๊ปเลือด/แพ้ยา/โรคประจำตัว/ผู้ติดต่อฉุกเฉิน) — เด้งใน SOS | คำขอผู้ใช้ (แนวสุขภาพ) | S-M | `users`/data ใหม่ + `sosModal()` + healthCard viewer + u3 home |
 | INC-K | ผู้ดูแล / แจ้งลูกหลาน (care circle) — ครอบครัวได้รับแจ้งเมื่อ SOS/นัด | คำขอผู้ใช้ (แนวสุขภาพ) | M | caregiver data + การ์ดผู้ดูแลบน u3 home + SOS notify line |
 
-สถานะการเลือก (อัปเดตหลังปิด batch 2026-07-19): **INC-0 = เสร็จ** (commit `2bbb500`) · **INC-F = เสร็จ + ตรวจรับแล้ว** (§5.3.1, commit `22f413c`) · **INC-A + INC-E + INC-B = เสร็จ + ตรวจรับแล้ว** (audit PASS §5.8, commits `2a8bd34`/`418ef45`, DEC-010) · **ยังเปิดให้เลือก:** INC-C (escape user input), INC-D (storage recovery), INC-G (โหมดผู้สูงอายุ), INC-H (สถิติผู้ประกอบการ), INC-I (accessibility) — เมื่อเลือกแล้ว Claude จะเขียนสเปกเต็มใน §5.x ก่อนขออนุมัติ · **อัปเดตหลังปิด v0.6 (2026-07-19):** INC-C + INC-G + PIA-001 + README = เสร็จ + ตรวจรับแล้ว (§5.13, `ca68ddb`, DEC-012/013) · **ยังเปิดให้เลือก:** INC-D (storage recovery), INC-H (สถิติผู้ประกอบการ), INC-I (accessibility) — INC-C/G ปิดครบแล้ว · **อัปเดต 2026-07-19:** ผู้ใช้เลือก **INC-D + INC-J + INC-K** เป็นรอบถัดไป (DEC-014) · **ปิดรอบแล้ว:** INC-D+J+K = เสร็จ + ตรวจรับ (audit PASS §5.18, `a948687`, DEC-015) · **ยังเปิดให้เลือก:** INC-H (สถิติผู้ประกอบการ), INC-I (accessibility) · **คำขอใหม่ 2026-07-19:** ผู้ใช้ขอ (1) design ให้ user-friendly + น่าดึงดูด (2) SOS เรียกรถพยาบาลทันที → Claude ทำ design audit 4 มุมมอง (49 findings) แล้วเขียนสเปก INC-L + INC-M (§5.19–§5.21) — รออนุมัติ v0.9
+สถานะการเลือก (อัปเดตหลังปิด batch 2026-07-19): **INC-0 = เสร็จ** (commit `2bbb500`) · **INC-F = เสร็จ + ตรวจรับแล้ว** (§5.3.1, commit `22f413c`) · **INC-A + INC-E + INC-B = เสร็จ + ตรวจรับแล้ว** (audit PASS §5.8, commits `2a8bd34`/`418ef45`, DEC-010) · **ยังเปิดให้เลือก:** INC-C (escape user input), INC-D (storage recovery), INC-G (โหมดผู้สูงอายุ), INC-H (สถิติผู้ประกอบการ), INC-I (accessibility) — เมื่อเลือกแล้ว Claude จะเขียนสเปกเต็มใน §5.x ก่อนขออนุมัติ · **อัปเดตหลังปิด v0.6 (2026-07-19):** INC-C + INC-G + PIA-001 + README = เสร็จ + ตรวจรับแล้ว (§5.13, `ca68ddb`, DEC-012/013) · **ยังเปิดให้เลือก:** INC-D (storage recovery), INC-H (สถิติผู้ประกอบการ), INC-I (accessibility) — INC-C/G ปิดครบแล้ว · **อัปเดต 2026-07-19:** ผู้ใช้เลือก **INC-D + INC-J + INC-K** เป็นรอบถัดไป (DEC-014) · **ปิดรอบแล้ว:** INC-D+J+K (`a948687`), INC-L+M (design + SOS ambulance) + INC-N (hardening) = **เสร็จ + deployed** (`3a41dfc`, §5.22/§5.24) · **คำขอใหม่ 2026-07-19:** ผู้ใช้ขอระบบ **real-time tracking + SOP workflow status แบบแกร็บ** → Claude สำรวจโค้ด 4 มุมมอง (grounded design) ผู้ใช้เลือก **Option B** แล้ว**ขยายเพิ่ม** (2026-07-19): + แม่บ้าน/นวด/Pet care + หน้า "สถานะการบริการ" แบบเสร็จ (ตามภาพ) + รูปแบบเงินมัดจำ/จ่ายหน้างาน (DEC-020) → **INC-O** (§5.25) รออนุมัติ v0.11 · **ยังเปิด:** INC-H (สถิติผู้ประกอบการ — ต่อยอดจาก tracker ได้), INC-I (accessibility)
 
 ข้อจำกัดการจัดลำดับ (ปิดแล้ว — INC-0 เสร็จตั้งแต่ `2bbb500` และถูกปฏิบัติครบใน INC-F/batch): เดิมกำหนดว่า **INC-0 ต้องเสร็จก่อน increment ใดที่แก้ `index.html`** เพราะงานค้างปัจจุบันทับซ้อน `successModal()` และ `render()` — หากข้าม INC-0 แล้วแก้บริเวณเดียวกัน จะแยกเจ้าของ diff ไม่ได้และ rollback ยาก (เข้าเงื่อนไขหยุดงานของ Codex ตาม `AGENTS.md` §6)
 
@@ -736,6 +736,88 @@ Hardcoded data + user form input + timer output
 
 **Round terms:** Codex รอบเดียว · baseline application state = `index.html` SHA-1 `36fcb910…` (v0.9 applied) · **แนะนำ commit v0.9 ก่อน** เพื่อ diff สะอาด — ถ้าไม่ ให้ preserve v0.9 diff เป็น pre-existing work (AGENTS.md §7) และแยก ~5 บรรทัด INC-N ใน Completion Report · Rollback: revert เฉพาะ ~5 บรรทัด
 
+### 5.24 INC-N closure (landed 2026-07-19)
+
+INC-N (hardening mini-pack §5.23) ถูก implement โดย Codex และ **commit รวมกับ INC-L+M ใน `3a41dfc`** (ผู้ใช้ commit ผ่าน GitHub Desktop หลายครั้งด้วยข้อความเดียวกัน) — ไม่ได้แยก commit ตามที่แนะนำ แต่ผลถูกต้อง
+
+**Claude static verification (2026-07-19) ต่อ `HEAD:index.html`:**
+
+| Fix | ผลตรวจ |
+|---|---|
+| N-1 (PIA-009 กัน SOS overlay ค้าง) | ✅ pattern บั๊ก `if (!profile \|\| !caregiver) return ""` = 0 · pattern แก้ `if (!profile) return ""` = 1 |
+| N-2 (PIA-012 fitPhone clamp) | ✅ `scale > 0 && scale < 1` = 1 |
+| N-3 (PIA-011 token สี) | ✅ `#5B6350` เหลือ 1 (บรรทัดนิยาม `--ink-soft` ใน `:root` เท่านั้น — literal ตกค้างถูก tokenize แล้ว) |
+
+สรุป: **INC-N landed ครบ 3 fix ถูกต้อง** · ข้อสังเกต process: Codex ควร commit แยกตาม scope และส่ง Completion Report ของ INC-N (ไม่ได้ส่งรอบนี้เพราะ fold เข้า INC-L+M) — บันทึกเป็น debt เชิงกระบวนการ ไม่กระทบโค้ด (DEC-018)
+
+### 5.25 INC-O specification — SOP live tracker + หน้าสถานะการบริการ (ปรับขยาย 2026-07-19)
+
+**Objective:** ต่อยอด SOS ambulance tracker (INC-M) เป็นระบบ **ติดตามสถานะสด + SOP workflow แบบแกร็บ** ครอบบริการถึงบ้าน + หน้า **"สถานะการบริการ" แบบเสร็จสมบูรณ์** (timeline ทุกขั้น "สำเร็จ" + เวลา + สรุปยอด + ปุ่มชำระส่วนที่เหลือ) ตามภาพอ้างอิงที่ Product Owner ให้ · **จำลอง 100%** (ASM-002)
+
+**ที่มา:** design exploration 4 มุมมอง (§5.25 เดิม) + ภาพอ้างอิง "สถานะการบริการ" + DEC-019/DEC-020 (Product Owner เลือกขยายบริการ + รูปแบบเงิน "มัดจำ + จ่ายหน้างาน")
+
+**ขอบเขตบริการ (ปรับขยายจาก Option B):**
+- **เจาะเลือดถึงบ้าน** (`kind:"lab"`) — home visit
+- **ส่งยาต่อเนื่อง** (`kind:"meds"`) — delivery
+- **บริการไลฟ์สไตล์: แม่บ้าน / นวด / Ice bath / กายภาพบำบัด / Pet care** (`kind:"lifestyle"`, ใช้ `category` แยกชนิด) — home visit
+- **ไม่รวม** ปรึกษาหมอ (มีคิว+VDO อยู่แล้ว — ไม่ใช่ booking)
+
+**SOP steps (แต่ละขั้นมี label + คำอธิบาย + เวลา preset แบบสมจริง เพื่อให้หน้า "สำเร็จ" อ่านเหมือนตารางจริงในภาพ):**
+
+*เจาะเลือดถึงบ้าน / ไลฟ์สไตล์ (home visit) — 5 ขั้น:*
+1. ผู้ให้บริการรับงาน (เผยการ์ดผู้ให้บริการ)
+2. กำลังเดินทางมาหาคุณ — **ETA** (นับถอยหลัง + progress)
+3. ถึงบ้านแล้ว
+4. กำลังให้บริการ (เจาะเลือด / ทำความสะอาด / นวด / ดูแลสัตว์ ฯลฯ ตามชนิด)
+5. เสร็จสิ้น *(terminal)* — เจาะเลือดมี CTA **"ดูผลตรวจของฉัน"** → `data-nav="lab-results"`
+
+*ส่งยาต่อเนื่อง (delivery) — 4 ขั้น:*
+1. เภสัชกรจัดยา
+2. ไรเดอร์รับพัสดุ (เผยการ์ดไรเดอร์)
+3. กำลังจัดส่ง — **ETA**
+4. ส่งถึงแล้ว *(terminal)*
+
+**หน้า "สถานะการบริการ" (ตามภาพ):** timeline แนวตั้ง — ขั้นที่ผ่าน = ไอคอน + ชื่อ + คำอธิบาย + **"สำเร็จ" (เขียว) + เวลา `HH:MM น.`** · ขั้นปัจจุบัน = ไฮไลต์ + ETA/หมุน · ขั้นถัดไป = จาง/รอดำเนินการ · ล่างสุด = การ์ดสรุปยอด (ยอดรวมทั้งสิ้น / ยอดที่ชำระแล้ว / ยอดคงเหลือ) + ปุ่ม **"ชำระเงิน"** (เต็มความกว้าง) · เมื่อจบครบทุกขั้น = ทุกบรรทัด "สำเร็จ" เหมือนภาพ
+
+**รูปแบบเงิน — มัดจำ + จ่ายหน้างาน (DEC-020):**
+- booking แต่ละรายการมี `total` (ราคาเต็มหลังส่วนลดลูกบ้าน), `deposit` (จ่ายตอนจอง), `remaining` (= total − deposit)
+- **บริการถึงบ้าน (lab + lifestyle):** ตอนจอง จ่าย **มัดจำ ~30%** (`deposit = round(total*0.3)`); หน้า tracker แสดง "คงเหลือชำระหน้างาน" = `remaining`; เมื่อถึงขั้นสุดท้าย ปุ่ม **"ชำระเงิน"** เปิด payment sheet จ่าย `remaining` (จำลอง + celebration เดิม) → เปลี่ยนเป็น "ชำระครบแล้ว ✓"
+- **ส่งยา (meds):** เป็นการซื้อของ — **จ่ายเต็มตอนจอง** (`deposit = total`, `remaining = 0`); หน้าสถานะแสดง "ชำระครบแล้ว ✓" ไม่มีปุ่มค้าง
+- **หมายเหตุ scope:** รูปแบบมัดจำ **แตะโซน payment** (payment sheet + booking amount) ที่เคยเป็น protected — รอบนี้ payment-confirm/paymentModal **อยู่ใน scope INC-O** และต้อง re-verify (AC-O-11) · ยอดต้องบวกกันลงตัว (`deposit + remaining = total`) ห้ามคิดเงินซ้ำ
+
+**Design invariants (บังคับ — กัน regression, จากผลสำรวจ):**
+1. Tracker/status = **modal kind ใหม่ `tracker`** · timer แบบ SOS (**direct-DOM + persist ทุก tick, ห้าม setState per tick**), single handle `trackTimer`, start/stop ใน `render()` หลัง DOM เขียน, `updateTrackerDom()` null-check, self-stop, ไม่ stack (คัดจาก `startSosTimer` 864-883)
+2. Gate = `state.loggedIn` + booking รองรับ track · **ไม่ใช่ `emergencyProfileFor()`** (u3-only) · **ห้ามคืน `""` ขณะ gate จริง** (บทเรียน PIA-009 — guard builder+gate เงื่อนไขเดียว, data ว่าง = placeholder)
+3. เก็บ `b.track = { step, eta }` บน booking **key ด้วย `ref`** (ไม่ใช่ index — กัน drift) · persist ผ่าน sessionStorage เดิม F5-safe · booking เก่าไม่มี track → "ยืนยันแล้ว" ปกติ ไม่ error
+4. `kind`/`category` discriminator เลือก SOP template · เก็บ provider id บน booking → avatar ผ่าน `staffAvatar()` (เพิ่ม mock พยาบาล/ไรเดอร์/ช่างบริการ)
+5. **`modalKey` คงที่ข้าม step** (ห้าม fold step — ไม่งั้น replay animation)
+6. ArrowRight: branch เดียวใน keydown listener เดิม, gate `modal.kind==="tracker"`, เลื่อน step, `preventDefault()+return` ก่อน queue branch (ไม่ชนคิว/SOS)
+7. เวลา timestamp: preset realistic schedule ต่อ SOP (ไม่ใช่ wall-clock จริงตอนกดเร็ว) เพื่อให้หน้า "สำเร็จ" อ่านเหมือนภาพ
+8. reduced-motion: เพิ่ม id progress ใหม่เข้า media block (405-411) · elder + 1366×768: dialog `max-height`+`overflow-y:auto` (timeline ยาว)
+9. **จำลอง 100%**: ไม่มีแผนที่/GPS/`tel:`/network/form ใหม่ · ป้าย "จำลอง" ถาวร · `esc()` ทุก dynamic field
+10. timer **foreground-only** · home chip = last-known step
+11. payment ส่วนที่เหลือ: **reuse** payment sheet + celebration เดิม (ไม่สร้าง flow ใหม่) — แค่ส่ง amount = `remaining`; อัปเดต booking เป็นชำระครบ ห้ามแตะ booking อื่น
+
+**Home card chip:** นัด track active → แสดง label สถานะปัจจุบัน (แทน "ยืนยันแล้ว") + progress เส้นเล็ก · ไม่มี track → เดิม
+
+**Non-goals (เก็บ Option C เต็ม/รอบหน้า):** ไม่ทำ consult tracker · ไม่มีแผนที่/route จริง/แชท/tip/rating · ไม่เดินสถานะเบื้องหลัง · ไม่มีแจ้งเตือน step-change (คู่ INC-E ทีหลัง) · ไม่มีสถิติผู้ประกอบการ (INC-H) · ไม่เพิ่มบริการใหม่ที่แอปยังไม่มี (เช่น รับ-ส่งผู้สูงอายุในภาพ — เป็น style reference; เพิ่มได้ถ้า PO สั่งภายหลัง) · ไม่เพิ่ม persisted key ใหม่
+
+**Acceptance Criteria:**
+- AC-O-01: นัด lab/meds/lifestyle ที่ยืนยันแล้ว มีปุ่ม "ติดตามสถานะ/สถานะการบริการ" (home card + detail sheet) · แตะ → เปิด tracker modal
+- AC-O-02: tracker home-visit (lab/lifestyle) แสดง SOP 5 ขั้นถูกลำดับ + การ์ดผู้ให้บริการ + ETA ขั้นเดินทาง + progress · lab ขั้นจบมี CTA เด้ง "ผลตรวจของฉัน"
+- AC-O-03: tracker meds แสดง SOP 4 ขั้น + การ์ดไรเดอร์ + ETA ขั้นจัดส่ง · ขั้นจบ "ส่งถึงแล้ว"
+- AC-O-04: ทั้ง 5 บริการไลฟ์สไตล์ (แม่บ้าน/นวด/ice bath/กายภาพ/petcare) เข้า tracker ได้ ขั้น 4 ปรับ label ตามชนิดบริการ
+- AC-O-05: หน้าสถานะแบบเสร็จ — เมื่อจบครบทุกขั้น ทุกบรรทัดขึ้น "สำเร็จ" + เวลา `HH:MM น.` (timeline เหมือนภาพ)
+- AC-O-06: ETA เดินถอยหลังจริง (direct-DOM) · ArrowRight เลื่อนขั้นเฉพาะตอน tracker เปิด · ไม่รบกวนคีย์ลัดคิว/SOS
+- AC-O-07: timer สะอาด — เปิด/ปิด ×5 ไม่ leak/stack, ETA ไม่ติดลบ, self-stop เมื่อปิด/logout/สลับผู้ใช้/จบ · F5 กลาง tracker กลับมาต่อขั้นเดิม
+- AC-O-08: home chip แสดงสถานะสด (last-known) เมื่อ active · booking เก่าไม่มี track = "ยืนยันแล้ว" ไม่ error หลัง F5
+- AC-O-09: gate ถูก — ทุกผู้ใช้ที่ล็อกอิน (ไม่ใช่แค่ u3) · ไม่มี empty-overlay lock · ก่อนล็อกอินไม่โผล่
+- AC-O-10: จำลอง — ไม่มี `a[href]`/`tel:`/form/network/map ใหม่ · ป้าย "จำลอง" ถาวร · `esc()` ทุก field
+- AC-O-11: **รูปแบบเงิน** — home-visit จ่ายมัดจำ ~30% ตอนจอง, tracker แสดงคงเหลือ, ปุ่ม "ชำระเงิน" จ่ายส่วนที่เหลือ (จำลอง+celebration) แล้วเป็น "ชำระครบแล้ว ✓" · meds จ่ายเต็ม แสดง "ชำระครบแล้ว" · ยอด `deposit + remaining = total` ทุกกรณี ไม่คิดเงินซ้ำ · F5 ระหว่างค้างจ่าย/จ่ายแล้ว สถานะเงินคงถูกต้อง
+- AC-O-12: Guard — `modalKey` คงที่ (ไม่ replay), reduced-motion ครอบ progress ใหม่, elder+1366×768 timeline เลื่อนได้ไม่ล้น, console 0, offline เดิม, ไม่แตะ protected นอกเหนือ payment ที่อยู่ใน scope (celebration/queue/SOS/call timers, escaping, privacy gate, INC-J/K, storage recovery ต้องคงเดิม)
+
+**Round terms:** ขนาด **L** (ขยายจาก Option B: +3 บริการไลฟ์สไตล์ +completed timeline +deposit/payment model) — **Codex อาจแจ้งขอแบ่งเป็น O-1 (tracker+บริการ+หน้าสถานะ) → O-2 (มัดจำ/จ่ายหน้างาน) ตาม AGENTS.md §6** ถ้าประเมินว่าเสี่ยง · baseline `3a41dfc` (SHA-1 `3974d870`) · Verification: AC 12 ข้อ + มาตรฐานเดิม + re-verify payment · Completion Report: inventory + cosmetic + hash SHA-1 · Rollback: revert diff เดียว
+
 ## 6. Non-goals
 
 Phase 0 ไม่รวม:
@@ -1139,6 +1221,9 @@ Assumptions must not be converted into implementation requirements without Produ
 | DEC-015 | 2026-07-19 | Batch INC-D+J+K audit = PASS (13/13 AC); Product Owner ตรวจรับด้วย commit `a948687` + push และยืนยัน "เรียบร้อย" ในแชท | Product Owner |
 | DEC-016 | 2026-07-19 | เลือก + อนุมัติรอบ design: INC-L (design polish pack จาก audit 4 มุมมอง) + INC-M (SOS เรียกรถพยาบาล — จำลอง 100%, ออกแบบ 2 จังหวะกันแตะพลาด) — สเปก §5.19–§5.21 | Product Owner |
 | DEC-017 | 2026-07-19 | INC-L+M audit = PASS_WITH_RESIDUAL (12/12 AC, findings LOW ทั้งหมด); Product Owner สั่ง "แก้ไขเลย" = ยอมรับ v0.9 + อนุมัติ INC-N hardening mini-pack (§5.23) ให้แก้ finding ที่แก้ได้ (PIA-009/011/012) | Product Owner |
+| DEC-018 | 2026-07-19 | INC-N landed ครบ 3 fix (verify static §5.24), commit รวมกับ INC-L+M ใน `3a41dfc` + deployed บน GitHub Pages — ปิด INC-N (debt เชิงกระบวนการ: ไม่แยก commit/ไม่ส่ง Completion Report แยก) | Product Owner / Claude |
+| DEC-019 | 2026-07-19 | คำขอ real-time tracking + SOP workflow แบบแกร็บ → Claude สำรวจโค้ด grounded design; Product Owner เลือก **Option B** (เจาะเลือด + ส่งยา) เป็น INC-O (§5.25) | Product Owner |
+| DEC-020 | 2026-07-19 | ขยาย INC-O (จากภาพอ้างอิง "สถานะการบริการ"): + บริการไลฟ์สไตล์ (แม่บ้าน/นวด/ice bath/กายภาพ/petcare) + หน้าสถานะแบบเสร็จ (timeline "สำเร็จ" + เวลา) + รูปแบบเงิน **มัดจำ ~30% + จ่ายส่วนที่เหลือหน้างาน** (home-visit; meds จ่ายเต็ม) — payment เข้า scope INC-O · ขนาดขยับเป็น L (Codex แบ่ง O-1/O-2 ได้) | Product Owner |
 
 ## 20. Approval Record
 
@@ -1163,3 +1248,5 @@ Only the Product Owner may authorize changing the first line to `Status: APPROVE
 | 0.9 | APPROVED_FOR_IMPLEMENTATION | Batch INC-L + INC-M ตาม §5.19–§5.21 ทั้งหมด (Codex รอบเดียว ลำดับ L→M, verification 12 AC + inventory L รายข้อ) | Product Owner (ผู้ใช้) — อนุมัติเป็นลายลักษณ์อักษรในแชท ("อนุมัติ v0.9") | 2026-07-19 (Asia/Bangkok) | เงื่อนไข: (1) baseline `a948687` (SHA-1 `41323998…`), `index.html` สะอาด; (2) doc diff README/SPEC/TODO ค้าง — ผู้ใช้ commit เอง ไม่ block; (3) Codex ขอแบ่งรอบ L→M ได้ถ้าประเมินว่าเสี่ยง; (4) INC-M จำลอง 100% ห้าม tel:/network; (5) ห้ามแตะจุดแข็ง/บริเวณ protected; (6) Claude ห้ามแก้ implementation |
 | 0.9→ปิด | COMPLETED | INC-L+M เสร็จ — audit PASS_WITH_RESIDUAL (§5.22, 12/12 AC, findings LOW); Product Owner ยอมรับด้วยคำสั่ง "แก้ไขเลย" (DEC-017) | Product Owner (ผู้ใช้) | 2026-07-19 | การ commit v0.9 ยังค้าง ณ เวลาปิด — แนะนำ commit `INC-L+M: design polish + SOS ambulance dispatch` |
 | 0.10 | APPROVED_FOR_IMPLEMENTATION | INC-N hardening mini-pack ตาม §5.23 ทั้งหมด (3 fix ~5 บรรทัด: PIA-009 SOS overlay guard, PIA-012 fitPhone zoom:0, PIA-011 token) — verification 5 AC | Product Owner (ผู้ใช้) — สั่ง "แก้ไขเลย" ในแชท | 2026-07-19 (Asia/Bangkok) | เงื่อนไข: (1) baseline application state = `index.html` SHA-1 `36fcb910…` (v0.9 applied); (2) แนะนำ commit v0.9 ก่อนรัน Codex — ถ้าไม่ ให้ preserve v0.9 diff เป็น pre-existing work และแยก INC-N ใน Completion Report; (3) ไม่แตะพฤติกรรม SOS อื่น/protected; (4) Claude ห้ามแก้ implementation |
+| 0.11 | DRAFT | None (INC-O SOP live tracker + หน้าสถานะการบริการ §5.25 awaiting approval) | Pending Product Owner | — | INC-N landed + ปิด (§5.24, DEC-018); INC-O ขยายตามภาพ + มัดจำ/จ่ายหน้างาน (DEC-020, 12 AC, ขนาด L); ไม่มี blocking question — รออนุมัติ v0.11 |
+| 0.11 | APPROVED_FOR_IMPLEMENTATION | INC-O ตาม §5.25 ทั้งหมด (SOP live tracker + หน้าสถานะการบริการ, 3 กลุ่มบริการ, timeline "สำเร็จ" + เวลา, มัดจำ/จ่ายหน้างาน) — verification 12 AC + re-verify payment | Product Owner (ผู้ใช้) — อนุมัติเป็นลายลักษณ์อักษรในแชท ("อนุมัติ v0.11") | 2026-07-19 (Asia/Bangkok) | เงื่อนไข: (1) baseline `3a41dfc` (SHA-1 `3974d870`), working tree สะอาด; (2) ขนาด L — Codex ขอแบ่ง O-1→O-2 ได้ (AGENTS.md §6); (3) payment เข้า scope (re-verify) — protected อื่นห้ามแตะ; (4) จำลอง 100% ห้าม map/tel:/network; (5) design invariants §5.25 (direct-DOM timer, key by ref, กัน empty-overlay lock, modalKey คงที่) บังคับ; (6) Claude ห้ามแก้ implementation |
