@@ -782,7 +782,7 @@ function formatLabSlot(){
 }
 
 /* ลำดับความลึกของแต่ละหน้า — ใช้ตัดสินทิศทางอนิเมชัน (ไปหน้า = ลอยขึ้น, ถอยกลับ = วางลง) */
-const DEPTH = { home: 0, "consult-specialty": 1, lab: 1, meds: 1, lifestyle: 1, "consult-form": 2, "lab-results": 2, queue: 3, call: 4 };
+const DEPTH = { home: 0, "health-record": 1, "consult-specialty": 1, lab: 1, meds: 1, lifestyle: 1, "consult-form": 2, "lab-results": 2, queue: 3, call: 4 };
 /* ค่าจาก render รอบก่อน — อนิเมชันจะเล่นก็ต่อเมื่อค่าเหล่านี้เปลี่ยนจริง ไม่ใช่แค่ re-render */
 let prevScreen = null, prevModalKey = null, prevLifestyleTab = "maid", prevProgress = 35, prevQueuePos = null, prevNotifCount = null;
 
@@ -1255,6 +1255,17 @@ function homeScreen(){
       `).join("")}
     </div>
 
+    <div class="px-5 mt-3">
+      <button data-nav="health-record" class="w-full rounded-2xl p-4 flex items-center gap-3 text-left" style="background:#EFF3EA;border:1px solid #C9D6BD">
+        <span class="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style="background:var(--primary);color:#fff">${icon("heart-pulse",19)}</span>
+        <span class="flex-1 min-w-0">
+          <span class="block serif-th font-semibold" style="font-size:14px">สมุดสุขภาพ</span>
+          <span class="block mt-0.5" style="font-size:10.5px;color:#6D7766">กราฟค่าสุขภาพ · ผลตรวจ · ยา ในที่เดียว</span>
+        </span>
+        ${icon("chevron-right",16,"shrink-0")}
+      </button>
+    </div>
+
     ${state.queue ? `
     <div class="px-5 mt-3">
       <button data-nav="queue" class="w-full text-left rounded-2xl p-3.5 flex items-center gap-3" style="background:#EFF3EA;border:1px solid #C9D6BD">
@@ -1700,6 +1711,60 @@ const labResultsByUser = {
   u4: [],
 };
 
+/* ค่าสุขภาพย้อนหลังจำลองสำหรับสมุดสุขภาพ — อ่านอย่างเดียว ไม่เก็บลง sessionStorage */
+const vitalsByUser = {
+  u1: {
+    bp: [
+      { daysAgo: 90, sys: 132, dia: 84 },
+      { daysAgo: 60, sys: 130, dia: 82 },
+      { daysAgo: 30, sys: 128, dia: 81 },
+      { daysAgo: 7, sys: 126, dia: 80 },
+    ],
+    sugar: [
+      { daysAgo: 90, value: 106 },
+      { daysAgo: 60, value: 112 },
+      { daysAgo: 30, value: 118 },
+    ],
+    weight: [
+      { daysAgo: 90, value: 56.4 },
+      { daysAgo: 60, value: 56.2 },
+      { daysAgo: 30, value: 56.1 },
+      { daysAgo: 7, value: 56.0 },
+    ],
+  },
+  u2: { bp: [], sugar: [], weight: [] },
+  u3: {
+    bp: [
+      { daysAgo: 120, sys: 158, dia: 96 },
+      { daysAgo: 90, sys: 153, dia: 94 },
+      { daysAgo: 60, sys: 148, dia: 91 },
+      { daysAgo: 30, sys: 142, dia: 90 },
+      { daysAgo: 7, sys: 136, dia: 86 },
+    ],
+    sugar: [
+      { daysAgo: 120, value: 156 },
+      { daysAgo: 90, value: 143 },
+      { daysAgo: 60, value: 130 },
+      { daysAgo: 45, value: 96 },
+      { daysAgo: 7, value: 118 },
+    ],
+    weight: [
+      { daysAgo: 120, value: 61.8 },
+      { daysAgo: 90, value: 62.0 },
+      { daysAgo: 60, value: 61.9 },
+      { daysAgo: 30, value: 61.8 },
+      { daysAgo: 7, value: 61.9 },
+    ],
+  },
+  u4: { bp: [], sugar: [], weight: [] },
+};
+const VITAL_BANDS = {
+  bpSys: { lo: 90, hi: 139 },
+  bpDia: { lo: 60, hi: 89 },
+  sugar: { lo: 70, hi: 125 },
+  weight: { lo: 50, hi: 80 },
+};
+
 function labResultDate(daysAgo){
   const d = new Date();
   d.setDate(d.getDate() - daysAgo);
@@ -1865,6 +1930,243 @@ function medsScreen(){
       <button id="meds-confirm" ${itemCount ? "" : "disabled"} class="w-full rounded-full py-3.5 font-medium"
         style="background:${itemCount ? "var(--clay)" : "#DCD5C2"};color:${itemCount ? "#fff" : "var(--muted)"};font-size:14px">ยืนยันสั่งซื้อยา</button>
       ${itemCount ? "" : `<p style="font-size:10.5px;color:var(--muted)" class="text-center mt-2">เลือกยาสามัญด้านบนเพื่อสั่งซื้อ</p>`}
+    </div>
+  </div>`;
+}
+
+/* ---------------- health record hub + static inline-SVG sparklines ---------------- */
+function sparklineSvg(points, series, label){
+  const source = Array.isArray(points) ? points : [];
+  const plotted = source
+    .map(point => ({ point, day: Number(point && point.daysAgo) }))
+    .filter(item => Number.isFinite(item.day));
+  const safeSeries = (Array.isArray(series) ? series : [])
+    .map(item => {
+      const values = plotted.map(({ point }) => Number(point && point[item.key])).filter(Number.isFinite);
+      const lo = Number(item.band && item.band.lo);
+      const hi = Number(item.band && item.band.hi);
+      return values.length ? { ...item, values, band: Number.isFinite(lo) && Number.isFinite(hi) ? { lo, hi } : null } : null;
+    })
+    .filter(Boolean);
+  if (!plotted.length || !safeSeries.length) return "";
+
+  const W = 240, H = 96, padX = 10, padY = 10;
+  const days = plotted.map(item => item.day);
+  const dMin = Math.min(...days), dMax = Math.max(...days), dSpan = (dMax - dMin) || 1;
+  const dataValues = safeSeries.flatMap(item => item.values);
+  const bandValues = safeSeries.flatMap(item => item.band ? [item.band.lo, item.band.hi] : []);
+  const allValues = [...dataValues, ...bandValues].filter(Number.isFinite);
+  if (!allValues.length) return "";
+  let vMin = Math.min(...allValues), vMax = Math.max(...allValues);
+  const equalValues = dataValues.every(value => value === dataValues[0]);
+  const margin = Math.max(1, (vMax - vMin) * 0.12);
+  vMin -= margin;
+  vMax += margin;
+  const vSpan = (vMax - vMin) || 1;
+  const xFor = day => dMax === dMin ? W / 2 : padX + ((dMax - Number(day)) / dSpan) * (W - padX * 2);
+  const scaleY = value => padY + ((vMax - Number(value)) / vSpan) * (H - padY * 2);
+  const pointY = value => plotted.length === 1 || equalValues ? H / 2 : scaleY(value);
+  const n = value => Number(value).toFixed(2);
+
+  const bands = safeSeries.map((item, index) => {
+    if (!item.band) return "";
+    const top = scaleY(Math.max(item.band.lo, item.band.hi));
+    const bottom = scaleY(Math.min(item.band.lo, item.band.hi));
+    return `<rect x="${padX}" y="${n(top)}" width="${W - padX * 2}" height="${n(Math.max(1, bottom - top))}" rx="4" style="fill:${index === 0 ? "var(--line)" : "var(--slate)"};opacity:${index === 0 ? ".34" : ".08"}"></rect>`;
+  }).join("");
+
+  const lines = safeSeries.map(item => {
+    const coords = plotted
+      .map(({ point, day }) => {
+        const value = Number(point && point[item.key]);
+        return { point, value, x: xFor(day), y: Number.isFinite(value) ? pointY(value) : null };
+      })
+      .filter(coord => Number.isFinite(coord.y));
+    if (!coords.length) return "";
+    const color = item.color === "var(--slate)" ? "var(--slate)" : "var(--primary)";
+    const path = coords.map((coord, index) => `${index ? "L" : "M"} ${n(coord.x)} ${n(coord.y)}`).join(" ");
+    return `
+      <path d="${path}" style="fill:none;stroke:${color};stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;${item.dashed ? "stroke-dasharray:4 3;" : ""}"></path>
+      ${coords.map(coord => {
+        const outsideBand = item.band && (coord.value < item.band.lo || coord.value > item.band.hi);
+        const follow = outsideBand || (typeof item.isFollow === "function" && item.isFollow(coord.point));
+        return `<circle cx="${n(coord.x)}" cy="${n(coord.y)}" r="3.6" style="fill:${follow ? "var(--clay)" : color};stroke:var(--surface);stroke-width:1.5"></circle>`;
+      }).join("")}`;
+  }).join("");
+
+  return `
+  <svg data-health-sparkline viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block" role="img" aria-label="${esc(label)}" focusable="false">
+    ${bands}
+    <line x1="${padX}" y1="${H - padY}" x2="${W - padX}" y2="${H - padY}" style="stroke:var(--line);stroke-width:1"></line>
+    ${lines}
+  </svg>`;
+}
+
+function healthRecordScreen(){
+  const user = currentUser();
+  const vitals = vitalsByUser[state.currentUser] || { bp: [], sugar: [], weight: [] };
+  const bp = Array.isArray(vitals.bp) ? vitals.bp : [];
+  const sugar = Array.isArray(vitals.sugar) ? vitals.sugar : [];
+  const weight = Array.isArray(vitals.weight) ? vitals.weight : [];
+  const hasVitals = bp.length > 0 || sugar.length > 0 || weight.length > 0;
+  const profile = emergencyProfileFor();
+  const labResults = labResultsByUser[state.currentUser] || [];
+  const medicines = medsByUser[state.currentUser] || [];
+  const bpFollow = bp.filter(point => Number(point.sys) >= 140 || Number(point.dia) >= 90).length;
+  const sugarFollow = sugar.filter(point => Number(point.value) >= 126).length;
+  const labFollow = labResults.filter(result => result.status === "follow").length;
+  const hasFollow = bpFollow + sugarFollow + labFollow > 0;
+  const cards = [];
+
+  if (bp.length) {
+    const first = bp[0], latest = bp[bp.length - 1];
+    const sysDelta = Number(latest.sys) - Number(first.sys);
+    const diaDelta = Number(latest.dia) - Number(first.dia);
+    const latestFollow = Number(latest.sys) >= 140 || Number(latest.dia) >= 90;
+    cards.push({
+      title: "ความดันโลหิต",
+      icon: "heart-pulse",
+      value: `${Number(latest.sys)}/${Number(latest.dia)}`,
+      unit: "mmHg · SYS/DIA",
+      status: latestFollow ? "ควรติดตาม" : "ปกติ",
+      follow: latestFollow,
+      startDate: labResultDate(Number(first.daysAgo) || 0),
+      date: labResultDate(Number(latest.daysAgo) || 0),
+      delta: `${sysDelta <= 0 ? "▼" : "▲"} ${Math.abs(sysDelta)}/${Math.abs(diaDelta)} mmHg`,
+      caption: `${sysDelta < 0 ? "แนวโน้มลดลง" : sysDelta > 0 ? "แนวโน้มเพิ่มขึ้น" : "แนวโน้มคงที่"} · ${bpFollow ? `${bpFollow} จุดควรติดตาม` : "ทุกจุดอยู่ในช่วงติดตามปกติ"}`,
+      chart: sparklineSvg(bp, [
+        { key: "sys", band: VITAL_BANDS.bpSys, color: "var(--primary)", isFollow: point => Number(point.sys) >= 140 },
+        { key: "dia", band: VITAL_BANDS.bpDia, color: "var(--slate)", dashed: true, isFollow: point => Number(point.dia) >= 90 },
+      ], `กราฟความดันโลหิตของ${user.short} ค่า SYS และ DIA ${bp.length} จุด`),
+      legend: `<span class="inline-flex items-center gap-1"><i class="rounded-full" style="width:6px;height:6px;background:var(--primary)"></i>SYS</span><span class="inline-flex items-center gap-1"><i class="rounded-full" style="width:6px;height:6px;background:var(--slate)"></i>DIA</span>`,
+    });
+  }
+  if (sugar.length) {
+    const first = sugar[0], latest = sugar[sugar.length - 1];
+    const delta = Number(latest.value) - Number(first.value);
+    const current = Number(latest.value);
+    const latestFollow = current >= 126;
+    cards.push({
+      title: "น้ำตาลในเลือด",
+      icon: "droplet",
+      value: String(current),
+      unit: "mg/dL",
+      status: latestFollow ? "ควรติดตาม" : current >= 100 ? "ก้ำกึ่ง" : "ปกติ",
+      follow: latestFollow,
+      borderline: !latestFollow && current >= 100,
+      startDate: labResultDate(Number(first.daysAgo) || 0),
+      date: labResultDate(Number(latest.daysAgo) || 0),
+      delta: `${delta <= 0 ? "▼" : "▲"} ${Math.abs(delta)} mg/dL`,
+      caption: `${delta < 0 ? "แนวโน้มลดลง" : delta > 0 ? "แนวโน้มเพิ่มขึ้น" : "แนวโน้มคงที่"} · ${sugarFollow ? `${sugarFollow} จุดควรติดตาม` : "ยังไม่มีจุดเกิน 126 mg/dL"}`,
+      chart: sparklineSvg(sugar, [
+        { key: "value", band: VITAL_BANDS.sugar, color: "var(--primary)", isFollow: point => Number(point.value) >= 126 },
+      ], `กราฟน้ำตาลในเลือดของ${user.short} ${sugar.length} จุด`),
+    });
+  }
+  if (weight.length) {
+    const first = weight[0], latest = weight[weight.length - 1];
+    const delta = Number(latest.value) - Number(first.value);
+    const trend = Math.abs(delta) < 0.3 ? "คงที่" : delta < 0 ? "ลดลง" : "เพิ่มขึ้น";
+    cards.push({
+      title: "น้ำหนัก",
+      icon: "scale",
+      value: Number(latest.value).toFixed(1),
+      unit: "กก.",
+      status: trend,
+      startDate: labResultDate(Number(first.daysAgo) || 0),
+      date: labResultDate(Number(latest.daysAgo) || 0),
+      delta: `${delta <= 0 ? "▼" : "▲"} ${Math.abs(delta).toFixed(1)} กก.`,
+      caption: `แนวโน้ม${trend} · เปลี่ยนแปลง ${Math.abs(delta).toFixed(1)} กก. จากจุดแรก`,
+      chart: sparklineSvg(weight, [
+        { key: "value", band: VITAL_BANDS.weight, color: "var(--primary)", isFollow: () => false },
+      ], `กราฟน้ำหนักของ${user.short} ${weight.length} จุด`),
+    });
+  }
+
+  return `
+  <div class="pb-28">
+    ${screenHero({ title: "สมุดสุขภาพ", sub: `ภาพรวมสุขภาพล่าสุดของ${esc(user.short)}`, icon: "heart-pulse", from: "var(--primary)", to: "var(--primary-dark)" })}
+    <div class="px-5">
+      <div class="rounded-xl px-3 py-2.5 flex items-start gap-2.5 mb-4" style="background:#FFF4DD;border:1px solid #E8D3A4;color:#70572B">
+        ${icon("info",14,"shrink-0 mt-0.5")}
+        <p style="font-size:10.5px;line-height:1.5">ข้อมูลสุขภาพและกราฟทั้งหมดเป็นข้อมูลจำลองสำหรับการนำเสนอ ไม่ใช่คำวินิจฉัยหรือเวชระเบียนจริง</p>
+      </div>
+
+      ${profile ? `
+      <div class="rounded-2xl p-4 mb-4" style="background:#F7F2E8;border:1px solid #D8C7AE">
+        <div class="flex items-start gap-3">
+          <div class="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style="background:#F3E9DB;color:var(--clay)">${icon("file-heart",19)}</div>
+          <div class="flex-1 min-w-0">
+            <p class="serif-th font-semibold" style="font-size:14px">ข้อมูลสุขภาพสำคัญ</p>
+            <p class="mt-1" style="font-size:11px;color:var(--ink-soft)">กรุ๊ปเลือด ${esc(profile.bloodType)} · แพ้ยา ${profile.allergies.map(esc).join(" · ")}</p>
+            <p class="mt-0.5" style="font-size:11px;color:var(--ink-soft)">${profile.conditions.map(esc).join(" · ")}</p>
+          </div>
+        </div>
+        <button data-health-card-open class="w-full rounded-full py-2.5 font-medium mt-3" style="background:var(--surface);border:1px solid #D8C7AE;color:var(--primary);font-size:12px">ดูบัตรสุขภาพฉุกเฉิน</button>
+      </div>` : ""}
+
+      ${hasVitals ? `
+      <p class="serif-th font-semibold mb-2" style="font-size:15px">แนวโน้มค่าสุขภาพ</p>
+      <div class="space-y-3">
+        ${cards.map(card => `
+        <div class="rounded-2xl p-4" style="background:var(--surface);border:1px solid var(--line)">
+          <div class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:#E7EDDF;color:var(--primary)">${icon(card.icon,17)}</div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <p class="font-medium" style="font-size:12.5px">${esc(card.title)}</p>
+                  ${card.legend ? `<p class="flex items-center gap-2 mt-0.5" style="font-size:9.5px;color:var(--ink-soft)">${card.legend}</p>` : ""}
+                </div>
+                <span class="shrink-0 rounded-full px-2 py-1 font-semibold" style="font-size:10.5px;background:${card.follow || card.borderline ? "#F8E8C7" : "#DDE9D7"};color:${card.follow || card.borderline ? "#7A5115" : "#3D5636"}">${esc(card.status)}</span>
+              </div>
+              <div class="flex items-end gap-1.5 mt-2">
+                <span class="serif-th font-semibold" style="font-size:21px;color:${card.follow ? "var(--clay)" : "var(--ink)"}">${esc(card.value)}</span>
+                <span style="font-size:10px;color:var(--ink-soft);padding-bottom:3px">${esc(card.unit)}</span>
+              </div>
+            </div>
+          </div>
+          <div class="mt-3">${card.chart}</div>
+          <div class="flex items-center justify-between gap-3 mt-0.5" style="font-size:9px;color:var(--muted)" aria-hidden="true">
+            <span>${esc(card.startDate)}</span>
+            <span>${esc(card.date)}</span>
+          </div>
+          <div class="flex items-center justify-between gap-3 mt-2">
+            <span style="font-size:10px;color:var(--ink-soft)">ล่าสุด ${esc(card.date)}</span>
+            <span style="font-size:10px;color:var(--ink-soft)">${esc(card.delta)}</span>
+          </div>
+          <p class="rounded-xl px-3 py-2 mt-2" style="background:#F5F4ED;color:var(--ink-soft);font-size:10.5px;line-height:1.45">${esc(card.caption)}</p>
+        </div>`).join("")}
+      </div>` : `
+      <div class="rounded-3xl p-7 text-center" style="background:var(--surface);border:1px solid var(--line)">
+        <span class="w-14 h-14 rounded-full mx-auto flex items-center justify-center" style="background:#E7EDDF;color:var(--primary)">${icon("activity",24)}</span>
+        <h2 class="serif-th mt-4 font-semibold" style="font-size:17px">ยังไม่มีข้อมูลค่าสุขภาพ</h2>
+        <p class="mt-1.5 leading-relaxed" style="font-size:11.5px;color:var(--ink-soft)">เมื่อมีการติดตามความดัน น้ำตาล หรือน้ำหนัก ระบบจะแสดงแนวโน้มไว้ที่สมุดสุขภาพนี้</p>
+        <button data-nav="lab" class="w-full rounded-full py-3 mt-5 font-medium" style="background:var(--primary);color:#fff;font-size:13px">เริ่มจากการตรวจสุขภาพ</button>
+      </div>`}
+
+      <p class="serif-th font-semibold mt-6 mb-2" style="font-size:15px">ข้อมูลที่เกี่ยวข้อง</p>
+      <div class="space-y-2.5">
+        <button data-nav="lab-results" class="w-full rounded-2xl p-3.5 flex items-center gap-3 text-left" style="background:#E8ECF2;border:1px solid #CDD5E0">
+          <span class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:#D7DEE8;color:#42536C">${icon("clipboard-check",18)}</span>
+          <span class="flex-1 min-w-0">
+            <span class="block font-medium" style="font-size:12.5px">ผลตรวจสุขภาพ</span>
+            <span class="block mt-0.5" style="font-size:10.5px;color:#586A85">${labResults.length ? `${labResults.length} รายการ · ${labFollow ? `${labFollow} รายการควรติดตาม` : "อยู่ในเกณฑ์ปกติ"}` : "ยังไม่มีผลตรวจ"}</span>
+          </span>
+          ${icon("chevron-right",16)}
+        </button>
+        <button data-nav="meds" class="w-full rounded-2xl p-3.5 flex items-center gap-3 text-left" style="background:#F9EFDF;border:1px solid #E8CFA4">
+          <span class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:#F3E9DB;color:var(--clay)">${icon("pill",18)}</span>
+          <span class="flex-1 min-w-0">
+            <span class="block font-medium" style="font-size:12.5px">ยาต่อเนื่อง</span>
+            <span class="block mt-0.5" style="font-size:10.5px;color:#8A6A3F">${medicines.length ? `${medicines.length} รายการ · ${medicines.map(med => esc(med.name)).join(" · ")}` : "ยังไม่มียาประจำ"}</span>
+          </span>
+          ${icon("chevron-right",16)}
+        </button>
+      </div>
+
+      ${hasFollow ? `
+      <button data-nav="consult-specialty" class="w-full rounded-full py-3.5 font-medium mt-5 flex items-center justify-center gap-2" style="background:var(--slate);color:#fff;font-size:14px">${icon("stethoscope",17)} ปรึกษาหมอต่อ</button>` : ""}
     </div>
   </div>`;
 }
@@ -2569,6 +2871,7 @@ function render(){
   else if (state.screen === "queue") html = queueScreen();
   else if (state.screen === "lab") html = labScreen();
   else if (state.screen === "lab-results") html = labResultsScreen();
+  else if (state.screen === "health-record") html = healthRecordScreen();
   else if (state.screen === "meds") html = medsScreen();
   else if (state.screen === "lifestyle") html = lifestyleScreen();
   else if (state.screen === "call") html = callScreen();

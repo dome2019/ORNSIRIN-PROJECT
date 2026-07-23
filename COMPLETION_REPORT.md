@@ -1,16 +1,16 @@
-# Completion Report — SPEC v0.11 INC-O
+# Completion Report — SPEC v0.12 INC-P
 
 Status: IMPLEMENTED_AND_VERIFIED
 
-Date: 2026-07-23 (Asia/Bangkok)
+Date: 2026-07-24 (Asia/Bangkok)
 
 Implementation and Verification Lead: Codex
 
-Approved scope: `SPEC.md` §5.25 — INC-O (O-1: SOP live tracker/status UI; O-2: deposit/remaining-payment flow)
+Approved scope: `SPEC.md` §5.27 — INC-P สมุดสุขภาพ (Health Record Hub) + กราฟค่าสุขภาพ Option A MVP แบบ read-only
 
-Approved application baseline: commit `3a41dfc6c0b99c63f65ea2e583646c89fae49b82`; `index.html` SHA-1 `3974d87039226f88c3f98283bda6e3befd86f630`
+Approved application baseline: commit `6f1e5d3a56285b6ac7c3cbab249dd91394843614`; `index.html` SHA-1 `6d225e064e27be4ad38396176b7ad03c95557448`
 
-Repository HEAD at preflight: `11edac991a4c920aa833bebbece22417d50d5bfc` (documentation-only approval commit after the application baseline)
+Repository HEAD at preflight: `d381b387d903299265f4485442cc69a8a0994374` (documentation-only SPEC approval commit after the application baseline)
 
 ## 1. Preflight
 
@@ -19,53 +19,65 @@ Result: **PASS**
 | Check | Evidence / Result |
 |---|---|
 | Working directory | `/Users/dome/Desktop/ORNSIRIN PROJECT` |
-| Required documents | Read `AGENTS.md`, `CLAUDE.md`, `SPEC.md`, and relevant `README.md`/`TODO.md` content in full before implementation |
+| Required documents | Read `AGENTS.md`, `CLAUDE.md`, `SPEC.md`, and relevant `README.md`/`TODO.md` content before implementation |
 | SPEC status | First line is exactly `Status: APPROVED_FOR_IMPLEMENTATION` |
-| Approval Record | v0.11 approved by the Product Owner on 2026-07-19 (Asia/Bangkok); approved scope is all of INC-O §5.25 with 12 AC and payment re-verification |
-| Blocking Questions | None; Scope, Non-goals, design invariants, rollback, Verification Plan, and AC-O-01…12 were testable |
-| Branch / HEAD | `main` tracks `origin/main`; both were `11edac991a4c920aa833bebbece22417d50d5bfc` |
-| Approved baseline reconciliation | HEAD differs from `3a41dfc` only by the SPEC approval commit; `HEAD:index.html` was byte-identical to the approved application baseline |
-| Application baseline fingerprints | SHA-1 `3974d87039226f88c3f98283bda6e3befd86f630`; SHA-256 `2c38f716dff79197c21cd4559692a1b3d40c6fdb3349ca088b3024e4d94eac77`; Git blob `daae1c73fb3dc3527c175e8e142d0cc35c5f9277` |
+| Approval Record | SPEC v0.12 approved by the Product Owner on 2026-07-24 (Asia/Bangkok); scope is exactly INC-P §5.27 with 9 AC |
+| Blocking Questions | None; Scope, Non-goals, SVG invariants, rollback, and AC-P-01…09 were testable |
+| Branch / HEAD | `main` tracks `origin/main`; both were `d381b387d903299265f4485442cc69a8a0994374` |
+| Approved baseline reconciliation | HEAD differs from `6f1e5d3` only by the SPEC approval commit; `HEAD:index.html` was byte-identical to the approved application baseline |
+| Application baseline fingerprints | SHA-1 `6d225e064e27be4ad38396176b7ad03c95557448`; SHA-256 `d794f31f3a337cf14d44bc8252797701e30f7a0d2f975669445a3a8164093a62`; Git blob `f7a0e4186186369c3cfa9b1b09b53594fa3f9258` |
 | Working tree before implementation | Clean; no staged, unstaged, or untracked work |
-| Architecture | Matched the SPEC current state: single-file offline-first prototype, vanilla JavaScript state/render flow, `sessionStorage`, embedded assets, no backend/build/test framework |
-| Scope controls | `index.html` was the only application file in scope; payment was explicitly reopened by §5.25 while celebration, queue, SOS/call timers, escaping, privacy gate, INC-J/K, and storage recovery remained protected |
+| Architecture | Matched the SPEC: one offline `index.html`, embedded assets, vanilla JavaScript state/render flow, `sessionStorage`, no backend/build/test framework |
+| Scope controls | `index.html` was the only application file in scope; timer, payment, tracker, celebration, escaping, privacy gate, INC-J/K, and storage remained protected |
+
+The stale Phase-0 prose elsewhere in `SPEC.md` is documentation debt, not a blocker: the current Document Control, §5.27, Decisions, and Approval Record consistently authorize INC-P.
 
 No reset, revert, checkout, dependency installation, staging, commit, push, PR, merge, or deployment action was performed.
 
 ## 2. Implemented Scope
 
-### O-1 — Tracker, SOP, and service-status UI
+### Data inventory
 
-- Added persisted, reference-keyed tracking state to new lab, medicine, and lifestyle bookings: `track.step` and bounded `track.eta`.
-- Added the approved SOP templates:
-  - lab and lifestyle: 5 steps;
-  - medicine delivery: 4 steps;
-  - category-specific active-service labels for maid, massage, Ice bath, physiotherapy, and Pet care.
-- Added simulated nurse/rider/provider resolution, provider cards, vertical timeline descriptions, preset realistic `HH:MM` times, active/future/completed states, and the permanent simulation notice.
-- Added tracker entry points on Home booking cards and booking-detail sheets, with live last-known chips/progress and a safe legacy fallback of `ยืนยันแล้ว`.
-- Added a single foreground-only direct-DOM ETA timer with persistence, clamping, null guards, self-stop conditions, and a stable tracker modal key.
-- Added tracker-scoped ArrowRight advancement without changing SOS or queue shortcuts.
-- Added completed-status behavior, including all rows marked `สำเร็จ`, medicine terminal copy `ส่งถึงแล้ว`, and the lab-results CTA.
-- Applied owner/login gating for all user personas and a non-empty safe tracker fallback.
+- Added `const vitalsByUser` beside `labResultsByUser` with the approved `{ bp, sugar, weight }` shape and numeric bands.
+- u1: BP 4 points, sugar 3 points, weight 4 points; mostly normal with latest FBS 118 aligned to the existing lab data.
+- u2: all three series empty.
+- u3: BP, sugar, and weight 5 points each; elevated historic BP/sugar points align with hypertension, type-2 diabetes, and existing lab values.
+- u4: all three series empty.
+- The data remains synthetic, read-only, outside `state`, and adds no persisted key.
 
-### O-2 — Deposit and remaining-payment flow
+### Health-record UI and SVG helper
 
-- Added `total`, `deposit`, `remaining`, and `remainingPaid` reconciliation:
-  - lab/lifestyle pay `round(total × 0.3)` at booking;
-  - medicine pays the full total at booking.
-- Added tracker and booking-detail finance summaries, terminal remaining-payment CTA, and the paid-in-full state.
-- Reused the existing QR payment and celebration flow for the remaining amount; updates target exactly one booking by `ref` and never prepend a duplicate booking.
-- Preserved `deposit + remaining = total` while using `remainingPaid` to represent settlement.
-- Returned the user to the same tracker after the remaining-payment celebration and kept the finance state F5-safe.
-- Hardened the asynchronous payment confirmation by binding its timeout to the exact payment object that was confirmed. Closing payment A and opening payment B during the delay can no longer settle B accidentally.
-- Corrected the completed tracker summary so `ยอดที่ชำระแล้ว` becomes the full paid amount after settlement, not the original deposit.
+- Added pure/static `sparklineSvg()` with finite-number filtering, guarded spans, centered single/equal-value points, automatic band-outlier coloring, escaped accessible labels, and no animation.
+- SVGs use `viewBox`, exact `width:100%;height:auto;display:block`, style-attribute colors, no fixed width/height attributes, no `<text>`, and no `crispEdges`.
+- Added `healthRecordScreen()` with:
+  - visible simulation/medical disclaimer;
+  - three health-trend cards with latest value, status, date, delta, Thai caption, and accessible SVG;
+  - u3 emergency-profile summary and the existing emergency-card modal;
+  - lab and medicine summaries with working links;
+  - conditional doctor-consult CTA when follow-up data exists;
+  - safe empty state for u2/u4 without empty SVG or `NaN`.
+
+### Wiring and entry
+
+- Added `DEPTH["health-record"] = 1`.
+- Added one full-width “สมุดสุขภาพ” card to the logged-in Home screen for every member.
+- Added the `health-record` render branch.
+- Reused the existing generic navigation, back behavior, privacy gate, member switching, and emergency-card event wiring without modifying them.
+
+### Cosmetic inventory
+
+- Green full-width Home entry and green gradient hero.
+- Amber simulation notice, cream emergency-profile summary, and neutral chart cards.
+- Primary/slate lines, clay out-of-band points, muted range bands, HTML date/value labels, and no new CSS animation.
+
+Independent review found one LOW helper robustness gap during verification: approved fixture outliers were already clay, but a future value outside a supplied band was not guaranteed to be clay without a callback. The helper was tightened within scope to color both low and high band outliers automatically and to discard mixed invalid values.
 
 ## 3. Files Changed
 
 | File | Reason |
 |---|---|
-| `index.html` | Approved INC-O implementation and the two payment correctness fixes found during independent verification |
-| `COMPLETION_REPORT.md` | Replaced the prior-round report with this required v0.11 handoff; the previous report remains recoverable in Git history |
+| `index.html` | Approved INC-P data, static SVG helper, Health Record screen, Home entry, and minimal navigation wiring |
+| `COMPLETION_REPORT.md` | Replaced the prior-round report with this required v0.12 handoff; the earlier report remains recoverable in Git history |
 
 `AGENTS.md`, `CLAUDE.md`, `SPEC.md`, `README.md`, and `TODO.md` were not edited.
 
@@ -73,74 +85,67 @@ No reset, revert, checkout, dependency installation, staging, commit, push, PR, 
 
 | Verification | Result |
 |---|---|
-| Mandatory Preflight (`pwd`, Git status/HEAD/origin, document and baseline checks) | **PASS**, exit 0 |
+| Mandatory Preflight (`pwd`, documents, approval, Git state, HEAD/origin, baseline) | **PASS**, exit 0 |
 | Inline JavaScript compilation with bundled Node and `new Function(...)` | **PASS**, exit 0 — all 3/3 inline scripts compile |
-| Deterministic VM harness over 7 service variants | **PASS**, exit 0 — lab, medicine, and all five lifestyle templates; descriptions, terminal timeline, provider/owner gate, escaping, finance, by-ref targeting, and timer checks returned `failures=[]` |
-| Payment timeout identity/race harness | **PASS**, exit 0 — a stale callback cannot process a newly opened payment object |
-| Finance reconciliation harness | **PASS**, exit 0 — tested splits: `1200=360+840`, `153=46+107`, `425=128+297`, `297=89+208`, `680=204+476`, `382=115+267`; medicine has zero outstanding |
-| Browser: lab primary flow | **PASS** — paid ฿360 deposit on ฿1,200 total; Home/detail tracker entry; 5 steps; provider; ETA/progress; terminal timestamps; ฿840 remaining payment; celebration; one booking only; paid-in-full survives reload |
-| Browser: medicine flow | **PASS** — full ฿400 payment; 4-step timeline; rider appears at handoff; delivery ETA; no remaining-payment CTA; terminal copy verified as `ส่งถึงแล้ว` on the final source |
-| Browser: lifestyle inventory | **PASS** — all 5 categories created and tracked; exact category-specific step-4 labels and assigned providers verified |
-| Browser: direct-DOM timer and persistence | **PASS** — ETA visibly decremented; modal did not replay; open/close ×5 produced one decrement only; F5 resumed the same step/ETA; no stacking or negative ETA |
-| Browser: keyboard regressions | **PASS** — tracker ArrowRight advanced only its booking; SOS ETA and queue position shortcuts remained independent |
-| Browser: login/owner gates | **PASS** — u1–u4 owner behavior, u3-created own tracker, user switching, and logged-out state produced no foreign tracker or empty-overlay lock |
-| Browser: 1366×768 elder layout | **PASS** — exact viewport checked; no horizontal overflow; tracker sheet remained closeable and vertically scrollable |
-| Browser: runtime errors | **PASS** — zero console errors across exercised flows; only the pre-existing embedded Tailwind warning remained |
-| Offline/outbound/security scan | **PASS**, exit 0 — no new `a[href]`, `tel:`, form, map, fetch/XHR, WebSocket, EventSource, external script/style, network endpoint, or persisted key; permanent simulation label present |
-| Reduced-motion/static guard | **PASS**, exit 0 — tracker progress selectors are included in the existing reduced-motion block; modal key remains stable |
-| Protected-region comparison | **PASS**, exit 0 — celebration, queue, SOS/call timers, escaping, privacy/login gate, health/caregiver behavior, and storage recovery matched the approved baseline |
-| Diff hygiene | **PASS**, exit 0 — `git diff --check`; final application diff reviewed at 456 insertions / 58 deletions |
-| Independent verification | **PASS 12/12** on final SHA-1 `6d225e064e27be4ad38396176b7ad03c95557448` |
+| Deterministic SVG helper VM harness | **PASS**, exit 0 — single/equal points centered; invalid values filtered; no `NaN`/`Infinity`; escaped ARIA; low/high outliers clay; responsive/style-only colors; no SVG text, `crispEdges`, or animation |
+| Source/network/storage scan over added lines | **PASS**, exit 0 — no new storage key/API, fetch/XHR, socket/event stream, external script, stylesheet, or endpoint |
+| Diff-scope guard | **PASS**, exit 0 — exactly five approved hunk regions: DEPTH, Home entry, vitals/bands, helper/screen, render branch |
+| Browser: u1 | **PASS** — 3 graphs; latest BP 126/80, sugar 118, weight 56.0; mostly normal presentation; lab/medicine summaries present |
+| Browser: u3 | **PASS** — 3 graphs, 11 resolved clay outlier points, profile/lab/condition consistency, working health-card modal, and conditional consult CTA |
+| Browser: u2/u4 | **PASS** — empty state, 0 health SVGs, no visible `NaN`, no follow-up CTA |
+| Browser: links and navigation | **PASS** — lab and medicine summaries reach the existing screens; consult CTA reaches “เลือกผู้เชี่ยวชาญ”; Home→Health is `screen-enter fwd`; back returns Home as `screen-enter back` |
+| Browser: privacy/session/member behavior | **PASS** — entry is absent before login; logout removes private health content/SVGs; reload retains the current member/screen through existing state; member re-render does not animate |
+| Browser: SVG/layout | **PASS** — 3 SVGs have exact responsive invariants and resolved primary/slate/clay colors; at live 1280×720 elder u3, document/body/app horizontal overflow were all 0 and content remained vertically scrollable |
+| Browser: runtime behavior | **PASS** — all exercised flows rendered and interacted without application/runtime failure; no new console error was observed |
+| Protected regions / persisted-state guard | **PASS**, exit 0 — protected logic has no diff; no persisted key or schema change |
+| `git diff --check` | **PASS**, exit 0 |
+| Independent read-only verification | **PASS 9/9** on final `index.html` SHA-1 `3c71557d10ebd00155998503ee42cadb859d536f`; no remaining defect |
 
-The in-app Browser rejects direct `file://` navigation by URL policy. Runtime verification therefore used a server bound only to `127.0.0.1`; single-file/offline preservation was verified separately through source, DOM, and outbound-reference scans. The local server was stopped after verification.
+The in-app Browser blocks direct `file://` navigation by URL policy. Runtime checks used a server bound only to `127.0.0.1`; it was stopped after verification. Single-file/offline preservation was checked separately through the application diff and outbound-reference scan.
 
-Final `index.html` fingerprints: SHA-1 `6d225e064e27be4ad38396176b7ad03c95557448`; SHA-256 `d794f31f3a337cf14d44bc8252797701e30f7a0d2f975669445a3a8164093a62`; Git blob `f7a0e4186186369c3cfa9b1b09b53594fa3f9258`; 3,200 lines; 1,900,763 bytes.
+The available live browser viewport was 1280×720 rather than exactly 1366×768. It is both narrower and shorter than the specified projector viewport; the elder u3 layout passed there with zero horizontal overflow. The unchanged monotonic `fitPhone()` behavior supplies the larger 1366×768 case.
+
+Final `index.html` fingerprints: SHA-1 `3c71557d10ebd00155998503ee42cadb859d536f`; SHA-256 `241e2c103b8c9200a746ece437275786ef3c452457faa20e887a88e15709e225`; Git blob `ea642546d2e7d2f51823bd87a2bbdb04abbd2512`; 3,503 lines; 1,919,578 bytes.
 
 ## 5. Acceptance Criteria
 
 | AC | Result | Evidence |
 |---|---|---|
-| AC-O-01 | **PASS** | Confirmed lab, medicine, and lifestyle bookings expose working tracker entry points on Home and booking detail |
-| AC-O-02 | **PASS** | Home-visit tracker has ordered 5-step SOP, provider card, travel ETA/progress, and terminal lab-results CTA |
-| AC-O-03 | **PASS** | Medicine tracker has 4 steps, rider card, delivery ETA, and exact terminal label `ส่งถึงแล้ว` |
-| AC-O-04 | **PASS** | Maid, massage, Ice bath, physiotherapy, and Pet care all track successfully with distinct service-step labels |
-| AC-O-05 | **PASS** | Terminal view marks every timeline row `สำเร็จ` with preset `HH:MM น.` values |
-| AC-O-06 | **PASS** | ETA decrements through direct DOM/persist logic; tracker ArrowRight does not interfere with queue or SOS |
-| AC-O-07 | **PASS** | Single timer handle, ×5 open/close test, ETA clamp, lifecycle self-stop, and mid-tracker F5 continuation verified |
-| AC-O-08 | **PASS** | Active Home cards show last-known state/progress; a no-track legacy booking remains `ยืนยันแล้ว` without reload error |
-| AC-O-09 | **PASS** | Owner/login gate works for all user personas; no pre-login tracker and no empty-overlay lock |
-| AC-O-10 | **PASS** | Permanent simulation notice, escaped dynamic fields, and no new link/tel/form/map/network behavior |
-| AC-O-11 | **PASS** | Deposit/full-payment arithmetic, remaining payment, celebration, final paid summary, F5 state, by-ref mutation, race guard, and no duplicate/double payment verified |
-| AC-O-12 | **PASS** | Stable modal key, reduced motion, elder 1366×768 scrolling, zero console errors, offline preservation, and protected-region equality verified |
+| AC-P-01 | **PASS** | Logged-in Home entry works for all members; no pre-login entry or private screen leak |
+| AC-P-02 | **PASS** | Three inline SVG graphs; CSS variables resolve; VM and browser confirm both low/high out-of-band points use clay |
+| AC-P-03 | **PASS** | Every graph includes latest value, status, date, visible Thai caption, `role="img"`, and escaped `aria-label` |
+| AC-P-04 | **PASS** | u3 data/profile/lab are consistent; u1 is mostly normal; u2/u4 show safe empty states with 0 SVG and no visible `NaN` |
+| AC-P-05 | **PASS** | Lab/medicine summaries and links work; u3 emergency profile/modal works; consult CTA appears only when follow-up data exists |
+| AC-P-06 | **PASS** | Responsive SVG invariants pass; no horizontal overflow at the stricter live 1280×720 elder viewport; full page remains scrollable |
+| AC-P-07 | **PASS** | Graphs are fully static with no draw animation; member re-render cannot replay an effect |
+| AC-P-08 | **PASS** | Dynamic health strings are escaped; math guards pass edge cases; disclaimer is visible; no network/external reference was added |
+| AC-P-09 | **PASS** | DEPTH/forward/back behavior is correct; scripts/runtime pass; protected regions and storage are untouched; no persisted key added |
 
-**Overall: 12/12 PASS.**
+**Overall: 9/9 PASS.**
 
 ## 6. Deviations
 
-No functional scope deviation.
+No functional, architectural, dependency, interface, data-schema, or scope deviation.
 
-Approved intent required two cosmetic/contextual adaptations:
+The automatic band-outlier guard added after independent review is a direct implementation of the approved SVG invariant and does not expand behavior beyond §5.27.
 
-1. For lifestyle services already bookable at the project's common area, tracker destination copy uses `พื้นที่ส่วนกลาง` instead of incorrectly saying the provider is arriving at the user's home. The same approved 5-step SOP and payment behavior remain unchanged.
-2. Cancellation copy now promises return of the amount actually paid (`คืนยอดที่ชำระแล้ว`) rather than a full-price refund, so deposit bookings are not misleading.
-
-No architecture, dependency, external interface, persisted-key, real payment, or real tracking capability was added.
+The requested customer service-history feature remains deferred under DEC-023 and was not implemented.
 
 ## 7. Pre-existing Work Preserved
 
-- The working tree was clean before INC-O; no pre-existing uncommitted user work required merging.
-- HEAD's SPEC approval commit and all earlier INC-N/L/M behavior were preserved.
-- Protected application regions were compared against `HEAD:index.html`/the approved baseline and remained byte-identical outside the explicitly reopened payment surface.
+- The working tree was clean before INC-P; there was no uncommitted user work to merge.
+- HEAD's SPEC approval commit and the full INC-O application baseline were preserved.
+- Protected timer/payment/tracker/celebration/escaping/privacy/INC-J/K/storage regions have no diff.
 - The previous Completion Report remains available in Git history.
-- No destructive Git command, dependency operation, staging, commit, or push occurred.
+- No destructive Git operation, dependency operation, staging, commit, or push occurred.
 
 ## 8. Residual Risks
 
-- **LOW cosmetic:** medicine booking detail still uses the generic row labels `มัดจำ` and `คงเหลือหน้างาน`, although its badge and tracker correctly show full payment and zero balance. §5.25 requires the paid-in-full message on the status tracker, which passes.
-- The repository has no automated test framework. Evidence combines deterministic dependency-free Node harnesses, static comparisons/scans, browser workflows, and independent review.
-- Direct `file://` automation could not run under the Browser URL policy; offline behavior is supported by the unchanged single-file architecture and no-outbound scans.
-- Tracking, timestamps, providers, payment, and location are intentionally simulated and foreground-only; this is not production GPS, dispatch, identity, or payment processing.
-- A pre-existing embedded Tailwind runtime warning remains; no new console error was introduced.
+- The repository has no automated test framework. Evidence combines dependency-free Node harnesses, source/diff scans, live browser workflows, and independent review.
+- Exact 1366×768 resizing was unavailable in the browser controller; the stricter 1280×720 elder case passed, supported by unchanged `fitPhone()` behavior.
+- Direct `file://` automation was blocked by Browser URL policy; offline preservation is supported by the unchanged single-file architecture and no-outbound scan.
+- All vitals, profiles, labs, medicines, and medical interpretations are intentionally synthetic and presentation-only; this is not a production medical record or diagnostic system.
+- A pre-existing embedded Tailwind runtime warning remains; no new application error was introduced.
 
 ## 9. Git Status at Handoff
 
@@ -154,11 +159,11 @@ Expected final status:
 
 Ownership:
 
-- Codex INC-O work: `index.html` and `COMPLETION_REPORT.md`.
+- Codex INC-P work: `index.html` and `COMPLETION_REPORT.md`.
 - Pre-existing uncommitted work: none.
 - No staged or untracked files.
-- HEAD and `origin/main` remain `11edac991a4c920aa833bebbece22417d50d5bfc`.
+- HEAD and `origin/main` remain `d381b387d903299265f4485442cc69a8a0994374`.
 
 ## 10. Recommended Next Step
 
-Hand off to Claude for the mandatory Post-implementation Audit: review the final `index.html` diff against SPEC §5.25, independently recheck AC-O-01…12 and the two documented cosmetic adaptations, then present the audited result to the Product Owner for acceptance.
+Hand off to Claude for the mandatory Post-implementation Audit: review the final `index.html` diff against SPEC §5.27, independently recheck AC-P-01…09 and the documented verification limitations, then present the audited result to the Product Owner for acceptance.
